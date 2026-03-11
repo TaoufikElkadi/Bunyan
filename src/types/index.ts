@@ -1,0 +1,167 @@
+export type MosquePlan = 'free' | 'starter' | 'growth'
+export type UserRole = 'admin' | 'viewer'
+export type DonationMethod = 'ideal' | 'card' | 'sepa' | 'cash' | 'bank_transfer'
+export type DonationStatus = 'pending' | 'completed' | 'failed' | 'refunded'
+export type RecurringFrequency = 'weekly' | 'monthly' | 'yearly'
+export type RecurringStatus = 'active' | 'paused' | 'cancelled'
+export type Locale = 'nl' | 'en' | 'tr' | 'ar'
+
+export interface Mosque {
+  id: string
+  name: string
+  slug: string
+  city: string | null
+  address: string | null
+  logo_url: string | null
+  banner_url: string | null
+  primary_color: string
+  welcome_msg: string | null
+  anbi_status: boolean
+  rsin: string | null
+  kvk: string | null
+  language: Locale
+  mollie_org_id: string | null
+  mollie_connected_at: string | null
+  plan: MosquePlan
+  plan_started_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface PublicMosque {
+  id: string
+  name: string
+  slug: string
+  city: string | null
+  logo_url: string | null
+  banner_url: string | null
+  primary_color: string
+  welcome_msg: string | null
+  anbi_status: boolean
+  rsin: string | null
+  language: Locale
+}
+
+export interface User {
+  id: string
+  mosque_id: string
+  name: string
+  email: string
+  role: UserRole
+  created_at: string
+}
+
+export interface Fund {
+  id: string
+  mosque_id: string
+  name: string
+  description: string | null
+  icon: string | null
+  goal_amount: number | null
+  goal_deadline: string | null
+  is_active: boolean
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
+export interface Donor {
+  id: string
+  mosque_id: string
+  name: string | null
+  email: string | null
+  phone: string | null
+  address: string | null
+  iban_hint: string | null
+  tags: string[]
+  total_donated: number
+  donation_count: number
+  first_donated_at: string | null
+  last_donated_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface Donation {
+  id: string
+  mosque_id: string
+  donor_id: string | null
+  fund_id: string
+  amount: number
+  fee_covered: number
+  currency: string
+  method: DonationMethod
+  status: DonationStatus
+  is_recurring: boolean
+  recurring_id: string | null
+  mollie_payment_id: string | null
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface Recurring {
+  id: string
+  mosque_id: string
+  donor_id: string
+  fund_id: string
+  amount: number
+  frequency: RecurringFrequency
+  mollie_mandate_id: string | null
+  mollie_customer_id: string | null
+  status: RecurringStatus
+  next_charge_at: string | null
+  cancel_token: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface Campaign {
+  id: string
+  mosque_id: string
+  fund_id: string
+  title: string
+  description: string | null
+  slug: string
+  goal_amount: number | null
+  start_date: string | null
+  end_date: string | null
+  banner_url: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface AnbiReceipt {
+  id: string
+  mosque_id: string
+  donor_id: string
+  year: number
+  total_amount: number
+  fund_breakdown: Record<string, number>
+  pdf_url: string | null
+  emailed_at: string | null
+  created_at: string
+}
+
+export interface QrLink {
+  id: string
+  mosque_id: string
+  code: string
+  fund_id: string | null
+  campaign_id: string | null
+  scan_count: number
+  created_at: string
+}
+
+export interface AuditLogEntry {
+  id: string
+  mosque_id: string
+  user_id: string
+  action: string
+  entity_type: string
+  entity_id: string
+  details: Record<string, unknown> | null
+  created_at: string
+}
