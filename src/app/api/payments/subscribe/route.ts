@@ -217,51 +217,66 @@ export async function POST(request: Request) {
       // Don't fail — subscription is created, webhook will handle payments
     }
 
-    // In newer Stripe API versions, payment_behavior: 'default_incomplete'
-    // no longer auto-creates a PaymentIntent on the invoice.
-    // We need to explicitly create one from the open invoice.
-    const invoice = subscription.latest_invoice
+    // Extract client_secret from the subscription's latest invoice.
+    // In newer Stripe API versions, the invoice may be draft or may not
+    // have a PaymentIntent until finalized.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const invoiceAny = invoice as any
-
+    let invoice = subscription.latest_invoice as any
     let clientSecret: string | null | undefined
 
-    // Method 1: confirmation_secret (newer API)
-    if (invoiceAny.confirmation_secret?.client_secret) {
-      clientSecret = invoiceAny.confirmation_secret.client_secret
+    // Method 1: confirmation_secret (newer API versions)
+    if (invoice.confirmation_secret?.client_secret) {
+      clientSecret = invoice.confirmation_secret.client_secret
     }
 
-    // Method 2: payment_intent already on invoice
-    if (!clientSecret && invoiceAny.payment_intent) {
-      if (typeof invoiceAny.payment_intent === 'object') {
-        clientSecret = invoiceAny.payment_intent.client_secret
-      } else if (typeof invoiceAny.payment_intent === 'string') {
-        const pi = await stripe.paymentIntents.retrieve(invoiceAny.payment_intent)
+    // Method 2: payment_intent already expanded on invoice
+    if (!clientSecret && invoice.payment_intent) {
+      if (typeof invoice.payment_intent === 'object') {
+        clientSecret = invoice.payment_intent.client_secret
+      } else if (typeof invoice.payment_intent === 'string') {
+        const pi = await stripe.paymentIntents.retrieve(invoice.payment_intent)
         clientSecret = pi.client_secret
       }
     }
 
-    // Method 3: no payment_intent — finalize and pay the invoice to create one
-    if (!clientSecret && invoice.status === 'open') {
-      const paidInvoice = await stripe.invoices.pay(invoice.id, {
+    // Method 3: invoice is draft — finalize it to create the PaymentIntent
+    if (!clientSecret && invoice.status === 'draft') {
+      const finalized = await stripe.invoices.finalizeInvoice(invoice.id, {
         expand: ['payment_intent'],
       }) as any
-      if (paidInvoice.payment_intent) {
-        if (typeof paidInvoice.payment_intent === 'object') {
-          clientSecret = paidInvoice.payment_intent.client_secret
-        } else if (typeof paidInvoice.payment_intent === 'string') {
-          const fetched = await stripe.paymentIntents.retrieve(paidInvoice.payment_intent)
-          clientSecret = fetched.client_secret
+      invoice = finalized
+      if (finalized.payment_intent) {
+        if (typeof finalized.payment_intent === 'object') {
+          clientSecret = finalized.payment_intent.client_secret
+        } else if (typeof finalized.payment_intent === 'string') {
+          const pi = await stripe.paymentIntents.retrieve(finalized.payment_intent)
+          clientSecret = pi.client_secret
         }
       }
     }
 
-    // Method 4: create a PaymentIntent manually for the invoice amount
+    // Method 4: invoice is open but no PI — retrieve it with expansion
+    if (!clientSecret && invoice.status === 'open') {
+      const retrieved = await stripe.invoices.retrieve(invoice.id, {
+        expand: ['payment_intent'],
+      }) as any
+      if (retrieved.payment_intent) {
+        if (typeof retrieved.payment_intent === 'object') {
+          clientSecret = retrieved.payment_intent.client_secret
+        } else if (typeof retrieved.payment_intent === 'string') {
+          const pi = await stripe.paymentIntents.retrieve(retrieved.payment_intent)
+          clientSecret = pi.client_secret
+        }
+      }
+    }
+
+    // Method 5: last resort — create a standalone PaymentIntent linked to the sub
     if (!clientSecret) {
       const pi = await stripe.paymentIntents.create({
         amount: invoice.amount_due,
         currency: invoice.currency,
         customer: customerId,
+        setup_future_usage: 'off_session',
         metadata: {
           invoice_id: invoice.id,
           subscription_id: subscription.id,
