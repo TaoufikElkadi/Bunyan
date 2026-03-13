@@ -217,37 +217,60 @@ export async function POST(request: Request) {
       // Don't fail — subscription is created, webhook will handle payments
     }
 
-    // Extract client secret from the subscription's latest invoice
+    // In newer Stripe API versions, payment_behavior: 'default_incomplete'
+    // no longer auto-creates a PaymentIntent on the invoice.
+    // We need to explicitly create one from the open invoice.
     const invoice = subscription.latest_invoice
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const invoiceAny = invoice as any
 
     let clientSecret: string | null | undefined
 
-    // Method 1: confirmation_secret (Stripe API 2024+)
+    // Method 1: confirmation_secret (newer API)
     if (invoiceAny.confirmation_secret?.client_secret) {
       clientSecret = invoiceAny.confirmation_secret.client_secret
     }
 
-    // Method 2: expanded payment_intent object
-    if (!clientSecret && invoiceAny.payment_intent && typeof invoiceAny.payment_intent === 'object') {
-      clientSecret = invoiceAny.payment_intent.client_secret
+    // Method 2: payment_intent already on invoice
+    if (!clientSecret && invoiceAny.payment_intent) {
+      if (typeof invoiceAny.payment_intent === 'object') {
+        clientSecret = invoiceAny.payment_intent.client_secret
+      } else if (typeof invoiceAny.payment_intent === 'string') {
+        const pi = await stripe.paymentIntents.retrieve(invoiceAny.payment_intent)
+        clientSecret = pi.client_secret
+      }
     }
 
-    // Method 3: payment_intent as string ID — fetch it
-    if (!clientSecret && typeof invoiceAny.payment_intent === 'string') {
-      const pi = await stripe.paymentIntents.retrieve(invoiceAny.payment_intent)
-      clientSecret = pi.client_secret
+    // Method 3: no payment_intent — finalize and pay the invoice to create one
+    if (!clientSecret && invoice.status === 'open') {
+      const paidInvoice = await stripe.invoices.pay(invoice.id, {
+        expand: ['payment_intent'],
+      }) as any
+      if (paidInvoice.payment_intent) {
+        if (typeof paidInvoice.payment_intent === 'object') {
+          clientSecret = paidInvoice.payment_intent.client_secret
+        } else if (typeof paidInvoice.payment_intent === 'string') {
+          const fetched = await stripe.paymentIntents.retrieve(paidInvoice.payment_intent)
+          clientSecret = fetched.client_secret
+        }
+      }
     }
 
+    // Method 4: create a PaymentIntent manually for the invoice amount
     if (!clientSecret) {
-      console.error('No client secret found. Full invoice keys:', Object.keys(invoiceAny).join(', '))
-      console.error('Invoice status:', invoiceAny.status, 'paid:', invoiceAny.paid)
-      console.error('Subscription status:', subscription.status, 'pending_setup_intent:', (subscription as any).pending_setup_intent)
-      return NextResponse.json(
-        { error: 'Betaling configuratie mislukt' },
-        { status: 500 }
-      )
+      const pi = await stripe.paymentIntents.create({
+        amount: invoice.amount_due,
+        currency: invoice.currency,
+        customer: customerId,
+        metadata: {
+          invoice_id: invoice.id,
+          subscription_id: subscription.id,
+          mosque_id: mosque.id,
+          fund_id,
+          donor_id: donorId,
+        },
+      })
+      clientSecret = pi.client_secret
     }
 
     return NextResponse.json({
