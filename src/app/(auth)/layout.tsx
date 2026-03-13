@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { AuthTopLink } from "./auth-top-link"
 
 export default function AuthLayout({
   children,
@@ -18,12 +19,7 @@ export default function AuthLayout({
           >
             bunyan
           </Link>
-          <Link
-            href="/signup"
-            className="rounded-full border border-[#e3dfd5] px-5 py-2 text-[14px] font-medium text-[#261b07] hover:bg-[#edeae4] transition-colors"
-          >
-            Account aanmaken
-          </Link>
+          <AuthTopLink />
         </div>
 
         {/* Center form */}

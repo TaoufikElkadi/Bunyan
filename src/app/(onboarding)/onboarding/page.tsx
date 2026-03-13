@@ -3,12 +3,6 @@
 import { useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { CheckIcon, PlusIcon, Trash2Icon, GripVerticalIcon, ArrowRightIcon, ArrowLeftIcon, Loader2Icon, PartyPopperIcon } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -33,12 +27,7 @@ function isValidSlug(slug: string): boolean {
 
 const TOTAL_STEPS = 4
 
-const STEP_LABELS = [
-  'Gegevens',
-  'Branding',
-  'Fondsen',
-  'ANBI',
-]
+const STEP_LABELS = ['Gegevens', 'Branding', 'Fondsen', 'ANBI']
 
 const DEFAULT_FUNDS = [
   { name: 'Algemeen', description: 'Algemene bijdrage aan de moskee', icon: '\u{1F54C}' },
@@ -58,75 +47,47 @@ const COLOR_PRESETS = [
 ]
 
 // ---------------------------------------------------------------------------
-// Step indicator
+// Shared input class
 // ---------------------------------------------------------------------------
 
-function StepIndicator({ current, total }: { current: number; total: number }) {
+const inputClass =
+  'w-full rounded-lg border border-[#e3dfd5] bg-white px-4 py-3 text-[14px] text-[#261b07] placeholder:text-[#b5b0a5] outline-none focus:border-[#261b07]/30 focus:ring-1 focus:ring-[#261b07]/10 transition-colors'
+
+// ---------------------------------------------------------------------------
+// Step dots
+// ---------------------------------------------------------------------------
+
+function StepDots({ current, total }: { current: number; total: number }) {
   return (
-    <div className="mb-8">
-      <div className="text-center mb-4">
-        <h1 className="text-2xl sm:text-3xl font-bold">Welkom bij Bunyan</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Stel uw moskee in — stap {current} van {total}
-        </p>
-      </div>
-
-      {/* Step dots + connecting lines */}
-      <div className="flex items-center justify-center gap-0 mx-auto max-w-xs">
-        {Array.from({ length: total }, (_, i) => {
-          const stepNum = i + 1
-          const isCompleted = stepNum < current
-          const isCurrent = stepNum === current
-          return (
-            <div key={stepNum} className="flex items-center">
-              {/* Dot */}
-              <div
-                className={[
-                  'flex items-center justify-center rounded-full text-xs font-semibold transition-all duration-300',
-                  'min-w-8 min-h-8 w-8 h-8 sm:min-w-9 sm:min-h-9 sm:w-9 sm:h-9',
-                  isCompleted
-                    ? 'bg-primary text-primary-foreground'
-                    : isCurrent
-                      ? 'bg-primary text-primary-foreground ring-4 ring-primary/20'
-                      : 'bg-muted text-muted-foreground',
-                ].join(' ')}
-              >
-                {isCompleted ? <CheckIcon className="size-4" /> : stepNum}
-              </div>
-
-              {/* Connector line */}
-              {stepNum < total && (
-                <div
-                  className={[
-                    'h-0.5 w-8 sm:w-12 transition-colors duration-300',
-                    stepNum < current ? 'bg-primary' : 'bg-muted',
-                  ].join(' ')}
-                />
-              )}
-            </div>
-          )
-        })}
-      </div>
-
-      {/* Step label */}
-      <p className="text-center mt-2 text-xs text-muted-foreground">
-        {STEP_LABELS[current - 1]}
-      </p>
+    <div className="flex items-center justify-center gap-2 mt-8">
+      {Array.from({ length: total }, (_, i) => {
+        const stepNum = i + 1
+        const isCurrent = stepNum === current
+        const isCompleted = stepNum < current
+        return (
+          <div
+            key={stepNum}
+            className={`rounded-full transition-all duration-300 ${
+              isCurrent
+                ? 'w-6 h-2 bg-[#f9a600]'
+                : isCompleted
+                  ? 'w-2 h-2 bg-[#261b07]/30'
+                  : 'w-2 h-2 bg-[#261b07]/10'
+            }`}
+          />
+        )
+      })}
     </div>
   )
 }
 
 // ---------------------------------------------------------------------------
-// Inline field error
+// Field error
 // ---------------------------------------------------------------------------
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null
-  return (
-    <p className="text-xs text-destructive mt-1 animate-in fade-in slide-in-from-top-1 duration-200">
-      {message}
-    </p>
-  )
+  return <p className="text-[12px] text-red-600 mt-1">{message}</p>
 }
 
 // ---------------------------------------------------------------------------
@@ -148,8 +109,6 @@ export default function OnboardingPage() {
   const [city, setCity] = useState('')
   const [slug, setSlug] = useState('')
   const [slugTouched, setSlugTouched] = useState(false)
-
-  // Step 1 validation
   const [nameError, setNameError] = useState('')
   const [cityError, setCityError] = useState('')
   const [slugError, setSlugError] = useState('')
@@ -162,8 +121,6 @@ export default function OnboardingPage() {
   // Step 3: Funds
   const [funds, setFunds] = useState(DEFAULT_FUNDS.map((f) => ({ ...f })))
   const [fundToRemove, setFundToRemove] = useState<number | null>(null)
-
-  // Drag state for fund reorder
   const dragItem = useRef<number | null>(null)
   const dragOverItem = useRef<number | null>(null)
 
@@ -171,25 +128,23 @@ export default function OnboardingPage() {
   const [anbiStatus, setAnbiStatus] = useState(false)
   const [rsin, setRsin] = useState('')
 
-  // -------------------------------------------------------------------------
-  // Navigation with transitions
-  // -------------------------------------------------------------------------
-
-  const goTo = useCallback((target: number) => {
-    if (isAnimating) return
-    setDirection(target > step ? 'forward' : 'back')
-    setIsAnimating(true)
-    // Small delay to let exit animation start, then switch step
-    setTimeout(() => {
-      setStep(target)
-      setIsAnimating(false)
-    }, 150)
-  }, [step, isAnimating])
+  // Navigation
+  const goTo = useCallback(
+    (target: number) => {
+      if (isAnimating) return
+      setDirection(target > step ? 'forward' : 'back')
+      setIsAnimating(true)
+      setTimeout(() => {
+        setStep(target)
+        setIsAnimating(false)
+      }, 150)
+    },
+    [step, isAnimating]
+  )
 
   function handleNameChange(name: string) {
     setMosqueName(name)
     if (nameError) setNameError('')
-    // Auto-generate slug only if user hasn't manually edited it
     if (!slugTouched) {
       setSlug(slugify(name))
       if (slugError) setSlugError('')
@@ -203,13 +158,8 @@ export default function OnboardingPage() {
     if (slugError) setSlugError('')
   }
 
-  // -------------------------------------------------------------------------
-  // Step 1 validation
-  // -------------------------------------------------------------------------
-
   function validateStep1(): boolean {
     let valid = true
-
     if (!mosqueName.trim()) {
       setNameError('Vul de naam van uw moskee in')
       valid = false
@@ -219,14 +169,12 @@ export default function OnboardingPage() {
     } else {
       setNameError('')
     }
-
     if (!city.trim()) {
       setCityError('Vul de stad in')
       valid = false
     } else {
       setCityError('')
     }
-
     if (!slug) {
       setSlugError('Vul een URL-slug in')
       valid = false
@@ -236,14 +184,10 @@ export default function OnboardingPage() {
     } else {
       setSlugError('')
     }
-
     return valid
   }
 
-  // -------------------------------------------------------------------------
   // Fund management
-  // -------------------------------------------------------------------------
-
   function addFund() {
     setFunds([...funds, { name: '', description: '', icon: '\u{1F4E6}' }])
   }
@@ -279,15 +223,10 @@ export default function OnboardingPage() {
     dragOverItem.current = null
   }
 
-  // -------------------------------------------------------------------------
   // Color picker
-  // -------------------------------------------------------------------------
-
   function handleCustomHexChange(value: string) {
-    // Allow typing with or without #
     let hex = value.startsWith('#') ? value : `#${value}`
     setCustomHex(value)
-    // Apply when we have a valid 7-char hex
     if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
       setPrimaryColor(hex.toLowerCase())
     }
@@ -295,16 +234,15 @@ export default function OnboardingPage() {
 
   const isCustomColor = !COLOR_PRESETS.some((p) => p.value === primaryColor)
 
-  // -------------------------------------------------------------------------
   // Submit
-  // -------------------------------------------------------------------------
-
   async function handleComplete() {
     setError(null)
     setLoading(true)
 
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       if (!session?.user) throw new Error('Niet ingelogd')
       const user = session.user
 
@@ -334,7 +272,6 @@ export default function OnboardingPage() {
         throw new Error(data.error || 'Er is iets misgegaan')
       }
 
-      // Show success state briefly before redirect
       setShowSuccess(true)
       setTimeout(() => {
         router.push('/dashboard')
@@ -346,420 +283,448 @@ export default function OnboardingPage() {
     }
   }
 
-  // -------------------------------------------------------------------------
   // Success screen
-  // -------------------------------------------------------------------------
-
   if (showSuccess) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-4 py-12">
-        <div className="text-center animate-in fade-in zoom-in-95 duration-500">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <PartyPopperIcon className="h-8 w-8 text-primary" />
-          </div>
-          <h2 className="text-2xl font-bold">Uw moskee is aangemaakt!</h2>
-          <p className="mt-2 text-muted-foreground">
-            U wordt doorgestuurd naar het dashboard...
-          </p>
-          <div className="mt-4 flex justify-center">
-            <Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground" />
-          </div>
+      <div className="w-full max-w-[480px] text-center py-20">
+        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#e8f0d4]">
+          <svg className="w-8 h-8 text-[#6aab35]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h2
+          className="text-[24px] font-[584] tracking-[-0.48px] text-[#261b07] mb-2"
+          style={{ fontFamily: 'var(--font-display), sans-serif' }}
+        >
+          Uw moskee is aangemaakt!
+        </h2>
+        <p className="text-[15px] text-[#a09888] mb-6">U wordt doorgestuurd naar het dashboard...</p>
+        <div className="flex justify-center">
+          <div className="w-5 h-5 rounded-full border-2 border-[#261b07] border-t-transparent animate-spin" />
         </div>
       </div>
     )
   }
 
-  // -------------------------------------------------------------------------
-  // Transition wrapper
-  // -------------------------------------------------------------------------
-
+  // Transition
   const transitionClass = isAnimating
     ? direction === 'forward'
       ? 'opacity-0 translate-x-4'
       : 'opacity-0 -translate-x-4'
     : 'opacity-100 translate-x-0'
 
-  // -------------------------------------------------------------------------
-  // Render
-  // -------------------------------------------------------------------------
-
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-8 sm:py-12">
-      <div className="w-full max-w-lg">
-        <StepIndicator current={step} total={TOTAL_STEPS} />
+    <div className="w-full max-w-[480px] py-8">
+      <div className={`transition-all duration-300 ease-in-out ${transitionClass}`}>
+        {/* ================================================================= */}
+        {/* STEP 1 — Mosque Basics                                           */}
+        {/* ================================================================= */}
+        {step === 1 && (
+          <div className="text-center">
+            {/* Step pill */}
+            <span className="inline-block rounded-full border border-[#e3dfd5] px-4 py-1 text-[12px] font-medium text-[#8a8478] mb-4">
+              {STEP_LABELS[0]}
+            </span>
 
-        <div className={`transition-all duration-300 ease-in-out ${transitionClass}`}>
-          {/* ============================================================= */}
-          {/* STEP 1 — Mosque Basics                                        */}
-          {/* ============================================================= */}
-          {step === 1 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Moskee gegevens</CardTitle>
-                <CardDescription>De basisinformatie van uw moskee</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Name */}
-                <div className="space-y-2">
-                  <Label htmlFor="name">
-                    Naam moskee <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="name"
-                    placeholder="bijv. Stichting Al-Fath"
-                    value={mosqueName}
-                    onChange={(e) => handleNameChange(e.target.value)}
-                    aria-invalid={!!nameError}
-                    autoFocus
-                  />
-                  <FieldError message={nameError} />
+            <h1
+              className="text-[24px] font-[584] tracking-[-0.48px] text-[#261b07] mb-1"
+              style={{ fontFamily: 'var(--font-display), sans-serif' }}
+            >
+              Hoe heet uw moskee?
+            </h1>
+            <p className="text-[14px] text-[#a09888] mb-8">De basisinformatie van uw organisatie.</p>
+
+            <div className="text-left space-y-4">
+              <div>
+                <label className="block text-[13px] font-medium text-[#261b07] mb-1.5">Naam moskee</label>
+                <input
+                  type="text"
+                  placeholder="bijv. Stichting Al-Fath"
+                  value={mosqueName}
+                  onChange={(e) => handleNameChange(e.target.value)}
+                  className={inputClass}
+                  autoFocus
+                />
+                <FieldError message={nameError} />
+              </div>
+
+              <div>
+                <label className="block text-[13px] font-medium text-[#261b07] mb-1.5">Stad</label>
+                <input
+                  type="text"
+                  placeholder="bijv. Amsterdam"
+                  value={city}
+                  onChange={(e) => {
+                    setCity(e.target.value)
+                    if (cityError) setCityError('')
+                  }}
+                  className={inputClass}
+                />
+                <FieldError message={cityError} />
+              </div>
+
+              <div>
+                <label className="block text-[13px] font-medium text-[#261b07] mb-1.5">URL-slug</label>
+                <input
+                  type="text"
+                  value={slug}
+                  onChange={(e) => handleSlugChange(e.target.value)}
+                  placeholder="uw-moskee"
+                  className={inputClass}
+                />
+                <FieldError message={slugError} />
+                {slug && !slugError && (
+                  <p className="text-[12px] text-[#a09888] mt-1">
+                    Uw donatiepagina:{' '}
+                    <span className="font-medium text-[#261b07]">bunyan.io/doneren/{slug}</span>
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                if (validateStep1()) goTo(2)
+              }}
+              className="w-full mt-6 rounded-lg bg-[#261b07] py-3 text-[14px] font-semibold text-[#f8f7f5] hover:bg-[#3a2c14] transition-colors"
+            >
+              Doorgaan
+            </button>
+
+            <StepDots current={1} total={TOTAL_STEPS} />
+          </div>
+        )}
+
+        {/* ================================================================= */}
+        {/* STEP 2 — Branding                                                */}
+        {/* ================================================================= */}
+        {step === 2 && (
+          <div className="text-center">
+            <span className="inline-block rounded-full border border-[#e3dfd5] px-4 py-1 text-[12px] font-medium text-[#8a8478] mb-4">
+              {STEP_LABELS[1]}
+            </span>
+
+            <h1
+              className="text-[24px] font-[584] tracking-[-0.48px] text-[#261b07] mb-1"
+              style={{ fontFamily: 'var(--font-display), sans-serif' }}
+            >
+              Personaliseer uw pagina
+            </h1>
+            <p className="text-[14px] text-[#a09888] mb-8">Kies een kleur en welkomstbericht.</p>
+
+            <div className="text-left space-y-5">
+              {/* Color presets */}
+              <div>
+                <label className="block text-[13px] font-medium text-[#261b07] mb-3">Primaire kleur</label>
+                <div className="flex flex-wrap gap-3">
+                  {COLOR_PRESETS.map((preset) => (
+                    <button
+                      key={preset.value}
+                      type="button"
+                      title={preset.label}
+                      className={`relative h-10 w-10 rounded-full border-2 transition-all duration-200 hover:scale-110 ${
+                        primaryColor === preset.value ? 'border-[#261b07] scale-110' : 'border-transparent'
+                      }`}
+                      style={{ backgroundColor: preset.value }}
+                      onClick={() => {
+                        setPrimaryColor(preset.value)
+                        setCustomHex('')
+                      }}
+                    >
+                      {primaryColor === preset.value && (
+                        <svg className="absolute inset-0 m-auto h-5 w-5 text-white drop-shadow-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </button>
+                  ))}
                 </div>
 
-                {/* City */}
-                <div className="space-y-2">
-                  <Label htmlFor="city">
-                    Stad <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="city"
-                    placeholder="bijv. Amsterdam"
-                    value={city}
-                    onChange={(e) => {
-                      setCity(e.target.value)
-                      if (cityError) setCityError('')
+                {/* Custom hex */}
+                <div className="flex items-center gap-3 mt-3">
+                  <div
+                    className="h-10 w-10 shrink-0 rounded-full border-2 transition-colors duration-200"
+                    style={{
+                      backgroundColor: primaryColor,
+                      borderColor: isCustomColor ? '#261b07' : 'transparent',
                     }}
-                    aria-invalid={!!cityError}
                   />
-                  <FieldError message={cityError} />
+                  <input
+                    placeholder="#1a2b3c"
+                    value={customHex}
+                    onChange={(e) => handleCustomHexChange(e.target.value)}
+                    maxLength={7}
+                    className={`${inputClass} font-mono`}
+                  />
+                  <span className="text-[12px] text-[#a09888] whitespace-nowrap hidden sm:inline">Eigen kleur</span>
                 </div>
+              </div>
 
-                {/* Slug */}
-                <div className="space-y-2">
-                  <Label htmlFor="slug">
-                    URL-slug <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="slug"
-                    value={slug}
-                    onChange={(e) => handleSlugChange(e.target.value)}
-                    placeholder="uw-moskee"
-                    aria-invalid={!!slugError}
+              {/* Welcome message */}
+              <div>
+                <label className="block text-[13px] font-medium text-[#261b07] mb-1.5">
+                  Welkomstbericht <span className="text-[#b5b0a5] font-normal">(optioneel)</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="bijv. Welkom bij onze moskee. Uw donatie maakt het verschil."
+                  value={welcomeMsg}
+                  onChange={(e) => setWelcomeMsg(e.target.value)}
+                  className={inputClass}
+                />
+                <p className="text-[12px] text-[#a09888] mt-1">Dit bericht verschijnt bovenaan uw donatiepagina.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => goTo(1)}
+                className="flex-1 rounded-lg border border-[#e3dfd5] py-3 text-[14px] font-medium text-[#261b07] hover:bg-[#f0ede6] transition-colors"
+              >
+                Terug
+              </button>
+              <button onClick={() => goTo(3)} className="flex-1 rounded-lg bg-[#261b07] py-3 text-[14px] font-semibold text-[#f8f7f5] hover:bg-[#3a2c14] transition-colors">
+                Doorgaan
+              </button>
+            </div>
+
+            <StepDots current={2} total={TOTAL_STEPS} />
+          </div>
+        )}
+
+        {/* ================================================================= */}
+        {/* STEP 3 — Funds                                                   */}
+        {/* ================================================================= */}
+        {step === 3 && (
+          <div className="text-center">
+            <span className="inline-block rounded-full border border-[#e3dfd5] px-4 py-1 text-[12px] font-medium text-[#8a8478] mb-4">
+              {STEP_LABELS[2]}
+            </span>
+
+            <h1
+              className="text-[24px] font-[584] tracking-[-0.48px] text-[#261b07] mb-1"
+              style={{ fontFamily: 'var(--font-display), sans-serif' }}
+            >
+              Richt uw fondsen in
+            </h1>
+            <p className="text-[14px] text-[#a09888] mb-8">Donateurs kiezen waar hun gift naartoe gaat.</p>
+
+            <div className="text-left space-y-2.5">
+              {funds.map((fund, i) => (
+                <div
+                  key={i}
+                  className="group flex items-center gap-2.5 rounded-lg border border-[#e3dfd5] bg-white p-2.5 transition-colors hover:border-[#d0cbc0]"
+                  draggable
+                  onDragStart={() => handleDragStart(i)}
+                  onDragEnter={() => handleDragEnter(i)}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={(e) => e.preventDefault()}
+                >
+                  {/* Drag handle */}
+                  <button
+                    type="button"
+                    className="cursor-grab touch-none p-0.5 text-[#b5b0a5] hover:text-[#8a8478] active:cursor-grabbing"
+                    tabIndex={-1}
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                      <circle cx="9" cy="6" r="1.5" />
+                      <circle cx="15" cy="6" r="1.5" />
+                      <circle cx="9" cy="12" r="1.5" />
+                      <circle cx="15" cy="12" r="1.5" />
+                      <circle cx="9" cy="18" r="1.5" />
+                      <circle cx="15" cy="18" r="1.5" />
+                    </svg>
+                  </button>
+
+                  {/* Icon */}
+                  <input
+                    value={fund.icon}
+                    onChange={(e) => updateFund(i, 'icon', e.target.value)}
+                    className="w-10 text-center rounded-md border border-[#e3dfd5] bg-[#f8f7f5] py-1.5 text-[14px] outline-none focus:border-[#261b07]/30"
                   />
-                  <FieldError message={slugError} />
-                  {/* Live URL preview */}
-                  {slug && !slugError && (
-                    <p className="text-xs text-muted-foreground animate-in fade-in duration-200">
-                      Uw donatiepagina:{' '}
-                      <span className="font-medium text-foreground">
-                        bunyan.io/doneren/{slug}
-                      </span>
-                    </p>
+
+                  {/* Name */}
+                  <input
+                    value={fund.name}
+                    onChange={(e) => updateFund(i, 'name', e.target.value)}
+                    placeholder="Fondsnaam"
+                    className="flex-1 rounded-md border border-[#e3dfd5] bg-white px-3 py-1.5 text-[13px] text-[#261b07] placeholder:text-[#b5b0a5] outline-none focus:border-[#261b07]/30"
+                  />
+
+                  {/* Remove */}
+                  {funds.length > 1 && (
+                    <>
+                      {fundToRemove === i ? (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => removeFund(i)}
+                            className="rounded px-2 py-1 text-[11px] font-medium bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                          >
+                            Ja
+                          </button>
+                          <button
+                            onClick={() => setFundToRemove(null)}
+                            className="rounded px-2 py-1 text-[11px] font-medium text-[#8a8478] hover:bg-[#f0ede6] transition-colors"
+                          >
+                            Nee
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setFundToRemove(i)}
+                          className="p-1 text-[#b5b0a5] hover:text-red-500 transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
-              </CardContent>
-              <CardFooter className="justify-end">
-                <Button
-                  size="lg"
-                  onClick={() => {
-                    if (validateStep1()) goTo(2)
-                  }}
-                >
-                  Volgende
-                  <ArrowRightIcon className="ml-1 size-4" />
-                </Button>
-              </CardFooter>
-            </Card>
-          )}
+              ))}
 
-          {/* ============================================================= */}
-          {/* STEP 2 — Branding                                             */}
-          {/* ============================================================= */}
-          {step === 2 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Branding</CardTitle>
-                <CardDescription>Personaliseer uw donatiepagina</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                {/* Color presets */}
-                <div className="space-y-3">
-                  <Label>Primaire kleur</Label>
-                  <div className="flex flex-wrap gap-3">
-                    {COLOR_PRESETS.map((preset) => (
-                      <button
-                        key={preset.value}
-                        type="button"
-                        title={preset.label}
-                        className={[
-                          'relative h-10 w-10 rounded-full border-2 transition-all duration-200',
-                          'hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-                          primaryColor === preset.value
-                            ? 'border-foreground scale-110'
-                            : 'border-transparent',
-                        ].join(' ')}
-                        style={{ backgroundColor: preset.value }}
-                        onClick={() => {
-                          setPrimaryColor(preset.value)
-                          setCustomHex('')
-                        }}
-                      >
-                        {primaryColor === preset.value && (
-                          <CheckIcon className="absolute inset-0 m-auto h-5 w-5 text-white drop-shadow-sm" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
+              <button
+                onClick={addFund}
+                className="w-full rounded-lg border border-dashed border-[#d5cfb8] py-2.5 text-[13px] font-medium text-[#8a8478] hover:bg-[#f0ede6] hover:border-[#c0b9a6] transition-colors"
+              >
+                + Fonds toevoegen
+              </button>
+            </div>
 
-                  {/* Custom hex input */}
-                  <div className="flex items-center gap-2 mt-2">
-                    <div
-                      className="h-10 w-10 shrink-0 rounded-full border-2 transition-colors duration-200"
-                      style={{
-                        backgroundColor: primaryColor,
-                        borderColor: isCustomColor ? 'var(--foreground)' : 'transparent',
-                      }}
-                    />
-                    <div className="flex-1">
-                      <Input
-                        placeholder="#1a2b3c"
-                        value={customHex}
-                        onChange={(e) => handleCustomHexChange(e.target.value)}
-                        maxLength={7}
-                        className="font-mono text-sm"
-                      />
-                    </div>
-                    <span className="text-xs text-muted-foreground hidden sm:inline">
-                      Eigen kleur
-                    </span>
-                  </div>
-                </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => goTo(2)}
+                className="flex-1 rounded-lg border border-[#e3dfd5] py-3 text-[14px] font-medium text-[#261b07] hover:bg-[#f0ede6] transition-colors"
+              >
+                Terug
+              </button>
+              <button
+                onClick={() => goTo(4)}
+                disabled={funds.every((f) => !f.name.trim())}
+                className="flex-1 rounded-lg bg-[#261b07] py-3 text-[14px] font-semibold text-[#f8f7f5] hover:bg-[#3a2c14] disabled:opacity-50 transition-colors"
+              >
+                Doorgaan
+              </button>
+            </div>
 
-                {/* Welcome message */}
-                <div className="space-y-2">
-                  <Label htmlFor="welcome">Welkomstbericht (optioneel)</Label>
-                  <Input
-                    id="welcome"
-                    placeholder="bijv. Welkom bij onze moskee. Uw donatie maakt het verschil."
-                    value={welcomeMsg}
-                    onChange={(e) => setWelcomeMsg(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Dit bericht verschijnt bovenaan uw donatiepagina.
-                  </p>
-                </div>
-              </CardContent>
-              <CardFooter className="justify-between">
-                <Button variant="ghost" size="lg" onClick={() => goTo(1)}>
-                  <ArrowLeftIcon className="mr-1 size-4" />
-                  Terug
-                </Button>
-                <Button size="lg" onClick={() => goTo(3)}>
-                  Volgende
-                  <ArrowRightIcon className="ml-1 size-4" />
-                </Button>
-              </CardFooter>
-            </Card>
-          )}
+            <StepDots current={3} total={TOTAL_STEPS} />
+          </div>
+        )}
 
-          {/* ============================================================= */}
-          {/* STEP 3 — Funds                                                */}
-          {/* ============================================================= */}
-          {step === 3 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Fondsen</CardTitle>
-                <CardDescription>
-                  Richt fondsen in waar donateurs aan kunnen geven. Versleep om de volgorde te wijzigen.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {funds.map((fund, i) => (
+        {/* ================================================================= */}
+        {/* STEP 4 — ANBI                                                    */}
+        {/* ================================================================= */}
+        {step === 4 && (
+          <div className="text-center">
+            <span className="inline-block rounded-full border border-[#e3dfd5] px-4 py-1 text-[12px] font-medium text-[#8a8478] mb-4">
+              {STEP_LABELS[3]}
+            </span>
+
+            <h1
+              className="text-[24px] font-[584] tracking-[-0.48px] text-[#261b07] mb-1"
+              style={{ fontFamily: 'var(--font-display), sans-serif' }}
+            >
+              Heeft u ANBI-status?
+            </h1>
+            <p className="text-[14px] text-[#a09888] mb-8">Donateurs kunnen hun gift dan aftrekken van de belasting.</p>
+
+            <div className="text-left space-y-4">
+              {/* ANBI toggle */}
+              <label className="flex items-start gap-3.5 cursor-pointer rounded-lg border border-[#e3dfd5] bg-white p-4 transition-colors hover:border-[#d0cbc0]">
+                <div className="pt-0.5">
                   <div
-                    key={i}
-                    className="group flex items-center gap-2 rounded-lg border bg-card p-2 transition-colors hover:bg-muted/50"
-                    draggable
-                    onDragStart={() => handleDragStart(i)}
-                    onDragEnter={() => handleDragEnter(i)}
-                    onDragEnd={handleDragEnd}
-                    onDragOver={(e) => e.preventDefault()}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      setAnbiStatus(!anbiStatus)
+                    }}
+                    className={`flex h-5 w-5 items-center justify-center rounded border-2 transition-colors ${
+                      anbiStatus ? 'bg-[#261b07] border-[#261b07]' : 'border-[#d5cfb8] bg-white'
+                    }`}
                   >
-                    {/* Drag handle */}
-                    <button
-                      type="button"
-                      className="cursor-grab touch-none p-1 text-muted-foreground hover:text-foreground active:cursor-grabbing"
-                      aria-label="Versleep om te herordenen"
-                      tabIndex={-1}
-                    >
-                      <GripVerticalIcon className="size-4" />
-                    </button>
-
-                    {/* Icon */}
-                    <Input
-                      value={fund.icon}
-                      onChange={(e) => updateFund(i, 'icon', e.target.value)}
-                      className="w-12 text-center px-1"
-                      aria-label="Icoon"
-                    />
-
-                    {/* Name */}
-                    <Input
-                      value={fund.name}
-                      onChange={(e) => updateFund(i, 'name', e.target.value)}
-                      placeholder="Fondsnaam"
-                      className="flex-1"
-                      aria-label={`Fonds ${i + 1} naam`}
-                    />
-
-                    {/* Remove button */}
-                    {funds.length > 1 && (
-                      <>
-                        {fundToRemove === i ? (
-                          <div className="flex items-center gap-1 animate-in fade-in duration-200">
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => removeFund(i)}
-                              className="text-xs"
-                            >
-                              Ja
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setFundToRemove(null)}
-                              className="text-xs"
-                            >
-                              Nee
-                            </Button>
-                          </div>
-                        ) : (
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            onClick={() => setFundToRemove(i)}
-                            aria-label={`Verwijder ${fund.name || 'fonds'}`}
-                            className="text-muted-foreground hover:text-destructive"
-                          >
-                            <Trash2Icon className="size-4" />
-                          </Button>
-                        )}
-                      </>
+                    {anbiStatus && (
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
                     )}
                   </div>
-                ))}
-
-                <Button variant="outline" size="sm" onClick={addFund} className="w-full mt-2">
-                  <PlusIcon className="mr-1 size-4" />
-                  Fonds toevoegen
-                </Button>
-              </CardContent>
-              <CardFooter className="justify-between">
-                <Button variant="ghost" size="lg" onClick={() => goTo(2)}>
-                  <ArrowLeftIcon className="mr-1 size-4" />
-                  Terug
-                </Button>
-                <Button
-                  size="lg"
-                  onClick={() => goTo(4)}
-                  disabled={funds.every((f) => !f.name.trim())}
-                >
-                  Volgende
-                  <ArrowRightIcon className="ml-1 size-4" />
-                </Button>
-              </CardFooter>
-            </Card>
-          )}
-
-          {/* ============================================================= */}
-          {/* STEP 4 — ANBI                                                 */}
-          {/* ============================================================= */}
-          {step === 4 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>ANBI-status</CardTitle>
-                <CardDescription>
-                  Als uw moskee een ANBI-instelling is, kunnen donateurs hun gift aftrekken van de belasting.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* ANBI checkbox */}
-                <label className="flex items-center gap-3 cursor-pointer rounded-lg border p-4 transition-colors hover:bg-muted/50">
-                  <Checkbox
-                    checked={anbiStatus}
-                    onCheckedChange={(checked) => setAnbiStatus(checked === true)}
-                  />
-                  <div>
-                    <p className="text-sm font-medium">Onze moskee heeft ANBI-status</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Donateurs ontvangen dan automatisch een fiscale ontvangstbevestiging
-                    </p>
-                  </div>
-                </label>
-
-                {/* RSIN input — appears when ANBI is checked */}
-                {anbiStatus && (
-                  <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <Label htmlFor="rsin">RSIN nummer</Label>
-                    <Input
-                      id="rsin"
-                      placeholder="123456789"
-                      value={rsin}
-                      onChange={(e) => setRsin(e.target.value.replace(/\D/g, '').slice(0, 9))}
-                      inputMode="numeric"
-                      maxLength={9}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      9 cijfers, te vinden op de ANBI-beschikking van de Belastingdienst
-                    </p>
-                  </div>
-                )}
-
-                {/* Skip affordance */}
-                {!anbiStatus && (
-                  <div className="rounded-lg border border-dashed bg-muted/30 p-4 text-center">
-                    <p className="text-sm text-muted-foreground">
-                      Geen ANBI-status? Geen probleem.
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Je kunt dit later instellen via Instellingen.
-                    </p>
-                  </div>
-                )}
-
-                {/* Stripe info */}
-                <div className="rounded-lg border bg-muted/50 p-4">
-                  <p className="text-sm font-medium">Online betalingen</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Betalingen worden veilig verwerkt via Stripe (iDEAL, creditcard, SEPA).
+                </div>
+                <div>
+                  <p className="text-[14px] font-medium text-[#261b07]">Onze moskee heeft ANBI-status</p>
+                  <p className="text-[12px] text-[#a09888] mt-0.5">
+                    Donateurs ontvangen dan automatisch een fiscale ontvangstbevestiging
                   </p>
                 </div>
+              </label>
 
-                {/* Error */}
-                {error && (
-                  <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-3 animate-in fade-in duration-200">
-                    <p className="text-sm text-destructive">{error}</p>
-                  </div>
+              {/* RSIN */}
+              {anbiStatus && (
+                <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                  <label className="block text-[13px] font-medium text-[#261b07] mb-1.5">RSIN nummer</label>
+                  <input
+                    placeholder="123456789"
+                    value={rsin}
+                    onChange={(e) => setRsin(e.target.value.replace(/\D/g, '').slice(0, 9))}
+                    inputMode="numeric"
+                    maxLength={9}
+                    className={inputClass}
+                  />
+                  <p className="text-[12px] text-[#a09888] mt-1">
+                    9 cijfers, te vinden op de ANBI-beschikking van de Belastingdienst
+                  </p>
+                </div>
+              )}
+
+              {/* No ANBI */}
+              {!anbiStatus && (
+                <div className="rounded-lg border border-dashed border-[#d5cfb8] bg-[#f8f7f5] p-4 text-center">
+                  <p className="text-[13px] text-[#a09888]">Geen ANBI-status? Geen probleem.</p>
+                  <p className="text-[12px] text-[#b5b0a5] mt-1">U kunt dit later instellen via Instellingen.</p>
+                </div>
+              )}
+
+              {/* Stripe info */}
+              <div className="rounded-lg border border-[#e3dfd5] bg-[#f8f7f5] p-4">
+                <p className="text-[13px] font-medium text-[#261b07]">Online betalingen</p>
+                <p className="text-[12px] text-[#a09888] mt-1">
+                  Betalingen worden veilig verwerkt via Stripe (iDEAL, creditcard, SEPA).
+                </p>
+              </div>
+
+              {/* Error */}
+              {error && (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+                  <p className="text-[13px] text-red-600">{error}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => goTo(3)}
+                className="flex-1 rounded-lg border border-[#e3dfd5] py-3 text-[14px] font-medium text-[#261b07] hover:bg-[#f0ede6] transition-colors"
+              >
+                Terug
+              </button>
+              <button
+                onClick={handleComplete}
+                disabled={loading}
+                className="flex-1 rounded-lg bg-[#261b07] py-3 text-[14px] font-semibold text-[#f8f7f5] hover:bg-[#3a2c14] disabled:opacity-50 transition-colors"
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 rounded-full border-2 border-[#f8f7f5] border-t-transparent animate-spin" />
+                    Bezig...
+                  </span>
+                ) : (
+                  'Moskee aanmaken'
                 )}
-              </CardContent>
-              <CardFooter className="justify-between">
-                <Button variant="ghost" size="lg" onClick={() => goTo(3)}>
-                  <ArrowLeftIcon className="mr-1 size-4" />
-                  Terug
-                </Button>
-                <Button size="lg" onClick={handleComplete} disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Loader2Icon className="mr-1 size-4 animate-spin" />
-                      Bezig...
-                    </>
-                  ) : (
-                    'Moskee aanmaken'
-                  )}
-                </Button>
-              </CardFooter>
-            </Card>
-          )}
-        </div>
+              </button>
+            </div>
+
+            <StepDots current={4} total={TOTAL_STEPS} />
+          </div>
+        )}
       </div>
     </div>
   )
