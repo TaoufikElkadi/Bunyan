@@ -241,10 +241,9 @@ export async function POST(request: Request) {
     }
 
     if (!clientSecret) {
-      console.error('No client secret found:', JSON.stringify({
-        invoiceId: invoice.id,
-        keys: Object.keys(invoiceAny).filter(k => k.includes('payment') || k.includes('secret') || k.includes('confirm')),
-      }))
+      console.error('No client secret found. Full invoice keys:', Object.keys(invoiceAny).join(', '))
+      console.error('Invoice status:', invoiceAny.status, 'paid:', invoiceAny.paid)
+      console.error('Subscription status:', subscription.status, 'pending_setup_intent:', (subscription as any).pending_setup_intent)
       return NextResponse.json(
         { error: 'Betaling configuratie mislukt' },
         { status: 500 }
