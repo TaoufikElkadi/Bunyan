@@ -181,13 +181,18 @@ export async function POST(request: Request) {
       payment_settings: {
         save_default_payment_method: 'on_subscription',
       },
-      expand: ['latest_invoice.payment_intent'],
+      expand: ['latest_invoice', 'latest_invoice.payment_intent'],
       metadata: {
         mosque_id: mosque.id,
         fund_id,
         donor_id: donorId,
       },
-    })
+    }) as Stripe.Subscription & {
+      latest_invoice: Stripe.Invoice & {
+        payment_intent?: Stripe.PaymentIntent | string | null
+        confirmation_secret?: { client_secret: string } | null
+      }
+    }
 
     // Generate cancel token
     const cancelToken = crypto.randomUUID()
@@ -212,27 +217,34 @@ export async function POST(request: Request) {
       // Don't fail — subscription is created, webhook will handle payments
     }
 
-    // Extract client secret from the expanded payment_intent on the invoice
-    const invoice = subscription.latest_invoice as Stripe.Invoice & {
-      payment_intent?: Stripe.PaymentIntent | string | null
-    }
+    // Extract client secret from the subscription's latest invoice
+    const invoice = subscription.latest_invoice
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const invoiceAny = invoice as any
 
     let clientSecret: string | null | undefined
 
-    if (invoice.payment_intent && typeof invoice.payment_intent === 'object') {
-      clientSecret = invoice.payment_intent.client_secret
-    } else if (typeof invoice.payment_intent === 'string') {
-      const pi = await stripe.paymentIntents.retrieve(invoice.payment_intent)
+    // Method 1: confirmation_secret (Stripe API 2024+)
+    if (invoiceAny.confirmation_secret?.client_secret) {
+      clientSecret = invoiceAny.confirmation_secret.client_secret
+    }
+
+    // Method 2: expanded payment_intent object
+    if (!clientSecret && invoiceAny.payment_intent && typeof invoiceAny.payment_intent === 'object') {
+      clientSecret = invoiceAny.payment_intent.client_secret
+    }
+
+    // Method 3: payment_intent as string ID — fetch it
+    if (!clientSecret && typeof invoiceAny.payment_intent === 'string') {
+      const pi = await stripe.paymentIntents.retrieve(invoiceAny.payment_intent)
       clientSecret = pi.client_secret
     }
 
-    // Fallback: try confirmation_secret (newer API versions)
     if (!clientSecret) {
-      clientSecret = invoice.confirmation_secret?.client_secret
-    }
-
-    if (!clientSecret) {
-      console.error('No client secret found on subscription invoice')
+      console.error('No client secret found:', JSON.stringify({
+        invoiceId: invoice.id,
+        keys: Object.keys(invoiceAny).filter(k => k.includes('payment') || k.includes('secret') || k.includes('confirm')),
+      }))
       return NextResponse.json(
         { error: 'Betaling configuratie mislukt' },
         { status: 500 }
