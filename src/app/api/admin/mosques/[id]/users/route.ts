@@ -72,21 +72,24 @@ export async function POST(
 
     let authUser = authUsers.find((u: any) => u.email === normalizedEmail)
 
-    // If no auth account exists, invite them (creates account + sends email)
+    // If no auth account exists, create one directly.
+    // We skip inviteUserByEmail because it requires SMTP/email to be fully
+    // configured. Instead we create the user and let them use "Forgot password"
+    // to set their password, or send a welcome email via Resend later.
     if (!authUser) {
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-      const { data: invited, error: inviteError } =
-        await admin.adminClient.auth.admin.inviteUserByEmail(normalizedEmail, {
-          data: { name: name?.trim() || normalizedEmail },
-          redirectTo: `${appUrl}/auth/callback?redirect=/set-password`,
+      const { data: created, error: createError } =
+        await admin.adminClient.auth.admin.createUser({
+          email: normalizedEmail,
+          email_confirm: true,
+          user_metadata: { name: name?.trim() || normalizedEmail },
         })
 
-      if (inviteError) {
-        console.error('Invite user error:', inviteError)
-        return NextResponse.json({ error: 'Failed to invite user' }, { status: 500 })
+      if (createError) {
+        console.error('Create user error:', createError)
+        return NextResponse.json({ error: 'Failed to create user' }, { status: 500 })
       }
 
-      authUser = invited.user
+      authUser = created.user
     }
 
     // Check if user is already assigned to a mosque
