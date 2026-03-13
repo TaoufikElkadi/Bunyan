@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -10,6 +10,14 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  )
+}
+
+function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -19,14 +27,14 @@ export default function LoginPage() {
   const searchParams = useSearchParams()
   const redirect = searchParams.get('redirect') || '/dashboard'
 
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     setLoading(true)
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
@@ -37,7 +45,9 @@ export default function LoginPage() {
       return
     }
 
-    router.push(redirect)
+    // Platform admins always go to the admin panel
+    const isPlatformAdmin = data.user?.app_metadata?.platform_role === 'platform_admin'
+    router.push(isPlatformAdmin ? '/admin' : redirect)
     router.refresh()
   }
 
@@ -104,10 +114,13 @@ export default function LoginPage() {
             <Input
               id="email"
               type="email"
+              inputMode="email"
               placeholder="uw@email.nl"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              autoComplete="email"
+              autoCapitalize="none"
             />
           </div>
           <div className="space-y-2">
@@ -118,6 +131,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              autoComplete="current-password"
             />
           </div>
 

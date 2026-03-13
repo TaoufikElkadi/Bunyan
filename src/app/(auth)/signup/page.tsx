@@ -62,6 +62,8 @@ export default function SignupPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
+              autoComplete="name"
+              autoCapitalize="words"
             />
           </div>
           <div className="space-y-2">
@@ -69,10 +71,13 @@ export default function SignupPage() {
             <Input
               id="email"
               type="email"
+              inputMode="email"
               placeholder="uw@email.nl"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              autoComplete="email"
+              autoCapitalize="none"
             />
           </div>
           <div className="space-y-2">
@@ -85,6 +90,7 @@ export default function SignupPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
+              autoComplete="new-password"
             />
           </div>
 

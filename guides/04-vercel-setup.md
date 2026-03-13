@@ -36,8 +36,7 @@
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY`
-   - `MOLLIE_CLIENT_ID`
-   - `MOLLIE_CLIENT_SECRET`
+   - `STRIPE_SECRET_KEY`
    - `RESEND_API_KEY`
    - etc.
 3. Use Vercel's environment scoping to set different values for **Production**, **Preview**, and **Development**

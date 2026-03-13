@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getCachedProfile } from '@/lib/supabase/cached'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/dashboard/app-sidebar'
 import { DashboardHeader } from '@/components/dashboard/dashboard-header'
@@ -9,29 +9,23 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { user, profile, mosque, isPlatformAdmin } = await getCachedProfile()
 
   if (!user) {
     redirect('/login')
   }
 
-  const { data: profile } = await supabase
-    .from('users')
-    .select('*, mosques(*)')
-    .eq('id', user.id)
-    .single()
-
   if (!profile) {
-    redirect('/onboarding')
+    // Platform admins don't need a mosque profile — send them to the admin panel
+    redirect(isPlatformAdmin ? '/admin' : '/onboarding')
   }
 
   return (
     <SidebarProvider>
-      <AppSidebar user={profile} mosque={profile.mosques} />
+      <AppSidebar user={profile} mosque={mosque} />
       <SidebarInset>
-        <DashboardHeader user={profile} mosque={profile.mosques} />
-        <main className="flex-1 p-6">{children}</main>
+        <DashboardHeader user={profile} mosque={mosque} />
+        <main className="flex-1 p-6 md:p-8 bg-background/50">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   )

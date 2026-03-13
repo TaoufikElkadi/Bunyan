@@ -1,6 +1,6 @@
 export type MosquePlan = 'free' | 'starter' | 'growth'
-export type UserRole = 'admin' | 'viewer'
-export type DonationMethod = 'ideal' | 'card' | 'sepa' | 'cash' | 'bank_transfer'
+export type UserRole = 'admin' | 'treasurer' | 'viewer'
+export type DonationMethod = 'ideal' | 'card' | 'sepa' | 'cash' | 'bank_transfer' | 'stripe'
 export type DonationStatus = 'pending' | 'completed' | 'failed' | 'refunded'
 export type RecurringFrequency = 'weekly' | 'monthly' | 'yearly'
 export type RecurringStatus = 'active' | 'paused' | 'cancelled'
@@ -20,8 +20,8 @@ export interface Mosque {
   rsin: string | null
   kvk: string | null
   language: Locale
-  mollie_org_id: string | null
-  mollie_connected_at: string | null
+  stripe_account_id: string | null
+  stripe_customer_id: string | null
   plan: MosquePlan
   plan_started_at: string | null
   created_at: string
@@ -42,13 +42,21 @@ export interface PublicMosque {
   language: Locale
 }
 
+export type TeamMemberStatus = 'active' | 'pending'
+
 export interface User {
   id: string
   mosque_id: string
   name: string
   email: string
   role: UserRole
+  invited_at: string | null
+  invited_by: string | null
   created_at: string
+}
+
+export interface TeamMember extends User {
+  status: TeamMemberStatus
 }
 
 export interface Fund {
@@ -94,7 +102,7 @@ export interface Donation {
   status: DonationStatus
   is_recurring: boolean
   recurring_id: string | null
-  mollie_payment_id: string | null
+  stripe_payment_intent_id: string | null
   notes: string | null
   created_by: string | null
   created_at: string
@@ -108,8 +116,8 @@ export interface Recurring {
   fund_id: string
   amount: number
   frequency: RecurringFrequency
-  mollie_mandate_id: string | null
-  mollie_customer_id: string | null
+  stripe_subscription_id: string | null
+  stripe_customer_id: string | null
   status: RecurringStatus
   next_charge_at: string | null
   cancel_token: string | null

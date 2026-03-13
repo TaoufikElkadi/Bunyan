@@ -1,66 +1,81 @@
-import { createClient } from '@/lib/supabase/server'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import { formatMoney } from '@/lib/money'
+import { getCachedProfile } from '@/lib/supabase/cached'
+import { Button } from '@/components/ui/button'
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { CampaignDialog } from '@/components/campaign/campaign-dialog'
+import { CampaignCards } from '@/components/campaign/campaign-cards'
+import { PlusIcon } from 'lucide-react'
+import { getPlanLimits } from '@/lib/plan'
+
+export const revalidate = 60
 
 export default async function CampagnesPage() {
-  const supabase = await createClient()
+  const { mosqueId, mosque, supabase, profile } = await getCachedProfile()
 
-  const { data: profile } = await supabase
-    .from('users')
-    .select('mosque_id')
-    .single()
+  if (!mosqueId) return null
 
-  if (!profile) return null
+  const limits = getPlanLimits(mosque?.plan ?? 'free')
+  if (!limits.hasCampaigns) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">Campagnes</h1>
+          <p className="text-muted-foreground mt-1">Beheer uw donatiecampagnes</p>
+        </div>
+        <Card className="border-dashed">
+          <CardHeader className="text-center py-12">
+            <CardTitle className="text-lg">Upgrade vereist</CardTitle>
+            <CardDescription className="max-w-sm mx-auto">
+              Campagnebeheer is beschikbaar vanaf het Starter-abonnement. Upgrade om campagnes te beheren.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    )
+  }
 
-  const { data: campaigns } = await supabase
-    .from('campaigns')
-    .select('*, funds(name)')
-    .eq('mosque_id', profile.mosque_id)
-    .order('created_at', { ascending: false })
+  const canEdit = profile.role !== 'viewer'
+
+  const [{ data: campaigns }, { data: funds }] = await Promise.all([
+    supabase
+      .from('campaigns')
+      .select('*, funds(name)')
+      .eq('mosque_id', mosqueId)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('funds')
+      .select('*')
+      .eq('mosque_id', mosqueId)
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true }),
+  ])
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Campagnes</h1>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        {campaigns?.map((campaign: any) => (
-          <Card key={campaign.id}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>{campaign.title}</CardTitle>
-                <Badge variant={campaign.is_active ? 'default' : 'secondary'}>
-                  {campaign.is_active ? 'Actief' : 'Inactief'}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {campaign.description && (
-                <p className="text-sm text-muted-foreground">{campaign.description}</p>
-              )}
-              <p className="text-sm">
-                Fonds: {campaign.funds?.name}
-              </p>
-              {campaign.goal_amount && (
-                <div>
-                  <p className="text-sm text-muted-foreground">
-                    Doel: {formatMoney(campaign.goal_amount)}
-                  </p>
-                </div>
-              )}
-              {campaign.start_date && campaign.end_date && (
-                <p className="text-xs text-muted-foreground">
-                  {new Date(campaign.start_date).toLocaleDateString('nl-NL')} -{' '}
-                  {new Date(campaign.end_date).toLocaleDateString('nl-NL')}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        ))}
+    <div className="space-y-8">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">Campagnes</h1>
+          <p className="text-muted-foreground mt-1">Beheer uw donatiecampagnes</p>
+        </div>
+        {canEdit && funds && funds.length > 0 && (
+          <CampaignDialog
+            mode="create"
+            funds={funds}
+            trigger={
+              <Button size="sm">
+                <PlusIcon className="size-4 mr-1" />
+                Nieuwe campagne
+              </Button>
+            }
+          />
+        )}
       </div>
-      {(!campaigns || campaigns.length === 0) && (
-        <p className="text-center text-muted-foreground py-8">Nog geen campagnes.</p>
+
+      {campaigns && campaigns.length > 0 ? (
+        <CampaignCards campaigns={campaigns} funds={funds ?? []} role={profile.role} />
+      ) : (
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16">
+          <p className="text-muted-foreground">Nog geen campagnes.</p>
+        </div>
       )}
     </div>
   )

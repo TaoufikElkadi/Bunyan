@@ -1,9 +1,11 @@
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Plus_Jakarta_Sans } from "next/font/google"
 import "./globals.css"
 
-const inter = Inter({
+const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
+  display: "swap",
+  variable: "--font-sans",
 })
 
 export const metadata: Metadata = {
@@ -18,7 +20,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="nl">
-      <body className={`${inter.className} antialiased`}>
+      <head>
+        <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_SUPABASE_URL} />
+        <link rel="preconnect" href={process.env.NEXT_PUBLIC_SUPABASE_URL} />
+      </head>
+      <body className={`${plusJakarta.variable} ${plusJakarta.className} antialiased`} suppressHydrationWarning>
         {children}
       </body>
     </html>
