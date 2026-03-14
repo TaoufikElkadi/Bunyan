@@ -101,8 +101,8 @@ export function FeatureScroll() {
       <div className="mx-auto max-w-[1216px] px-5 sm:px-[30px]">
         {/* ── Desktop: side-by-side sticky scroll ── */}
         <div className="hidden lg:block py-40">
-          {/* Sticky section heading */}
-          <div className="sticky top-[80px] z-10 bg-[#f8f7f5] pb-10">
+          {/* Section heading — static on desktop */}
+          <div className="pb-10">
             <h2
               className="text-[56px] font-[584] leading-[1.1] tracking-[-1.12px] text-[#261b07] mb-4"
               style={{ fontFamily: "var(--font-display), sans-serif" }}
