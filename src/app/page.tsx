@@ -3,6 +3,7 @@ import Link from "next/link"
 import { InviteHandler } from "@/components/auth/invite-handler"
 import { DashboardMockup } from "@/components/landing/dashboard-mockup"
 import { FeatureScroll } from "@/components/landing/feature-scroll"
+import { MobileHeroMockup } from "@/components/landing/mobile-hero-mockup"
 
 /* ------------------------------------------------------------------ */
 /*  DATA                                                               */
@@ -23,8 +24,35 @@ export default function HomePage() {
     <div className="min-h-screen bg-[#f8f7f5] text-[#261b07]" style={{ fontFamily: "var(--font-sans), system-ui, sans-serif" }}>
       <InviteHandler />
 
-      {/* ---- Floating pill navbar ---- */}
-      <header className="fixed top-0 left-0 right-0 z-[999] flex justify-center px-4 pt-4">
+      {/* ---- Mobile: flat sticky top bar ---- */}
+      <header className="lg:hidden sticky top-0 z-[999] flex items-center justify-between px-5 py-3 bg-[#f8f7f5]/95 backdrop-blur-md border-b border-[#e3dfd5]/60">
+        <Link href="/" className="flex items-center gap-2">
+          <Image src="/logos/logo_transparent.svg" alt="" width={24} height={24} className="h-6 w-6" />
+          <span
+            className="text-[16px] font-[584] tracking-[-0.36px] text-[#261b07] uppercase"
+            style={{ fontFamily: "var(--font-display), sans-serif" }}
+          >
+            bunyan
+          </span>
+        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/login"
+            className="inline-flex items-center justify-center rounded-lg border border-[#e3dfd5] bg-white px-4 py-2 text-[13px] font-medium text-[#261b07] hover:bg-[#f3f1ec] transition-colors"
+          >
+            Inloggen
+          </Link>
+          <Link
+            href="/signup"
+            className="inline-flex items-center justify-center rounded-lg bg-[#261b07] px-4 py-2 text-[13px] font-semibold text-[#f8f7f5] hover:bg-[#3a2c14] transition-colors"
+          >
+            Starten
+          </Link>
+        </div>
+      </header>
+
+      {/* ---- Desktop: floating pill navbar ---- */}
+      <header className="hidden lg:flex fixed top-0 left-0 right-0 z-[999] justify-center px-4 pt-4">
         <nav className="flex items-center gap-1 bg-[#261b07] rounded-full px-2 py-1.5 shadow-[0_4px_24px_rgba(38,27,7,0.25)]">
           {/* Logo */}
           <Link
@@ -41,7 +69,7 @@ export default function HomePage() {
           </Link>
 
           {/* Nav links */}
-          <div className="hidden lg:flex items-center gap-0.5">
+          <div className="flex items-center gap-0.5">
             {navLinks.map((link) => (
               <a
                 key={link.label}
@@ -60,7 +88,7 @@ export default function HomePage() {
           <div className="flex items-center gap-1 pl-2">
             <Link
               href="/login"
-              className="px-4 py-2 rounded-full text-[14px] font-medium text-[#f8f7f5]/70 hover:text-[#f8f7f5] hover:bg-white/10 transition-all hidden lg:inline-block"
+              className="px-4 py-2 rounded-full text-[14px] font-medium text-[#f8f7f5]/70 hover:text-[#f8f7f5] hover:bg-white/10 transition-all"
             >
               Inloggen
             </Link>
@@ -83,7 +111,7 @@ export default function HomePage() {
           {/* Gradient background — olive/sage to cream */}
           <div className="absolute inset-0 bg-gradient-to-b from-[#c5bfa0]/30 via-[#d5cfb8]/20 to-[#f8f7f5] pointer-events-none" />
 
-          <section className="relative pt-28 pb-10">
+          <section className="relative pt-10 lg:pt-28 pb-10">
             <div className="mx-auto max-w-[980px] px-[30px] text-center">
               {/* Category */}
               <p className="text-[12px] font-medium tracking-[0.6px] uppercase text-[color:rgba(38,27,7,0.5)] mb-5">
@@ -124,10 +152,16 @@ export default function HomePage() {
 
           {/* ---- Dashboard mockup — overlapping into hero gradient ---- */}
           <section id="product" className="relative pb-0">
-            <div className="mx-auto max-w-[1216px] px-4 sm:px-6">
+            {/* Desktop: edge-to-edge with open bottom */}
+            <div className="hidden md:block mx-auto max-w-[1216px] px-4 sm:px-6">
               <div className="relative rounded-t-[12px] border-[0.666667px] border-b-0 border-[#e3dfd5] overflow-hidden shadow-[0_-4px_60px_-12px_rgba(38,27,7,0.08)]">
                 <DashboardMockup />
               </div>
+            </div>
+
+            {/* Mobile: zoomed-out full dashboard view in a warm frame */}
+            <div className="md:hidden mx-auto px-4">
+              <MobileHeroMockup />
             </div>
           </section>
         </div>
