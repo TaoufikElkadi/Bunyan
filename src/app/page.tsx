@@ -228,7 +228,7 @@ export default function HomePage() {
                     {/* Plan info */}
                     <div className="flex-1 p-7 flex flex-col">
                       <span className="self-start text-[10px] font-semibold tracking-[0.55px] uppercase bg-[#edeae4] text-[color:rgba(26,21,16,0.5)] rounded-[6px] px-3 py-1.5 mb-7">
-                        €29 per maand
+                        €49 per maand
                       </span>
                       <h3
                         className="text-[40px] font-[380] leading-none tracking-[-1px] text-[#1a1510] mb-3"

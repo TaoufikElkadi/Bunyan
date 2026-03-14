@@ -17,13 +17,13 @@ const PLAN_INFO: Record<string, { label: string; description: string; price: str
   starter: {
     label: 'Starter',
     description: 'Onbeperkte donaties, 5 fondsen, team toegang.',
-    price: '€29',
+    price: '€49',
     variant: 'default',
   },
   growth: {
     label: 'Growth',
     description: 'Alles in Starter plus campagnes, QR-codes, ANBI rapporten en prioriteitsondersteuning.',
-    price: '€49',
+    price: '€99',
     variant: 'default',
   },
 }
