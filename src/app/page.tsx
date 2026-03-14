@@ -1,3 +1,4 @@
+import Image from "next/image"
 import Link from "next/link"
 import { InviteHandler } from "@/components/auth/invite-handler"
 import { DashboardMockup } from "@/components/landing/dashboard-mockup"
@@ -28,10 +29,15 @@ export default function HomePage() {
           {/* Logo */}
           <Link
             href="/"
-            className="text-[16px] font-[584] tracking-[-0.36px] text-[#f8f7f5] uppercase pl-4 pr-5"
-            style={{ fontFamily: "var(--font-display), sans-serif" }}
+            className="flex items-center gap-2 pl-3 pr-5"
           >
-            bunyan
+            <Image src="/logos/logo_transparent.svg" alt="" width={22} height={22} className="h-[22px] w-[22px]" />
+            <span
+              className="text-[16px] font-[584] tracking-[-0.36px] text-[#f8f7f5] uppercase"
+              style={{ fontFamily: "var(--font-display), sans-serif" }}
+            >
+              bunyan
+            </span>
           </Link>
 
           {/* Nav links */}
@@ -497,7 +503,7 @@ export default function HomePage() {
               fontSize: "clamp(80px, 16vw, 210px)",
             }}
           >
-            bunyan
+            Bunyan
           </h2>
         </div>
 

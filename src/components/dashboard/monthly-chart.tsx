@@ -38,16 +38,18 @@ function formatEuros(cents: number): string {
 
 export function MonthlyChart({
   data,
-  color = '#8B7355',
+  color = '#C87D3A',
 }: {
   data: MonthlyData[]
   color?: string
 }) {
   if (data.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground py-8 text-center">
-        Nog geen gegevens beschikbaar.
-      </p>
+      <div className="flex items-center justify-center h-[300px]">
+        <p className="text-[13px] text-[#a09888]">
+          Nog geen gegevens beschikbaar.
+        </p>
+      </div>
     )
   }
 
@@ -59,15 +61,15 @@ export function MonthlyChart({
   return (
     <ResponsiveContainer width="100%" height={300}>
       <BarChart data={chartData}>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0ece8" />
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e3dfd5" />
         <XAxis
           dataKey="month"
-          tick={{ fontSize: 12, fill: '#8B7355' }}
-          axisLine={{ stroke: '#f0ece8' }}
+          tick={{ fontSize: 12, fill: '#a09888' }}
+          axisLine={{ stroke: '#e3dfd5' }}
           tickLine={false}
         />
         <YAxis
-          tick={{ fontSize: 12, fill: '#8B7355' }}
+          tick={{ fontSize: 12, fill: '#a09888' }}
           tickFormatter={(v: number) => formatEuros(v)}
           width={70}
           axisLine={false}
@@ -78,12 +80,13 @@ export function MonthlyChart({
           labelFormatter={(label) => String(label)}
           contentStyle={{
             backgroundColor: '#ffffff',
-            border: '1px solid #f0ece8',
-            borderRadius: '8px',
-            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05)',
+            border: '1px solid #e3dfd5',
+            borderRadius: '10px',
+            boxShadow: '0 4px 24px rgba(38, 27, 7, 0.08)',
             fontSize: '13px',
+            color: '#261b07',
           }}
-          cursor={{ fill: 'rgba(139, 115, 85, 0.06)' }}
+          cursor={{ fill: 'rgba(200, 125, 58, 0.06)' }}
         />
         <Bar dataKey="total" fill={color} radius={[6, 6, 0, 0]} />
       </BarChart>

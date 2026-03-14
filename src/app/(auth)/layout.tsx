@@ -1,3 +1,4 @@
+import Image from "next/image"
 import Link from "next/link"
 import { AuthTopLink } from "./auth-top-link"
 
@@ -14,10 +15,17 @@ export default function AuthLayout({
         <div className="flex items-center justify-between px-8 pt-8">
           <Link
             href="/"
-            className="text-[18px] font-[584] tracking-[-0.36px] text-[#261b07] uppercase"
-            style={{ fontFamily: "var(--font-display), sans-serif" }}
+            className="flex items-center gap-2.5"
           >
-            bunyan
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#345e7d] shadow-sm overflow-hidden">
+              <Image src="/logos/logo_transparent.svg" alt="" width={24} height={24} className="h-6 w-6" />
+            </div>
+            <span
+              className="text-[18px] font-[584] tracking-[-0.36px] text-[#261b07] uppercase"
+              style={{ fontFamily: "var(--font-display), sans-serif" }}
+            >
+              bunyan
+            </span>
           </Link>
           <AuthTopLink />
         </div>
@@ -89,7 +97,9 @@ function DashboardDecoration() {
       {/* Sidebar skeleton */}
       <div className="w-[52px] flex flex-col items-center pt-6 gap-4 flex-shrink-0">
         {/* Logo placeholder */}
-        <div className="w-7 h-7 rounded-lg bg-[#261b07]/10 mb-2" />
+        <div className="w-7 h-7 rounded-lg bg-[#345e7d]/20 mb-2 overflow-hidden flex items-center justify-center">
+          <Image src="/logos/logo_transparent.svg" alt="" width={18} height={18} className="h-[18px] w-[18px] opacity-40" />
+        </div>
         {sidebarItems.map((item, i) => (
           <div
             key={i}

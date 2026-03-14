@@ -1,5 +1,4 @@
 import { getCachedProfile } from '@/lib/supabase/cached'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { buttonVariants } from '@/components/ui/button'
 import { formatMoney } from '@/lib/money'
 import { getPlanLimits } from '@/lib/plan'
@@ -12,6 +11,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import Link from 'next/link'
+import { Download, ChevronLeft, ChevronRight, Users, Lock } from 'lucide-react'
 
 export const revalidate = 60
 
@@ -31,27 +31,22 @@ export default async function DonateursPage({
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Donateurs</h1>
-          <p className="text-sm text-muted-foreground mt-1.5">
+          <h1 className="text-[28px] font-bold tracking-[-0.5px] text-[#261b07]">Donateurs</h1>
+          <p className="text-[14px] text-[#8a8478] mt-1">
             Beheer uw donateurs en bekijk hun donaties
           </p>
         </div>
-        <Card className="border-border/50 shadow-sm">
-          <CardContent className="flex flex-col items-center justify-center py-16 px-6">
-            <div className="rounded-full bg-muted/40 p-5 mb-5">
-              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/50">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4-4v2"/>
-                <circle cx="9" cy="7" r="4"/>
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-              </svg>
+        <div className="rounded-xl border border-[#e3dfd5] bg-white">
+          <div className="flex flex-col items-center justify-center py-16 px-6">
+            <div className="rounded-full bg-[#f3f1ec] p-5 mb-5">
+              <Lock className="h-7 w-7 text-[#a09888]" strokeWidth={1.5} />
             </div>
-            <h3 className="text-sm font-medium mb-1.5">Upgrade vereist</h3>
-            <p className="text-sm text-muted-foreground/70 text-center max-w-sm leading-relaxed">
+            <h3 className="text-[14px] font-medium text-[#261b07] mb-1.5">Upgrade vereist</h3>
+            <p className="text-[13px] text-[#a09888] text-center max-w-sm leading-relaxed">
               Donateurbeheer is beschikbaar vanaf het Starter-abonnement. Upgrade om uw donateurs te beheren.
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     )
   }
@@ -75,134 +70,125 @@ export default async function DonateursPage({
       {/* Page header */}
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Donateurs</h1>
-          <p className="text-sm text-muted-foreground mt-1.5">
+          <h1 className="text-[28px] font-bold tracking-[-0.5px] text-[#261b07]">Donateurs</h1>
+          <p className="text-[14px] text-[#8a8478] mt-1">
             Beheer uw donateurs en bekijk hun donaties
           </p>
         </div>
         {limits.hasCsvExport && (
           <a
             href="/api/donors/export"
-            className={buttonVariants({ variant: 'outline', size: 'sm' })}
+            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg border border-[#e3dfd5] bg-white text-[13px] font-medium text-[#261b07] hover:bg-[#f3f1ec] transition-colors"
             download
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <Download className="h-3.5 w-3.5" strokeWidth={1.5} />
             CSV exporteren
           </a>
         )}
       </div>
 
       {/* Table */}
-      <Card className="border-border/50 shadow-sm">
-        <CardHeader className="pb-0 pt-5 px-6">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-medium">Alle donateurs</CardTitle>
-            {(count ?? 0) > 0 && (
-              <span className="text-xs text-muted-foreground tabular-nums">{count} resultaten</span>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="px-0 pb-0 pt-4">
-          {donors && donors.length > 0 ? (
-            <>
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent border-border/50">
-                    <TableHead className="h-10 px-6 text-sm font-medium text-muted-foreground">Naam</TableHead>
-                    <TableHead className="h-10 px-4 text-sm font-medium text-muted-foreground hidden sm:table-cell">E-mail</TableHead>
-                    <TableHead className="h-10 px-4 text-sm font-medium text-muted-foreground text-right">Totaal</TableHead>
-                    <TableHead className="h-10 px-4 text-sm font-medium text-muted-foreground text-right hidden sm:table-cell">Donaties</TableHead>
-                    <TableHead className="h-10 px-6 text-sm font-medium text-muted-foreground hidden md:table-cell">Laatste donatie</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {donors.map((donor: any) => (
-                    <TableRow key={donor.id} className="hover:bg-muted/30 border-border/40">
-                      <TableCell className="px-6 py-4 text-sm font-medium">
-                        <Link
-                          href={`/donateurs/${donor.id}`}
-                          className="hover:underline text-primary underline-offset-4"
-                        >
-                          {donor.name ?? (
-                            <span className="text-muted-foreground/70 italic">Anoniem</span>
-                          )}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="px-4 py-4 text-sm text-muted-foreground hidden sm:table-cell">
-                        {donor.email ?? <span className="text-muted-foreground/40">-</span>}
-                      </TableCell>
-                      <TableCell className="px-4 py-4 text-sm text-right font-semibold tabular-nums">
-                        {formatMoney(donor.total_donated)}
-                      </TableCell>
-                      <TableCell className="px-4 py-4 text-right text-muted-foreground hidden sm:table-cell">
-                        <span className="inline-flex items-center justify-center min-w-[1.75rem] rounded-md bg-muted/50 px-1.5 py-0.5 text-xs font-medium tabular-nums">
-                          {donor.donation_count}
-                        </span>
-                      </TableCell>
-                      <TableCell className="px-6 py-4 text-sm text-muted-foreground hidden md:table-cell">
-                        {donor.last_donated_at
-                          ? new Date(donor.last_donated_at).toLocaleDateString('nl-NL', {
-                              day: 'numeric',
-                              month: 'short',
-                              year: 'numeric',
-                            })
-                          : <span className="text-muted-foreground/40">-</span>}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-4 border-t border-border/40">
-                  <p className="text-sm text-muted-foreground">
-                    <span className="font-medium text-foreground">{count}</span> donateurs
-                    <span className="mx-1.5 text-border">|</span>
-                    pagina <span className="font-medium text-foreground">{page}</span> van <span className="font-medium text-foreground">{totalPages}</span>
-                  </p>
-                  <div className="flex gap-1.5">
-                    {page > 1 && (
-                      <Link
-                        href={`/donateurs?page=${page - 1}`}
-                        className="inline-flex items-center justify-center min-h-[44px] md:min-h-0 h-9 px-3.5 text-sm font-medium rounded-lg border border-border/50 bg-background hover:bg-muted/50 transition-colors"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5"><polyline points="15 18 9 12 15 6"/></svg>
-                        Vorige
-                      </Link>
-                    )}
-                    {page < totalPages && (
-                      <Link
-                        href={`/donateurs?page=${page + 1}`}
-                        className="inline-flex items-center justify-center min-h-[44px] md:min-h-0 h-9 px-3.5 text-sm font-medium rounded-lg border border-border/50 bg-background hover:bg-muted/50 transition-colors"
-                      >
-                        Volgende
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-1.5"><polyline points="9 18 15 12 9 6"/></svg>
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              )}
-            </>
-          ) : (
-            /* Empty state */
-            <div className="flex flex-col items-center justify-center py-20 px-6">
-              <div className="rounded-full bg-muted/40 p-5 mb-5">
-                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/50">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4-4v2"/>
-                  <circle cx="9" cy="7" r="4"/>
-                  <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                </svg>
-              </div>
-              <h3 className="text-sm font-medium mb-1.5">Geen donateurs gevonden</h3>
-              <p className="text-sm text-muted-foreground/70 text-center max-w-xs leading-relaxed">
-                Zodra er donateurs worden geregistreerd, verschijnen ze hier.
-              </p>
-            </div>
+      <div className="rounded-xl border border-[#e3dfd5] bg-white overflow-hidden">
+        <div className="flex items-center justify-between px-6 pt-5 pb-4">
+          <h3 className="text-[15px] font-semibold text-[#261b07]">Alle donateurs</h3>
+          {(count ?? 0) > 0 && (
+            <span className="text-[12px] text-[#a09888] tabular-nums">{count} resultaten</span>
           )}
-        </CardContent>
-      </Card>
+        </div>
+
+        {donors && donors.length > 0 ? (
+          <>
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent border-[#e3dfd5]">
+                  <TableHead className="h-10 px-6 text-[12px] font-medium text-[#a09888] uppercase tracking-wide">Naam</TableHead>
+                  <TableHead className="h-10 px-4 text-[12px] font-medium text-[#a09888] uppercase tracking-wide hidden sm:table-cell">E-mail</TableHead>
+                  <TableHead className="h-10 px-4 text-[12px] font-medium text-[#a09888] uppercase tracking-wide text-right">Totaal</TableHead>
+                  <TableHead className="h-10 px-4 text-[12px] font-medium text-[#a09888] uppercase tracking-wide text-right hidden sm:table-cell">Donaties</TableHead>
+                  <TableHead className="h-10 px-6 text-[12px] font-medium text-[#a09888] uppercase tracking-wide hidden md:table-cell">Laatste donatie</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {donors.map((donor: any) => (
+                  <TableRow key={donor.id} className="hover:bg-[#fafaf8] border-[#e3dfd5]/60">
+                    <TableCell className="px-6 py-4 text-[13px] font-medium">
+                      <Link
+                        href={`/donateurs/${donor.id}`}
+                        className="text-[#261b07] hover:text-[#C87D3A] underline-offset-4 hover:underline transition-colors"
+                      >
+                        {donor.name ?? (
+                          <span className="text-[#b5b0a5] italic">Anoniem</span>
+                        )}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="px-4 py-4 text-[13px] text-[#8a8478] hidden sm:table-cell">
+                      {donor.email ?? <span className="text-[#d5cfb8]">-</span>}
+                    </TableCell>
+                    <TableCell className="px-4 py-4 text-[13px] text-right font-semibold tabular-nums text-[#261b07]">
+                      {formatMoney(donor.total_donated)}
+                    </TableCell>
+                    <TableCell className="px-4 py-4 text-right hidden sm:table-cell">
+                      <span className="inline-flex items-center justify-center min-w-[1.75rem] rounded-md bg-[#f3f1ec] px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-[#8a8478]">
+                        {donor.donation_count}
+                      </span>
+                    </TableCell>
+                    <TableCell className="px-6 py-4 text-[13px] text-[#8a8478] hidden md:table-cell">
+                      {donor.last_donated_at
+                        ? new Date(donor.last_donated_at).toLocaleDateString('nl-NL', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })
+                        : <span className="text-[#d5cfb8]">-</span>}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-4 border-t border-[#e3dfd5]">
+                <p className="text-[13px] text-[#8a8478]">
+                  <span className="font-medium text-[#261b07]">{count}</span> donateurs
+                  <span className="mx-1.5 text-[#e3dfd5]">|</span>
+                  pagina <span className="font-medium text-[#261b07]">{page}</span> van <span className="font-medium text-[#261b07]">{totalPages}</span>
+                </p>
+                <div className="flex gap-1.5">
+                  {page > 1 && (
+                    <Link
+                      href={`/donateurs?page=${page - 1}`}
+                      className="inline-flex items-center justify-center min-h-[44px] md:min-h-0 h-9 px-3.5 text-[13px] font-medium rounded-lg border border-[#e3dfd5] bg-white hover:bg-[#f3f1ec] transition-colors text-[#261b07]"
+                    >
+                      <ChevronLeft className="h-3.5 w-3.5 mr-1" />
+                      Vorige
+                    </Link>
+                  )}
+                  {page < totalPages && (
+                    <Link
+                      href={`/donateurs?page=${page + 1}`}
+                      className="inline-flex items-center justify-center min-h-[44px] md:min-h-0 h-9 px-3.5 text-[13px] font-medium rounded-lg border border-[#e3dfd5] bg-white hover:bg-[#f3f1ec] transition-colors text-[#261b07]"
+                    >
+                      Volgende
+                      <ChevronRight className="h-3.5 w-3.5 ml-1" />
+                    </Link>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-20 px-6">
+            <div className="rounded-full bg-[#f3f1ec] p-5 mb-5">
+              <Users className="h-7 w-7 text-[#a09888]" strokeWidth={1.5} />
+            </div>
+            <h3 className="text-[13px] font-medium text-[#261b07] mb-1.5">Geen donateurs gevonden</h3>
+            <p className="text-[13px] text-[#a09888] text-center max-w-xs leading-relaxed">
+              Zodra er donateurs worden geregistreerd, verschijnen ze hier.
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

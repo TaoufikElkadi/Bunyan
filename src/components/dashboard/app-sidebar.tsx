@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -13,7 +14,7 @@ import {
   Settings,
   ClipboardList,
   PanelLeft,
-  Building2,
+  ChevronRight,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -70,7 +71,7 @@ const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    label: 'BEHEER',
+    label: 'ADMINISTRATIE',
     adminOnly: true,
     items: [
       { title: 'ANBI', href: '/anbi', icon: FileText, adminOnly: true },
@@ -87,7 +88,7 @@ const NAV_SECTIONS: NavSection[] = [
 function RoleBadge({ role }: { role: string }) {
   const label = role === 'admin' ? 'Admin' : role === 'viewer' ? 'Viewer' : 'Lid'
   return (
-    <span className="inline-flex items-center rounded-full bg-sidebar-accent px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sidebar-foreground/50">
+    <span className="inline-flex items-center rounded-full bg-[#f9a600]/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#261b07]/60">
       {label}
     </span>
   )
@@ -107,31 +108,33 @@ export function AppSidebar({ user, mosque }: AppSidebarProps) {
   const { toggleSidebar } = useSidebar()
 
   return (
-    <Sidebar className="border-r border-sidebar-border bg-sidebar">
+    <Sidebar className="border-r border-[#e3dfd5] bg-[#fafaf8]">
       {/* ---- Header ---- */}
-      <SidebarHeader className="border-b border-sidebar-border px-4 py-4">
+      <SidebarHeader className="border-b border-[#e3dfd5] px-5 py-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-sidebar-primary to-sidebar-primary/80 text-sidebar-primary-foreground shadow-sm">
-              <Building2 className="h-4 w-4" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#345e7d] shadow-sm overflow-hidden">
+              <Image src="/logos/logo_transparent.svg" alt="Bunyan" width={24} height={24} className="h-6 w-6" />
             </div>
-            <span className="text-[15px] font-bold tracking-tight text-sidebar-foreground">
-              Bunyan
-            </span>
+            <div>
+              <span className="text-[15px] font-bold tracking-tight text-[#261b07]">
+                Bunyan
+              </span>
+              <p className="truncate text-[11px] text-[#8a8478] font-medium leading-tight">{mosque.name}</p>
+            </div>
           </div>
           <button
             onClick={toggleSidebar}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-sidebar-foreground/40 hover:bg-sidebar-accent hover:text-sidebar-foreground/70 transition-colors duration-150"
+            className="flex h-7 w-7 items-center justify-center rounded-md text-[#8a8478] hover:bg-[#e3dfd5]/50 hover:text-[#261b07] transition-colors duration-150"
             aria-label="Toggle sidebar"
           >
             <PanelLeft className="h-4 w-4" />
           </button>
         </div>
-        <p className="mt-1.5 truncate text-xs text-sidebar-foreground/40 font-medium">{mosque.name}</p>
       </SidebarHeader>
 
       {/* ---- Navigation ---- */}
-      <SidebarContent className="px-2 py-3">
+      <SidebarContent className="px-3 py-4">
         {NAV_SECTIONS
           .filter((section) => !section.adminOnly || user.role === 'admin')
           .map((section, idx) => {
@@ -141,8 +144,8 @@ export function AppSidebar({ user, mosque }: AppSidebarProps) {
             if (visibleItems.length === 0) return null
 
             return (
-              <SidebarGroup key={`${section.label}-${idx}`}>
-                <SidebarGroupLabel className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.1em] text-sidebar-foreground/35">
+              <SidebarGroup key={`${section.label}-${idx}`} className="mb-1">
+                <SidebarGroupLabel className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#a09888]">
                   {section.label}
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
@@ -156,14 +159,17 @@ export function AppSidebar({ user, mosque }: AppSidebarProps) {
                           <SidebarMenuButton
                             render={<Link href={item.href} />}
                             isActive={isActive}
-                            className={`relative transition-all duration-150 rounded-md ${
+                            className={`relative rounded-lg px-3 py-2 transition-all duration-150 ${
                               isActive
-                                ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-4 before:w-[3px] before:rounded-full before:bg-sidebar-primary'
-                                : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground/90'
+                                ? 'bg-[#f9a600]/12 text-[#261b07] font-medium before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-[3px] before:rounded-full before:bg-[#f9a600]'
+                                : 'text-[#8a8478] hover:bg-[#e3dfd5]/40 hover:text-[#261b07]'
                             }`}
                           >
-                            <Icon className="h-4 w-4 shrink-0" />
-                            <span>{item.title}</span>
+                            <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={1.5} />
+                            <span className="text-[13px]">{item.title}</span>
+                            {isActive && (
+                              <ChevronRight className="ml-auto h-3.5 w-3.5 text-[#a09888]" />
+                            )}
                           </SidebarMenuButton>
                         </SidebarMenuItem>
                       )
@@ -176,19 +182,19 @@ export function AppSidebar({ user, mosque }: AppSidebarProps) {
       </SidebarContent>
 
       {/* ---- Footer ---- */}
-      <SidebarFooter className="border-t border-sidebar-border px-4 py-3">
+      <SidebarFooter className="border-t border-[#e3dfd5] px-5 py-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sidebar-primary to-sidebar-primary/70 text-[11px] font-semibold uppercase text-sidebar-primary-foreground shadow-sm">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#261b07] text-[11px] font-semibold uppercase text-[#f8f7f5]">
             {user.name?.charAt(0) || '?'}
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <p className="truncate text-sm font-medium text-sidebar-foreground">
+              <p className="truncate text-sm font-medium text-[#261b07]">
                 {user.name}
               </p>
               <RoleBadge role={user.role} />
             </div>
-            <p className="truncate text-xs text-sidebar-foreground/40">{user.email}</p>
+            <p className="truncate text-[11px] text-[#a09888]">{user.email}</p>
           </div>
         </div>
       </SidebarFooter>

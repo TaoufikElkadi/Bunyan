@@ -10,13 +10,13 @@ import {
 } from 'recharts'
 
 const COLORS = [
-  '#8B7355', // brown
-  '#A0926B', // tan
-  '#6B8E7B', // sage
-  '#C4A97D', // gold
-  '#7B8B9E', // slate-blue
+  '#C87D3A', // warm orange
+  '#6B8F71', // sage green
+  '#7B8EAD', // slate blue
+  '#D4956A', // peach
+  '#f9a600', // gold
+  '#8a8478', // warm gray
   '#B8956A', // caramel
-  '#9B8B7A', // taupe
   '#6B7B6B', // olive
 ]
 
@@ -34,9 +34,11 @@ function formatEuros(cents: number): string {
 export function FundChart({ data }: { data: FundData[] }) {
   if (data.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground py-8 text-center">
-        Nog geen gegevens beschikbaar.
-      </p>
+      <div className="flex items-center justify-center h-[300px]">
+        <p className="text-[13px] text-[#a09888]">
+          Nog geen gegevens beschikbaar.
+        </p>
+      </div>
     )
   }
 
@@ -49,10 +51,10 @@ export function FundChart({ data }: { data: FundData[] }) {
           nameKey="name"
           cx="50%"
           cy="50%"
-          innerRadius={60}
+          innerRadius={65}
           outerRadius={100}
           label={false}
-          strokeWidth={2}
+          strokeWidth={3}
           stroke="#ffffff"
         >
           {data.map((_, index) => (
@@ -63,10 +65,11 @@ export function FundChart({ data }: { data: FundData[] }) {
           formatter={(value) => formatEuros(Number(value))}
           contentStyle={{
             backgroundColor: '#ffffff',
-            border: '1px solid #f0ece8',
-            borderRadius: '8px',
-            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05)',
+            border: '1px solid #e3dfd5',
+            borderRadius: '10px',
+            boxShadow: '0 4px 24px rgba(38, 27, 7, 0.08)',
             fontSize: '13px',
+            color: '#261b07',
           }}
         />
         <Legend
@@ -74,6 +77,7 @@ export function FundChart({ data }: { data: FundData[] }) {
             const item = data.find((d) => d.name === value)
             return `${value} (${item ? formatEuros(item.total) : ''})`
           }}
+          wrapperStyle={{ fontSize: '12px', color: '#8a8478' }}
         />
       </PieChart>
     </ResponsiveContainer>

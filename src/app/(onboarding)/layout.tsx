@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { redirect } from 'next/navigation'
 import { getCachedProfile } from '@/lib/supabase/cached'
 import Link from 'next/link'
@@ -24,10 +25,17 @@ export default async function OnboardingLayout({
       <div className="flex items-center justify-between px-8 pt-6">
         <Link
           href="/"
-          className="text-[18px] font-[584] tracking-[-0.36px] text-[#261b07] uppercase"
-          style={{ fontFamily: "var(--font-display), sans-serif" }}
+          className="flex items-center gap-2.5"
         >
-          bunyan
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#345e7d] shadow-sm overflow-hidden">
+            <Image src="/logos/logo_transparent.svg" alt="" width={24} height={24} className="h-6 w-6" />
+          </div>
+          <span
+            className="text-[18px] font-[584] tracking-[-0.36px] text-[#261b07] uppercase"
+            style={{ fontFamily: "var(--font-display), sans-serif" }}
+          >
+            bunyan
+          </span>
         </Link>
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#edeae4] text-[12px] font-medium text-[#a09888]">
           U

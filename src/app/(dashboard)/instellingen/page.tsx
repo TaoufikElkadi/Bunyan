@@ -21,8 +21,8 @@ export default async function InstellingenPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Instellingen</h1>
-        <p className="mt-1 text-base text-muted-foreground">
+        <h1 className="text-[28px] font-bold tracking-[-0.5px] text-[#261b07]">Instellingen</h1>
+        <p className="text-[14px] text-[#8a8478] mt-1">
           Beheer de instellingen en voorkeuren van uw moskee
         </p>
       </div>

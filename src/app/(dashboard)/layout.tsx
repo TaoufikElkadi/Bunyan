@@ -25,7 +25,7 @@ export default async function DashboardLayout({
       <AppSidebar user={profile} mosque={mosque} />
       <SidebarInset>
         <DashboardHeader user={profile} mosque={mosque} />
-        <main className="flex-1 p-6 md:p-8 bg-background/50">{children}</main>
+        <main className="flex-1 p-6 md:p-8 bg-[#f8f7f5]">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   )

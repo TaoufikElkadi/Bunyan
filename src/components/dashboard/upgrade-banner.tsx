@@ -1,9 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Alert, AlertTitle, AlertDescription, AlertAction } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
-import { XIcon } from 'lucide-react'
+import { XIcon, Sparkles } from 'lucide-react'
 
 interface UpgradeBannerProps {
   message: string
@@ -26,20 +24,23 @@ export function UpgradeBanner({ message, plan }: UpgradeBannerProps) {
   }
 
   return (
-    <Alert className="border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">
-      <AlertTitle>Upgrade uw abonnement</AlertTitle>
-      <AlertDescription>{message}</AlertDescription>
-      <AlertAction>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-7 text-amber-900 hover:text-amber-700 dark:text-amber-200 dark:hover:text-amber-100"
+    <div className="relative rounded-xl border border-[#f9a600]/30 bg-[#f9a600]/8 px-5 py-4">
+      <div className="flex items-start gap-3">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#f9a600]/15 mt-0.5">
+          <Sparkles className="h-4 w-4 text-[#f9a600]" strokeWidth={1.5} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[13px] font-semibold text-[#261b07]">Upgrade uw abonnement</p>
+          <p className="text-[13px] text-[#8a8478] mt-0.5">{message}</p>
+        </div>
+        <button
           onClick={handleDismiss}
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[#a09888] hover:bg-[#261b07]/5 hover:text-[#261b07] transition-colors"
         >
-          <XIcon className="size-4" />
+          <XIcon className="h-4 w-4" />
           <span className="sr-only">Sluiten</span>
-        </Button>
-      </AlertAction>
-    </Alert>
+        </button>
+      </div>
+    </div>
   )
 }

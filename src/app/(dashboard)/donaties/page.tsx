@@ -1,7 +1,5 @@
 import { getCachedProfile } from '@/lib/supabase/cached'
 import { getPlanLimits } from '@/lib/plan'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
 import { formatMoney } from '@/lib/money'
 import { ManualDonationDialog } from '@/components/donation/manual-donation-dialog'
@@ -14,6 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import Link from 'next/link'
+import { Download, ChevronLeft, ChevronRight, X } from 'lucide-react'
 
 export const revalidate = 60
 
@@ -60,11 +59,14 @@ function buildFilterUrl(params: Record<string, string | undefined>): string {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  completed: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/20',
-  pending: 'bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400 dark:border-amber-500/20',
-  failed: 'bg-red-500/10 text-red-600 border-red-500/20 dark:text-red-400 dark:border-red-500/20',
-  refunded: 'bg-stone-500/10 text-stone-500 border-stone-500/20 dark:text-stone-400 dark:border-stone-500/20',
+  completed: 'bg-[#e8f0d4] text-[#4a7c10] border-[#d4e4b8]',
+  pending: 'bg-[#fef3cd] text-[#8a6d00] border-[#fde68a]',
+  failed: 'bg-red-50 text-red-600 border-red-200',
+  refunded: 'bg-[#f3f1ec] text-[#8a8478] border-[#e3dfd5]',
 }
+
+const selectClasses = "h-9 rounded-lg border border-[#e3dfd5] bg-white px-3 text-[13px] text-[#261b07] transition-all focus:border-[#261b07]/30 focus:outline-none focus:ring-1 focus:ring-[#261b07]/10 hover:border-[#d5cfb8]"
+const inputClasses = "h-9 rounded-lg border border-[#e3dfd5] bg-white px-3 text-[13px] text-[#261b07] placeholder:text-[#b5b0a5] transition-all focus:border-[#261b07]/30 focus:outline-none focus:ring-1 focus:ring-[#261b07]/10 hover:border-[#d5cfb8]"
 
 export default async function DonatiesPage({
   searchParams,
@@ -163,8 +165,8 @@ export default async function DonatiesPage({
       {/* Page header */}
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Donaties</h1>
-          <p className="text-sm text-muted-foreground mt-1.5">
+          <h1 className="text-[28px] font-bold tracking-[-0.5px] text-[#261b07]">Donaties</h1>
+          <p className="text-[14px] text-[#8a8478] mt-1">
             Beheer en bekijk alle ontvangen donaties
           </p>
         </div>
@@ -172,10 +174,10 @@ export default async function DonatiesPage({
           {limits.hasCsvExport && (
             <a
               href={`/api/donations/export?${new URLSearchParams(Object.entries(currentFilters).filter(([, v]) => v !== undefined) as [string, string][]).toString()}`}
-              className={buttonVariants({ variant: 'outline', size: 'sm' })}
+              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg border border-[#e3dfd5] bg-white text-[13px] font-medium text-[#261b07] hover:bg-[#f3f1ec] transition-colors"
               download
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <Download className="h-3.5 w-3.5" strokeWidth={1.5} />
               CSV exporteren
             </a>
           )}
@@ -184,197 +186,167 @@ export default async function DonatiesPage({
       </div>
 
       {/* Filters */}
-      <Card className="border-border/50 shadow-sm">
-        <CardContent className="pt-5 pb-5">
-          <form action="/donaties" method="GET" className="grid grid-cols-2 md:flex md:flex-wrap items-center gap-2.5">
-            <select
-              name="status"
-              defaultValue={statusFilter}
-              className="h-9 rounded-lg border border-border/50 bg-background px-3 text-sm transition-all focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20 hover:border-border"
+      <div className="rounded-xl border border-[#e3dfd5] bg-white p-5">
+        <form action="/donaties" method="GET" className="grid grid-cols-2 md:flex md:flex-wrap items-center gap-2.5">
+          <select name="status" defaultValue={statusFilter} className={selectClasses}>
+            {STATUS_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+
+          <select name="method" defaultValue={methodFilter} className={selectClasses}>
+            {METHOD_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+
+          <select name="fund" defaultValue={fundFilter} className={selectClasses}>
+            <option value="">Alle fondsen</option>
+            {(funds ?? []).map((f: { id: string; name: string }) => (
+              <option key={f.id} value={f.id}>{f.name}</option>
+            ))}
+          </select>
+
+          <input type="date" name="from" defaultValue={fromDate} className={inputClasses} placeholder="Van" />
+          <input type="date" name="to" defaultValue={toDate} className={inputClasses} placeholder="Tot" />
+
+          <input
+            type="text"
+            name="q"
+            defaultValue={searchQuery}
+            placeholder="Zoek op naam of e-mail..."
+            className={`${inputClasses} col-span-2 md:w-56`}
+          />
+
+          <button
+            type="submit"
+            className="h-9 px-4 rounded-lg bg-[#261b07] text-[#f8f7f5] text-[13px] font-medium hover:bg-[#3a2c14] transition-colors"
+          >
+            Filteren
+          </button>
+
+          {hasActiveFilters && (
+            <Link
+              href="/donaties"
+              className="h-9 px-3 rounded-lg border border-[#e3dfd5] text-[13px] font-medium flex items-center justify-center gap-1 hover:bg-[#f3f1ec] transition-colors text-[#8a8478] hover:text-[#261b07]"
             >
-              {STATUS_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-
-            <select
-              name="method"
-              defaultValue={methodFilter}
-              className="h-9 rounded-lg border border-border/50 bg-background px-3 text-sm transition-all focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20 hover:border-border"
-            >
-              {METHOD_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-
-            <select
-              name="fund"
-              defaultValue={fundFilter}
-              className="h-9 rounded-lg border border-border/50 bg-background px-3 text-sm transition-all focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20 hover:border-border"
-            >
-              <option value="">Alle fondsen</option>
-              {(funds ?? []).map((f: { id: string; name: string }) => (
-                <option key={f.id} value={f.id}>{f.name}</option>
-              ))}
-            </select>
-
-            <input
-              type="date"
-              name="from"
-              defaultValue={fromDate}
-              className="h-9 rounded-lg border border-border/50 bg-background px-3 text-sm transition-all focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20 hover:border-border"
-              placeholder="Van"
-            />
-
-            <input
-              type="date"
-              name="to"
-              defaultValue={toDate}
-              className="h-9 rounded-lg border border-border/50 bg-background px-3 text-sm transition-all focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20 hover:border-border"
-              placeholder="Tot"
-            />
-
-            <input
-              type="text"
-              name="q"
-              defaultValue={searchQuery}
-              placeholder="Zoek op naam of e-mail..."
-              className="h-9 rounded-lg border border-border/50 bg-background px-3 text-sm col-span-2 md:w-56 transition-all focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20 hover:border-border"
-            />
-
-            <button
-              type="submit"
-              className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-            >
-              Filteren
-            </button>
-
-            {hasActiveFilters && (
-              <Link
-                href="/donaties"
-                className="h-9 px-3.5 rounded-lg border border-border/50 text-sm font-medium flex items-center justify-center hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
-              >
-                Wissen
-              </Link>
-            )}
-          </form>
-        </CardContent>
-      </Card>
+              <X className="h-3.5 w-3.5" />
+              Wissen
+            </Link>
+          )}
+        </form>
+      </div>
 
       {/* Table */}
-      <Card className="border-border/50 shadow-sm">
-        <CardHeader className="pb-0 pt-5 px-6">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-medium">Alle donaties</CardTitle>
-            {filteredCount > 0 && (
-              <span className="text-xs text-muted-foreground tabular-nums">{filteredCount} resultaten</span>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="px-0 pb-0 pt-4">
-          {filteredDonations.length > 0 ? (
-            <>
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent border-border/50">
-                    <TableHead className="h-10 px-6 text-sm font-medium text-muted-foreground">Datum</TableHead>
-                    <TableHead className="h-10 px-4 text-sm font-medium text-muted-foreground">Donateur</TableHead>
-                    <TableHead className="h-10 px-4 text-sm font-medium text-muted-foreground hidden sm:table-cell">Fonds</TableHead>
-                    <TableHead className="h-10 px-4 text-sm font-medium text-muted-foreground hidden md:table-cell">Methode</TableHead>
-                    <TableHead className="h-10 px-4 text-sm font-medium text-muted-foreground">Status</TableHead>
-                    <TableHead className="h-10 px-6 text-sm font-medium text-muted-foreground text-right">Bedrag</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredDonations.map((donation: Record<string, unknown>) => {
-                    const status = STATUS_LABELS[donation.status as string] ?? { label: donation.status as string, variant: 'secondary' as const }
-                    const donors = donation.donors as { name?: string } | null
-                    const fundRecord = donation.funds as { name?: string } | null
-                    const statusColor = STATUS_COLORS[donation.status as string] ?? STATUS_COLORS.pending
-                    return (
-                      <TableRow key={donation.id as string} className="hover:bg-muted/30 border-border/40">
-                        <TableCell className="px-6 py-4 text-sm text-muted-foreground">
-                          {new Date(donation.created_at as string).toLocaleDateString('nl-NL', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                          })}
-                        </TableCell>
-                        <TableCell className="px-4 py-4 text-sm font-medium">
-                          {donors?.name ?? (
-                            <span className="text-muted-foreground/70 italic">Anoniem</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="px-4 py-4 text-sm text-muted-foreground hidden sm:table-cell">
-                          {fundRecord?.name ?? <span className="text-muted-foreground/40">-</span>}
-                        </TableCell>
-                        <TableCell className="px-4 py-4 text-sm text-muted-foreground hidden md:table-cell">
-                          {METHOD_LABELS[donation.method as string] ?? (donation.method as string)}
-                        </TableCell>
-                        <TableCell className="px-4 py-4">
-                          <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${statusColor}`}>
-                            {status.label}
-                          </span>
-                        </TableCell>
-                        <TableCell className="px-6 py-4 text-sm text-right font-semibold tabular-nums">
-                          {formatMoney(donation.amount as number)}
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-4 border-t border-border/40">
-                  <p className="text-sm text-muted-foreground">
-                    <span className="font-medium text-foreground">{filteredCount}</span> donaties
-                    <span className="mx-1.5 text-border">|</span>
-                    pagina <span className="font-medium text-foreground">{page}</span> van <span className="font-medium text-foreground">{totalPages}</span>
-                  </p>
-                  <div className="flex gap-1.5">
-                    {page > 1 && (
-                      <Link
-                        href={buildFilterUrl({ ...currentFilters, page: String(page - 1) })}
-                        className="inline-flex items-center justify-center min-h-[44px] md:min-h-0 h-9 px-3.5 text-sm font-medium rounded-lg border border-border/50 bg-background hover:bg-muted/50 transition-colors"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5"><polyline points="15 18 9 12 15 6"/></svg>
-                        Vorige
-                      </Link>
-                    )}
-                    {page < totalPages && (
-                      <Link
-                        href={buildFilterUrl({ ...currentFilters, page: String(page + 1) })}
-                        className="inline-flex items-center justify-center min-h-[44px] md:min-h-0 h-9 px-3.5 text-sm font-medium rounded-lg border border-border/50 bg-background hover:bg-muted/50 transition-colors"
-                      >
-                        Volgende
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-1.5"><polyline points="9 18 15 12 9 6"/></svg>
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              )}
-            </>
-          ) : (
-            /* Empty state */
-            <div className="flex flex-col items-center justify-center py-20 px-6">
-              <div className="rounded-full bg-muted/40 p-5 mb-5">
-                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/50">
-                  <rect x="2" y="5" width="20" height="14" rx="2"/>
-                  <line x1="2" y1="10" x2="22" y2="10"/>
-                </svg>
-              </div>
-              <h3 className="text-sm font-medium mb-1.5">Geen donaties gevonden</h3>
-              <p className="text-sm text-muted-foreground/70 text-center max-w-xs leading-relaxed">
-                {hasActiveFilters
-                  ? 'Probeer andere filters of wis de huidige filters.'
-                  : 'Zodra er donaties binnenkomen, verschijnen ze hier.'}
-              </p>
-            </div>
+      <div className="rounded-xl border border-[#e3dfd5] bg-white overflow-hidden">
+        <div className="flex items-center justify-between px-6 pt-5 pb-4">
+          <h3 className="text-[15px] font-semibold text-[#261b07]">Alle donaties</h3>
+          {filteredCount > 0 && (
+            <span className="text-[12px] text-[#a09888] tabular-nums">{filteredCount} resultaten</span>
           )}
-        </CardContent>
-      </Card>
+        </div>
+
+        {filteredDonations.length > 0 ? (
+          <>
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent border-[#e3dfd5]">
+                  <TableHead className="h-10 px-6 text-[12px] font-medium text-[#a09888] uppercase tracking-wide">Datum</TableHead>
+                  <TableHead className="h-10 px-4 text-[12px] font-medium text-[#a09888] uppercase tracking-wide">Donateur</TableHead>
+                  <TableHead className="h-10 px-4 text-[12px] font-medium text-[#a09888] uppercase tracking-wide hidden sm:table-cell">Fonds</TableHead>
+                  <TableHead className="h-10 px-4 text-[12px] font-medium text-[#a09888] uppercase tracking-wide hidden md:table-cell">Methode</TableHead>
+                  <TableHead className="h-10 px-4 text-[12px] font-medium text-[#a09888] uppercase tracking-wide">Status</TableHead>
+                  <TableHead className="h-10 px-6 text-[12px] font-medium text-[#a09888] uppercase tracking-wide text-right">Bedrag</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredDonations.map((donation: Record<string, unknown>) => {
+                  const status = STATUS_LABELS[donation.status as string] ?? { label: donation.status as string, variant: 'secondary' as const }
+                  const donors = donation.donors as { name?: string } | null
+                  const fundRecord = donation.funds as { name?: string } | null
+                  const statusColor = STATUS_COLORS[donation.status as string] ?? STATUS_COLORS.pending
+                  return (
+                    <TableRow key={donation.id as string} className="hover:bg-[#fafaf8] border-[#e3dfd5]/60">
+                      <TableCell className="px-6 py-4 text-[13px] text-[#8a8478]">
+                        {new Date(donation.created_at as string).toLocaleDateString('nl-NL', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </TableCell>
+                      <TableCell className="px-4 py-4 text-[13px] font-medium text-[#261b07]">
+                        {donors?.name ?? (
+                          <span className="text-[#b5b0a5] italic">Anoniem</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="px-4 py-4 text-[13px] text-[#8a8478] hidden sm:table-cell">
+                        {fundRecord?.name ?? <span className="text-[#d5cfb8]">-</span>}
+                      </TableCell>
+                      <TableCell className="px-4 py-4 text-[13px] text-[#8a8478] hidden md:table-cell">
+                        {METHOD_LABELS[donation.method as string] ?? (donation.method as string)}
+                      </TableCell>
+                      <TableCell className="px-4 py-4">
+                        <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-medium ${statusColor}`}>
+                          {status.label}
+                        </span>
+                      </TableCell>
+                      <TableCell className="px-6 py-4 text-[13px] text-right font-semibold tabular-nums text-[#261b07]">
+                        {formatMoney(donation.amount as number)}
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-4 border-t border-[#e3dfd5]">
+                <p className="text-[13px] text-[#8a8478]">
+                  <span className="font-medium text-[#261b07]">{filteredCount}</span> donaties
+                  <span className="mx-1.5 text-[#e3dfd5]">|</span>
+                  pagina <span className="font-medium text-[#261b07]">{page}</span> van <span className="font-medium text-[#261b07]">{totalPages}</span>
+                </p>
+                <div className="flex gap-1.5">
+                  {page > 1 && (
+                    <Link
+                      href={buildFilterUrl({ ...currentFilters, page: String(page - 1) })}
+                      className="inline-flex items-center justify-center min-h-[44px] md:min-h-0 h-9 px-3.5 text-[13px] font-medium rounded-lg border border-[#e3dfd5] bg-white hover:bg-[#f3f1ec] transition-colors text-[#261b07]"
+                    >
+                      <ChevronLeft className="h-3.5 w-3.5 mr-1" />
+                      Vorige
+                    </Link>
+                  )}
+                  {page < totalPages && (
+                    <Link
+                      href={buildFilterUrl({ ...currentFilters, page: String(page + 1) })}
+                      className="inline-flex items-center justify-center min-h-[44px] md:min-h-0 h-9 px-3.5 text-[13px] font-medium rounded-lg border border-[#e3dfd5] bg-white hover:bg-[#f3f1ec] transition-colors text-[#261b07]"
+                    >
+                      Volgende
+                      <ChevronRight className="h-3.5 w-3.5 ml-1" />
+                    </Link>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-20 px-6">
+            <div className="rounded-full bg-[#f3f1ec] p-5 mb-5">
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#a09888]">
+                <rect x="2" y="5" width="20" height="14" rx="2"/>
+                <line x1="2" y1="10" x2="22" y2="10"/>
+              </svg>
+            </div>
+            <h3 className="text-[13px] font-medium text-[#261b07] mb-1.5">Geen donaties gevonden</h3>
+            <p className="text-[13px] text-[#a09888] text-center max-w-xs leading-relaxed">
+              {hasActiveFilters
+                ? 'Probeer andere filters of wis de huidige filters.'
+                : 'Zodra er donaties binnenkomen, verschijnen ze hier.'}
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
