@@ -16,6 +16,8 @@ type Fund = {
   name: string
   description: string | null
   icon: string | null
+  goal_amount: number | null
+  raised: number // cents
 }
 
 type Props = {
@@ -325,12 +327,14 @@ export function DonationForm({
                 const active = selectedFund === fund.id
                 const Icon = getFundIcon(fund.icon, fund.name)
                 const colorSet = FUND_ICON_COLORS[index % FUND_ICON_COLORS.length]
+                const hasGoal = fund.goal_amount && fund.goal_amount > 0
+                const pct = hasGoal ? Math.min((fund.raised / fund.goal_amount!) * 100, 100) : null
                 return (
                   <button
                     key={fund.id}
                     type="button"
                     onClick={() => setSelectedFund(fund.id)}
-                    className="w-full flex items-center gap-3.5 rounded-2xl p-3.5 text-start transition-all duration-200"
+                    className="w-full rounded-2xl p-3.5 text-start transition-all duration-200"
                     style={active ? {
                       background: '#1B2541',
                       color: 'white',
@@ -341,37 +345,66 @@ export function DonationForm({
                       border: '1px solid #EDE8DF',
                     }}
                   >
-                    <div
-                      className="flex size-9 items-center justify-center rounded-xl shrink-0"
-                      style={{
-                        background: active ? 'rgba(255,255,255,0.12)' : `${colorSet.hex}15`,
-                      }}
-                    >
-                      <Icon
-                        className="size-[18px]"
-                        strokeWidth={1.5}
-                        style={{ color: active ? 'white' : colorSet.hex }}
-                      />
+                    <div className="flex items-center gap-3.5">
+                      <div
+                        className="flex size-9 items-center justify-center rounded-xl shrink-0"
+                        style={{
+                          background: active ? 'rgba(255,255,255,0.12)' : `${colorSet.hex}15`,
+                        }}
+                      >
+                        <Icon
+                          className="size-[18px]"
+                          strokeWidth={1.5}
+                          style={{ color: active ? 'white' : colorSet.hex }}
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-sm">{fund.name}</div>
+                        {fund.description && (
+                          <div className="text-xs mt-0.5 line-clamp-1" style={{ color: active ? '#8B9CC0' : '#9B8E7B' }}>
+                            {fund.description}
+                          </div>
+                        )}
+                      </div>
+                      <div
+                        className="size-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all"
+                        style={active ? {
+                          borderColor: accent,
+                          background: accent,
+                        } : {
+                          borderColor: '#D4CFC5',
+                        }}
+                      >
+                        {active && <CheckIcon className="size-3 text-white" strokeWidth={3} />}
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-sm">{fund.name}</div>
-                      {fund.description && (
-                        <div className="text-xs mt-0.5 line-clamp-1" style={{ color: active ? '#8B9CC0' : '#9B8E7B' }}>
-                          {fund.description}
+                    {/* Progress bar */}
+                    {hasGoal && (
+                      <div className="mt-3">
+                        <div
+                          className="h-1.5 rounded-full overflow-hidden"
+                          style={{ background: active ? 'rgba(255,255,255,0.12)' : '#EDE8DF' }}
+                        >
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${pct}%`,
+                              background: active
+                                ? accent
+                                : `linear-gradient(90deg, ${colorSet.hex}, ${colorSet.hex}CC)`,
+                            }}
+                          />
                         </div>
-                      )}
-                    </div>
-                    <div
-                      className="size-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all"
-                      style={active ? {
-                        borderColor: accent,
-                        background: accent,
-                      } : {
-                        borderColor: '#D4CFC5',
-                      }}
-                    >
-                      {active && <CheckIcon className="size-3 text-white" strokeWidth={3} />}
-                    </div>
+                        <div className="flex justify-between mt-1.5">
+                          <span className="text-[11px] font-medium" style={{ color: active ? '#8B9CC0' : '#9B8E7B' }}>
+                            {formatMoney(fund.raised)}
+                          </span>
+                          <span className="text-[11px] font-medium" style={{ color: active ? '#8B9CC0' : '#9B8E7B' }}>
+                            {formatMoney(fund.goal_amount!)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </button>
                 )
               })}

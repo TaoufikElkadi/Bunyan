@@ -48,10 +48,27 @@ export default async function DonerenPage({ params }: Props) {
 
   const { data: funds } = await admin
     .from('funds')
-    .select('id, name, description, icon')
+    .select('id, name, description, icon, goal_amount')
     .eq('mosque_id', mosque.id)
     .eq('is_active', true)
     .order('sort_order', { ascending: true })
+
+  // Aggregate completed donations per fund
+  const { data: fundTotals } = await admin
+    .from('donations')
+    .select('fund_id, amount')
+    .eq('mosque_id', mosque.id)
+    .eq('status', 'completed')
+
+  const totalsByFund = new Map<string, number>()
+  for (const d of fundTotals ?? []) {
+    totalsByFund.set(d.fund_id, (totalsByFund.get(d.fund_id) ?? 0) + d.amount)
+  }
+
+  const fundsWithProgress = (funds ?? []).map((f) => ({
+    ...f,
+    raised: totalsByFund.get(f.id) ?? 0,
+  }))
 
   const defaultLocale = (mosque.language as Locale) || 'nl'
 
@@ -69,7 +86,7 @@ export default async function DonerenPage({ params }: Props) {
         primaryColor={mosque.primary_color || '#6B5E4C'}
         welcomeMsg={mosque.welcome_msg}
         logoUrl={mosque.logo_url}
-        funds={funds || []}
+        funds={fundsWithProgress}
         anbiEnabled={!!mosque.anbi_status && !!mosque.rsin}
       />
     </DonationPageShell>

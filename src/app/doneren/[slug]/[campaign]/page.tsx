@@ -62,22 +62,32 @@ export default async function CampaignDonationPage({ params }: Props) {
   // Fetch all active funds (needed for the form)
   const { data: funds } = await admin
     .from('funds')
-    .select('id, name, description, icon')
+    .select('id, name, description, icon, goal_amount')
     .eq('mosque_id', mosque.id)
     .eq('is_active', true)
     .order('sort_order', { ascending: true })
 
-  // Calculate progress if goal is set
-  let raised = 0
-  if (campaign.goal_amount) {
-    const { data: progress } = await admin
-      .from('donations')
-      .select('amount')
-      .eq('mosque_id', mosque.id)
-      .eq('fund_id', campaign.fund_id)
-      .eq('status', 'completed')
+  // Aggregate completed donations per fund
+  const { data: fundTotals } = await admin
+    .from('donations')
+    .select('fund_id, amount')
+    .eq('mosque_id', mosque.id)
+    .eq('status', 'completed')
 
-    raised = (progress || []).reduce((sum, d) => sum + d.amount, 0)
+  const totalsByFund = new Map<string, number>()
+  for (const d of fundTotals ?? []) {
+    totalsByFund.set(d.fund_id, (totalsByFund.get(d.fund_id) ?? 0) + d.amount)
+  }
+
+  const fundsWithProgress = (funds ?? []).map((f) => ({
+    ...f,
+    raised: totalsByFund.get(f.id) ?? 0,
+  }))
+
+  // Calculate campaign progress
+  let raised = 0
+  if (campaign.goal_amount && campaign.fund_id) {
+    raised = totalsByFund.get(campaign.fund_id) ?? 0
   }
 
   const primaryColor = mosque.primary_color || '#10b981'
@@ -114,7 +124,7 @@ export default async function CampaignDonationPage({ params }: Props) {
           primaryColor={primaryColor}
           welcomeMsg={mosque.welcome_msg ?? null}
           logoUrl={mosque.logo_url ?? null}
-          funds={funds || []}
+          funds={fundsWithProgress}
           preselectedFundId={campaign.fund_id}
         />
       </div>
