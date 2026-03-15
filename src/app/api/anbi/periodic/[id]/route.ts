@@ -1,8 +1,20 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { PeriodicGiftAgreement } from '@/lib/pdf/periodic-gift-agreement'
 import type { PeriodicGiftData } from '@/lib/pdf/periodic-gift-agreement'
+
+async function downloadSignatureAsDataUrl(
+  admin: ReturnType<typeof createAdminClient>,
+  path: string | null
+): Promise<string | undefined> {
+  if (!path) return undefined
+  const { data, error } = await admin.storage.from('signatures').download(path)
+  if (error || !data) return undefined
+  const buffer = Buffer.from(await data.arrayBuffer())
+  return `data:image/png;base64,${buffer.toString('base64')}`
+}
 
 export async function GET(
   _request: Request,
@@ -27,7 +39,6 @@ export async function GET(
       return NextResponse.json({ error: 'Geen toestemming' }, { status: 403 })
     }
 
-    // Fetch agreement with donor and fund info
     const { data: agreement } = await supabase
       .from('periodic_gift_agreements')
       .select('*, donors(name, address), funds(name)')
@@ -39,7 +50,6 @@ export async function GET(
       return NextResponse.json({ error: 'Overeenkomst niet gevonden' }, { status: 404 })
     }
 
-    // Fetch mosque info
     const { data: mosque } = await supabase
       .from('mosques')
       .select('name, address, rsin, kvk')
@@ -60,6 +70,13 @@ export async function GET(
         year: 'numeric',
       })
 
+    // Download signatures from storage if present
+    const admin = createAdminClient()
+    const [donorSigDataUrl, boardSigDataUrl] = await Promise.all([
+      downloadSignatureAsDataUrl(admin, agreement.donor_signature_url),
+      downloadSignatureAsDataUrl(admin, agreement.board_signature_url),
+    ])
+
     const pdfData: PeriodicGiftData = {
       mosqueName: mosque.name,
       mosqueAddress: mosque.address ?? '',
@@ -76,6 +93,11 @@ export async function GET(
         month: 'long',
         year: 'numeric',
       }),
+      donorSignatureDataUrl: donorSigDataUrl,
+      donorSignedAt: agreement.donor_signed_at ? formatDate(agreement.donor_signed_at) : undefined,
+      boardSignatureDataUrl: boardSigDataUrl,
+      boardSignedAt: agreement.board_signed_at ? formatDate(agreement.board_signed_at) : undefined,
+      boardSignerName: agreement.board_signer_name ?? undefined,
     }
 
     const pdfBuffer = await renderToBuffer(

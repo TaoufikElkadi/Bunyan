@@ -57,6 +57,9 @@ export async function GET(request: Request) {
         end_date: a.end_date,
         status: a.status,
         notes: a.notes,
+        donor_signed_at: a.donor_signed_at,
+        board_signed_at: a.board_signed_at,
+        board_signer_name: a.board_signer_name,
         created_at: a.created_at,
       }
     })

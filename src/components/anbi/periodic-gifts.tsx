@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { SignaturePad } from '@/components/ui/signature-pad'
 import { formatMoney } from '@/lib/money'
 import { eurosToCents } from '@/lib/money'
 import { toast } from 'sonner'
@@ -20,6 +21,7 @@ import {
   Loader2Icon,
   PlusIcon,
   XCircleIcon,
+  PenLineIcon,
 } from 'lucide-react'
 
 interface Agreement {
@@ -34,6 +36,9 @@ interface Agreement {
   start_date: string
   end_date: string
   status: string
+  donor_signed_at: string | null
+  board_signed_at: string | null
+  board_signer_name: string | null
   created_at: string
 }
 
@@ -49,12 +54,14 @@ interface FundOption {
 }
 
 const statusLabels: Record<string, string> = {
+  pending_board: 'Wacht op ondertekening',
   active: 'Actief',
-  completed: 'Afgerond',
+  completed: 'Verlopen',
   cancelled: 'Geannuleerd',
 }
 
 const statusColors: Record<string, 'default' | 'secondary' | 'destructive'> = {
+  pending_board: 'secondary',
   active: 'default',
   completed: 'secondary',
   cancelled: 'destructive',
@@ -67,22 +74,23 @@ export function PeriodicGifts() {
   const [downloadingId, setDownloadingId] = useState<string | null>(null)
   const [cancellingId, setCancellingId] = useState<string | null>(null)
 
-  // Form state
+  // Countersign state
+  const [countersignId, setCountersignId] = useState<string | null>(null)
+  const [countersignSig, setCountersignSig] = useState<string | null>(null)
+  const [countersigning, setCountersigning] = useState(false)
+
+  // Create form state
   const [donors, setDonors] = useState<DonorOption[]>([])
   const [funds, setFunds] = useState<FundOption[]>([])
   const [donorSearch, setDonorSearch] = useState('')
   const [selectedDonorId, setSelectedDonorId] = useState('')
   const [annualAmountEuros, setAnnualAmountEuros] = useState('')
   const [selectedFundId, setSelectedFundId] = useState('')
-  const [startDate, setStartDate] = useState(() => {
-    const now = new Date()
-    return `${now.getFullYear()}-01-01`
-  })
-  const [endDate, setEndDate] = useState(() => {
-    const now = new Date()
-    return `${now.getFullYear() + 5}-01-01`
-  })
+  const [startDate, setStartDate] = useState(() => `${new Date().getFullYear()}-01-01`)
+  const [endDate, setEndDate] = useState(() => `${new Date().getFullYear() + 5}-01-01`)
   const [submitting, setSubmitting] = useState(false)
+
+  const pendingCount = agreements.filter((a) => a.status === 'pending_board').length
 
   useEffect(() => {
     fetchAgreements()
@@ -109,31 +117,22 @@ export function PeriodicGifts() {
         fetch('/api/donors?limit=200'),
         fetch('/api/funds'),
       ])
-
       if (donorsRes.ok) {
         const data = await donorsRes.json()
         setDonors(
           (data.donors ?? data ?? [])
             .filter((d: DonorOption) => d.name)
-            .map((d: DonorOption) => ({
-              id: d.id,
-              name: d.name,
-              email: d.email,
-            }))
+            .map((d: DonorOption) => ({ id: d.id, name: d.name, email: d.email }))
         )
       }
-
       if (fundsRes.ok) {
         const data = await fundsRes.json()
         setFunds(
-          (data.funds ?? data ?? []).map((f: FundOption) => ({
-            id: f.id,
-            name: f.name,
-          }))
+          (data.funds ?? data ?? []).map((f: FundOption) => ({ id: f.id, name: f.name }))
         )
       }
     } catch {
-      // Non-critical, form still works
+      // Non-critical
     }
   }
 
@@ -151,7 +150,6 @@ export function PeriodicGifts() {
     }
   }
 
-  // Auto-update end date when start date changes
   function handleStartDateChange(value: string) {
     setStartDate(value)
     const start = new Date(value)
@@ -168,9 +166,7 @@ export function PeriodicGifts() {
       toast.error('Vul alle verplichte velden in')
       return
     }
-
     setSubmitting(true)
-
     try {
       const res = await fetch('/api/anbi/periodic', {
         method: 'POST',
@@ -183,14 +179,11 @@ export function PeriodicGifts() {
           end_date: endDate,
         }),
       })
-
       const data = await res.json()
-
       if (!res.ok) {
         toast.error(data.error || 'Fout bij aanmaken')
         return
       }
-
       toast.success('Overeenkomst aangemaakt')
       setDialogOpen(false)
       fetchAgreements()
@@ -203,16 +196,13 @@ export function PeriodicGifts() {
 
   async function handleDownloadPdf(agreementId: string, donorName: string) {
     setDownloadingId(agreementId)
-
     try {
       const res = await fetch(`/api/anbi/periodic/${agreementId}`)
-
       if (!res.ok) {
         const data = await res.json()
         toast.error(data.error || 'Fout bij genereren PDF')
         return
       }
-
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -222,7 +212,6 @@ export function PeriodicGifts() {
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
-
       toast.success('PDF gedownload')
     } catch {
       toast.error('Er is iets misgegaan')
@@ -233,26 +222,48 @@ export function PeriodicGifts() {
 
   async function handleCancel(agreementId: string) {
     setCancellingId(agreementId)
-
     try {
       const res = await fetch(`/api/anbi/periodic/${agreementId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'cancelled' }),
       })
-
       if (!res.ok) {
         const data = await res.json()
         toast.error(data.error || 'Fout bij annuleren')
         return
       }
-
       toast.success('Overeenkomst geannuleerd')
       fetchAgreements()
     } catch {
       toast.error('Er is iets misgegaan')
     } finally {
       setCancellingId(null)
+    }
+  }
+
+  async function handleCountersign() {
+    if (!countersignId || !countersignSig) return
+    setCountersigning(true)
+    try {
+      const res = await fetch(`/api/anbi/periodic/${countersignId}/countersign`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ signature_base64: countersignSig }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        toast.error(data.error || 'Fout bij ondertekenen')
+        return
+      }
+      toast.success('Overeenkomst ondertekend')
+      setCountersignId(null)
+      setCountersignSig(null)
+      fetchAgreements()
+    } catch {
+      toast.error('Er is iets misgegaan')
+    } finally {
+      setCountersigning(false)
     }
   }
 
@@ -270,6 +281,8 @@ export function PeriodicGifts() {
     )
   }
 
+  const countersignAgreement = agreements.find((a) => a.id === countersignId)
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -280,13 +293,14 @@ export function PeriodicGifts() {
           <PlusIcon className="size-4 mr-1" />
           Nieuwe overeenkomst
         </Button>
+
+        {/* Create dialog */}
         <Dialog open={dialogOpen} onOpenChange={handleDialogOpen}>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Nieuwe periodieke gift</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Donor search */}
               <div className="space-y-2">
                 <Label>Donateur *</Label>
                 <Input
@@ -310,9 +324,7 @@ export function PeriodicGifts() {
                           }}
                         >
                           <span className="font-medium">{d.name}</span>
-                          {d.email && (
-                            <span className="ml-2 text-muted-foreground">{d.email}</span>
-                          )}
+                          {d.email && <span className="ml-2 text-muted-foreground">{d.email}</span>}
                         </button>
                       ))
                     )}
@@ -322,17 +334,12 @@ export function PeriodicGifts() {
                   <button
                     type="button"
                     className="text-xs text-muted-foreground hover:underline"
-                    onClick={() => {
-                      setSelectedDonorId('')
-                      setDonorSearch('')
-                    }}
+                    onClick={() => { setSelectedDonorId(''); setDonorSearch('') }}
                   >
                     Wijzigen
                   </button>
                 )}
               </div>
-
-              {/* Amount */}
               <div className="space-y-2">
                 <Label>Jaarlijks bedrag *</Label>
                 <div className="flex items-center rounded-lg border border-input bg-transparent focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
@@ -348,8 +355,6 @@ export function PeriodicGifts() {
                   />
                 </div>
               </div>
-
-              {/* Fund */}
               <div className="space-y-2">
                 <Label>Fonds (optioneel)</Label>
                 <select
@@ -359,36 +364,23 @@ export function PeriodicGifts() {
                 >
                   <option value="">Geen specifiek fonds</option>
                   {funds.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.name}
-                    </option>
+                    <option key={f.id} value={f.id}>{f.name}</option>
                   ))}
                 </select>
               </div>
-
-              {/* Dates */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Startdatum *</Label>
-                  <Input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => handleStartDateChange(e.target.value)}
-                  />
+                  <Input type="date" value={startDate} onChange={(e) => handleStartDateChange(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label>Einddatum *</Label>
-                  <Input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                  />
+                  <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">
                 Minimaal 5 jaar looptijd vereist voor fiscale aftrek.
               </p>
-
               <Button type="submit" className="w-full" disabled={submitting}>
                 {submitting && <Loader2Icon className="size-4 mr-1 animate-spin" />}
                 Overeenkomst aanmaken
@@ -396,7 +388,60 @@ export function PeriodicGifts() {
             </form>
           </DialogContent>
         </Dialog>
+
+        {/* Countersign dialog */}
+        <Dialog open={!!countersignId} onOpenChange={(open) => { if (!open) { setCountersignId(null); setCountersignSig(null) } }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Ondertekenen namens de moskee</DialogTitle>
+            </DialogHeader>
+            {countersignAgreement && (
+              <div className="space-y-4">
+                <div className="rounded-lg border p-3 text-sm space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Donateur</span>
+                    <span className="font-medium">{countersignAgreement.donor_name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Jaarlijks</span>
+                    <span className="font-medium">{formatMoney(countersignAgreement.annual_amount)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Periode</span>
+                    <span className="font-medium">
+                      {new Date(countersignAgreement.start_date).toLocaleDateString('nl-NL')} – {new Date(countersignAgreement.end_date).toLocaleDateString('nl-NL')}
+                    </span>
+                  </div>
+                </div>
+                <SignaturePad
+                  onSign={setCountersignSig}
+                  onClear={() => setCountersignSig(null)}
+                  disabled={countersigning}
+                />
+                <Button
+                  className="w-full"
+                  disabled={!countersignSig || countersigning}
+                  onClick={handleCountersign}
+                >
+                  {countersigning ? (
+                    <Loader2Icon className="size-4 mr-1 animate-spin" />
+                  ) : (
+                    <PenLineIcon className="size-4 mr-1" />
+                  )}
+                  Ondertekenen
+                </Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
+
+      {/* Pending notification */}
+      {pendingCount > 0 && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
+          {pendingCount} overeenkomst{pendingCount > 1 ? 'en' : ''} wacht{pendingCount > 1 ? 'en' : ''} op uw ondertekening
+        </div>
+      )}
 
       {/* Agreements table */}
       <Card>
@@ -425,15 +470,10 @@ export function PeriodicGifts() {
                   {agreements.map((a) => (
                     <tr key={a.id} className="border-b last:border-0">
                       <td className="py-3 font-medium pr-4">{a.donor_name}</td>
-                      <td className="py-3 text-muted-foreground pr-4">
-                        {a.fund_name ?? '—'}
-                      </td>
-                      <td className="py-3 text-right font-medium pr-6">
-                        {formatMoney(a.annual_amount)}
-                      </td>
+                      <td className="py-3 text-muted-foreground pr-4">{a.fund_name ?? '—'}</td>
+                      <td className="py-3 text-right font-medium pr-6">{formatMoney(a.annual_amount)}</td>
                       <td className="py-3 text-muted-foreground pl-2">
-                        {new Date(a.start_date).toLocaleDateString('nl-NL')} –{' '}
-                        {new Date(a.end_date).toLocaleDateString('nl-NL')}
+                        {new Date(a.start_date).toLocaleDateString('nl-NL')} – {new Date(a.end_date).toLocaleDateString('nl-NL')}
                       </td>
                       <td className="py-3 text-center">
                         <Badge variant={statusColors[a.status] ?? 'secondary'}>
@@ -442,6 +482,16 @@ export function PeriodicGifts() {
                       </td>
                       <td className="py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
+                          {a.status === 'pending_board' && (
+                            <Button
+                              size="sm"
+                              variant="default"
+                              onClick={() => setCountersignId(a.id)}
+                              title="Ondertekenen"
+                            >
+                              <PenLineIcon className="size-4" />
+                            </Button>
+                          )}
                           <Button
                             size="sm"
                             variant="outline"
@@ -455,7 +505,7 @@ export function PeriodicGifts() {
                               <DownloadIcon className="size-4" />
                             )}
                           </Button>
-                          {a.status === 'active' && (
+                          {(a.status === 'active' || a.status === 'pending_board') && (
                             <Button
                               size="sm"
                               variant="outline"

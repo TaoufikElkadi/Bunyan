@@ -84,6 +84,33 @@ export function parseReceiptSequence(receiptNumber: string): number {
 }
 
 /**
+ * Shared agreement article texts used in both the review screen and PDF.
+ * Placeholders: {amount}, {fundClause}, {startDate}, {endDate}, {rsin}
+ */
+export const PERIODIC_GIFT_ARTICLES = [
+  {
+    title: 'Artikel 1 — Periodieke gift',
+    text: 'De schenker verbindt zich gedurende een tijdvak van ten minste vijf jaren jaarlijks een bedrag van {amount} te schenken aan de instelling{fundClause}.',
+  },
+  {
+    title: 'Artikel 2 — Looptijd',
+    text: 'Deze overeenkomst gaat in op {startDate} en eindigt op {endDate}. De looptijd bedraagt ten minste vijf jaren.',
+  },
+  {
+    title: 'Artikel 3 — Betaling',
+    text: 'De schenker betaalt het jaarlijkse bedrag via bank- of giro-overschrijving. Contante betalingen zijn uitgesloten.',
+  },
+  {
+    title: 'Artikel 4 — Beeindiging',
+    text: 'De verplichting tot het doen van de periodieke uitkeringen eindigt:\na. bij overlijden van de schenker;\nb. bij faillissement van de schenker;\nc. bij een aanzienlijke daling van het inkomen van de schenker waardoor het niet langer redelijk is de verplichting voort te zetten;\nd. aan het einde van de overeengekomen looptijd.',
+  },
+  {
+    title: 'Artikel 5 — ANBI-status',
+    text: 'De instelling verklaart dat zij door de Belastingdienst is aangemerkt als Algemeen Nut Beogende Instelling (ANBI) als bedoeld in artikel 5b van de Algemene wet inzake rijksbelastingen (RSIN: {rsin}).',
+  },
+]
+
+/**
  * Validates a periodic gift agreement.
  * Returns null if valid, or an error message string.
  */

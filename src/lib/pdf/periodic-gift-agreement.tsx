@@ -3,6 +3,7 @@ import {
   Page,
   View,
   Text,
+  Image,
   StyleSheet,
 } from '@react-pdf/renderer'
 
@@ -18,6 +19,12 @@ export type PeriodicGiftData = {
   startDate: string // formatted date string
   endDate: string
   issueDate: string
+  // Optional e-signature fields
+  donorSignatureDataUrl?: string
+  donorSignedAt?: string
+  boardSignatureDataUrl?: string
+  boardSignedAt?: string
+  boardSignerName?: string
 }
 
 function formatEuro(cents: number): string {
@@ -119,6 +126,18 @@ const styles = StyleSheet.create({
   signatureHint: {
     fontSize: 8,
     color: '#666',
+  },
+  signatureImage: {
+    width: 150,
+    height: 50,
+    objectFit: 'contain' as const,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  signatureDate: {
+    fontSize: 8,
+    color: '#444',
+    marginTop: 2,
   },
   footer: {
     position: 'absolute',
@@ -250,19 +269,48 @@ export function PeriodicGiftAgreement({ data }: { data: PeriodicGiftData }) {
 
         {/* Signature area */}
         <View style={styles.signatureArea}>
+          {/* Donor signature */}
           <View style={styles.signatureBlock}>
             <Text style={styles.signatureLabel}>De schenker</Text>
-            <View style={styles.signatureLine} />
-            <Text style={styles.signatureHint}>Naam en handtekening</Text>
-            <View style={[styles.signatureLine, { marginTop: 20 }]} />
-            <Text style={styles.signatureHint}>Datum</Text>
+            {data.donorSignatureDataUrl ? (
+              <>
+                <Image src={data.donorSignatureDataUrl} style={styles.signatureImage} />
+                <Text style={styles.signatureHint}>{data.donorName}</Text>
+                {data.donorSignedAt && (
+                  <Text style={styles.signatureDate}>Ondertekend: {data.donorSignedAt}</Text>
+                )}
+              </>
+            ) : (
+              <>
+                <View style={styles.signatureLine} />
+                <Text style={styles.signatureHint}>Naam en handtekening</Text>
+                <View style={[styles.signatureLine, { marginTop: 20 }]} />
+                <Text style={styles.signatureHint}>Datum</Text>
+              </>
+            )}
           </View>
+
+          {/* Board signature */}
           <View style={styles.signatureBlock}>
             <Text style={styles.signatureLabel}>De instelling</Text>
-            <View style={styles.signatureLine} />
-            <Text style={styles.signatureHint}>Naam en handtekening</Text>
-            <View style={[styles.signatureLine, { marginTop: 20 }]} />
-            <Text style={styles.signatureHint}>Datum</Text>
+            {data.boardSignatureDataUrl ? (
+              <>
+                <Image src={data.boardSignatureDataUrl} style={styles.signatureImage} />
+                <Text style={styles.signatureHint}>
+                  {data.boardSignerName ?? data.mosqueName}
+                </Text>
+                {data.boardSignedAt && (
+                  <Text style={styles.signatureDate}>Ondertekend: {data.boardSignedAt}</Text>
+                )}
+              </>
+            ) : (
+              <>
+                <View style={styles.signatureLine} />
+                <Text style={styles.signatureHint}>Naam en handtekening</Text>
+                <View style={[styles.signatureLine, { marginTop: 20 }]} />
+                <Text style={styles.signatureHint}>Datum</Text>
+              </>
+            )}
           </View>
         </View>
 

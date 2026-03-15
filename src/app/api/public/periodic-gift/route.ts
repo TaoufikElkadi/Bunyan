@@ -1,13 +1,11 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { validatePeriodicGift } from '@/lib/anbi'
-import { renderToBuffer } from '@react-pdf/renderer'
-import { PeriodicGiftAgreement } from '@/lib/pdf/periodic-gift-agreement'
-import type { PeriodicGiftData } from '@/lib/pdf/periodic-gift-agreement'
+import { parseSignatureBase64, getClientIp } from '@/lib/signatures'
 
 /**
- * Public endpoint for donors to create a periodic gift agreement.
- * No auth required — creates/finds donor and generates the PDF.
+ * Public endpoint for donors to submit a signed periodic gift agreement.
+ * No auth required — creates/finds donor, stores signature, returns JSON.
  */
 export async function POST(request: Request) {
   try {
@@ -21,19 +19,29 @@ export async function POST(request: Request) {
       fund_id,
       start_date,
       end_date,
+      signature_base64,
     } = body as {
       mosque_slug: string
       donor_name: string
       donor_email: string
       donor_address: string
-      annual_amount: number // euros from frontend
+      annual_amount: number
       fund_id?: string
       start_date: string
       end_date: string
+      signature_base64: string
     }
 
-    if (!mosque_slug || !donor_name || !donor_email || !donor_address || !annual_amount || !start_date || !end_date) {
+    if (!mosque_slug || !donor_name || !donor_email || !donor_address || !annual_amount || !start_date || !end_date || !signature_base64) {
       return NextResponse.json({ error: 'Vul alle verplichte velden in' }, { status: 400 })
+    }
+
+    // Validate signature
+    let rawBase64: string
+    try {
+      rawBase64 = parseSignatureBase64(signature_base64)
+    } catch (err) {
+      return NextResponse.json({ error: (err as Error).message }, { status: 400 })
     }
 
     const amountCents = Math.round(annual_amount * 100)
@@ -74,7 +82,6 @@ export async function POST(request: Request) {
 
     if (existingDonor) {
       donorId = existingDonor.id
-      // Update name/address if provided
       await admin
         .from('donors')
         .update({ name: donor_name, address: donor_address })
@@ -98,19 +105,7 @@ export async function POST(request: Request) {
       donorId = newDonor.id
     }
 
-    // Get fund name if specified
-    let fundName: string | null = null
-    if (fund_id) {
-      const { data: fund } = await admin
-        .from('funds')
-        .select('name')
-        .eq('id', fund_id)
-        .eq('mosque_id', mosque.id)
-        .single()
-      fundName = fund?.name ?? null
-    }
-
-    // Create agreement
+    // Create agreement (defaults to pending_board)
     const { data: agreement, error: agreementError } = await admin
       .from('periodic_gift_agreements')
       .insert({
@@ -121,7 +116,7 @@ export async function POST(request: Request) {
         start_date,
         end_date,
       })
-      .select()
+      .select('id')
       .single()
 
     if (agreementError || !agreement) {
@@ -129,45 +124,37 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Fout bij aanmaken overeenkomst' }, { status: 500 })
     }
 
-    // Generate PDF
-    const formatDate = (dateStr: string) =>
-      new Date(dateStr).toLocaleDateString('nl-NL', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
+    // Upload donor signature to storage
+    const signaturePath = `${agreement.id}/donor.png`
+    const { error: uploadError } = await admin.storage
+      .from('signatures')
+      .upload(signaturePath, Buffer.from(rawBase64, 'base64'), {
+        contentType: 'image/png',
+        upsert: true,
       })
 
-    const pdfData: PeriodicGiftData = {
-      mosqueName: mosque.name,
-      mosqueAddress: mosque.address ?? '',
-      rsin: mosque.rsin,
-      kvk: mosque.kvk ?? null,
-      donorName: donor_name,
-      donorAddress: donor_address,
-      annualAmount: amountCents,
-      fundName,
-      startDate: formatDate(start_date),
-      endDate: formatDate(end_date),
-      issueDate: new Date().toLocaleDateString('nl-NL', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      }),
+    if (uploadError) {
+      console.error('Signature upload error:', uploadError)
+      return NextResponse.json({ error: 'Fout bij opslaan handtekening' }, { status: 500 })
     }
 
-    const pdfBuffer = await renderToBuffer(
-      PeriodicGiftAgreement({ data: pdfData })
-    )
+    // Record signature metadata
+    const now = new Date().toISOString()
+    const clientIp = getClientIp(request)
 
-    const fileName = `Periodieke_gift_${donor_name.replace(/\s+/g, '_')}.pdf`
+    await admin
+      .from('periodic_gift_agreements')
+      .update({
+        donor_signature_url: signaturePath,
+        donor_signed_at: now,
+        donor_ip: clientIp,
+      })
+      .eq('id', agreement.id)
 
-    return new NextResponse(new Uint8Array(pdfBuffer), {
-      status: 201,
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${fileName}"`,
-      },
-    })
+    // TODO: Send notification email to mosque admin (Resend blocked)
+    console.log(`[email-stub] Periodic gift pending: agreement=${agreement.id}, mosque=${mosque.name}, donor=${donor_name}`)
+
+    return NextResponse.json({ success: true, agreement_id: agreement.id }, { status: 201 })
   } catch (err) {
     console.error('Public periodic gift error:', err)
     return NextResponse.json({ error: 'Er is iets misgegaan' }, { status: 500 })
