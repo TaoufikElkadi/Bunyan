@@ -25,7 +25,7 @@ export function DonationPageShell({
         style={{ background: '#FDFBF7' }}
       >
         <div
-          className="absolute inset-0 opacity-[0.65] pointer-events-none"
+          className="absolute inset-0 opacity-[0.60] pointer-events-none"
           style={{
             backgroundImage: 'url(/patterns/5540829-1.png)',
             backgroundSize: '500px',
