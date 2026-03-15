@@ -42,15 +42,24 @@ export async function proxy(request: NextRequest) {
   if (isAuthRoute && user) {
     const url = request.nextUrl.clone()
     const isPlatformAdmin = user.app_metadata?.platform_role === 'platform_admin'
-    url.pathname = isPlatformAdmin ? '/admin' : '/dashboard'
+    const viewMode = request.cookies.get('bunyan-view')?.value
+    // Platform admins who chose mosque view go to dashboard, not admin
+    if (isPlatformAdmin && viewMode === 'mosque') {
+      url.pathname = '/dashboard'
+    } else {
+      url.pathname = isPlatformAdmin ? '/admin' : '/dashboard'
+    }
     return NextResponse.redirect(url)
   }
 
   // Platform admin without a mosque profile hitting /onboarding → /admin
   if (pathname.startsWith('/onboarding') && user?.app_metadata?.platform_role === 'platform_admin') {
-    const url = request.nextUrl.clone()
-    url.pathname = '/admin'
-    return NextResponse.redirect(url)
+    const viewMode = request.cookies.get('bunyan-view')?.value
+    if (viewMode !== 'mosque') {
+      const url = request.nextUrl.clone()
+      url.pathname = '/admin'
+      return NextResponse.redirect(url)
+    }
   }
 
   return supabaseResponse

@@ -16,13 +16,12 @@ export default async function DashboardLayout({
   }
 
   if (!profile) {
-    // Platform admins don't need a mosque profile — send them to the admin panel
     redirect(isPlatformAdmin ? '/admin' : '/onboarding')
   }
 
   return (
     <SidebarProvider>
-      <AppSidebar user={profile} mosque={mosque} />
+      <AppSidebar user={profile} mosque={mosque} isPlatformAdmin={isPlatformAdmin} />
       <SidebarInset>
         <DashboardHeader user={profile} mosque={mosque} />
         <main className="flex-1 p-6 md:p-8 bg-[#f8f7f5]">{children}</main>

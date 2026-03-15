@@ -15,6 +15,7 @@ import {
   ClipboardList,
   PanelLeft,
   ChevronRight,
+  Shield,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -101,11 +102,21 @@ function RoleBadge({ role }: { role: string }) {
 interface AppSidebarProps {
   user: { name: string; email: string; role: string }
   mosque: { name: string; slug: string; plan: string }
+  isPlatformAdmin?: boolean
 }
 
-export function AppSidebar({ user, mosque }: AppSidebarProps) {
+export function AppSidebar({ user, mosque, isPlatformAdmin }: AppSidebarProps) {
   const pathname = usePathname()
   const { toggleSidebar } = useSidebar()
+
+  async function switchToAdmin() {
+    await fetch('/api/switch-view', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'admin' }),
+    })
+    window.location.href = '/admin'
+  }
 
   return (
     <Sidebar className="border-r border-[#e3dfd5] bg-[#fafaf8]">
@@ -183,6 +194,15 @@ export function AppSidebar({ user, mosque }: AppSidebarProps) {
 
       {/* ---- Footer ---- */}
       <SidebarFooter className="border-t border-[#e3dfd5] px-5 py-4">
+        {isPlatformAdmin && (
+          <button
+            onClick={switchToAdmin}
+            className="mb-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-[#e3dfd5] bg-white px-3 py-2 text-[12px] font-medium text-[#8a8478] hover:bg-[#f3f1ec] hover:text-[#261b07] transition-colors"
+          >
+            <Shield className="h-3.5 w-3.5" strokeWidth={1.5} />
+            Platform Admin
+          </button>
+        )}
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#261b07] text-[11px] font-semibold uppercase text-[#f8f7f5]">
             {user.name?.charAt(0) || '?'}

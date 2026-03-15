@@ -1,7 +1,9 @@
 import Image from 'next/image'
 import { redirect } from 'next/navigation'
 import { getPlatformAdmin } from '@/lib/supabase/platform-admin'
+import { createClient } from '@/lib/supabase/server'
 import { SignOutButton } from './sign-out-button'
+import { SwitchToMosqueButton } from './switch-to-mosque-button'
 import { Shield } from 'lucide-react'
 
 export default async function AdminLayout({
@@ -14,6 +16,14 @@ export default async function AdminLayout({
   if (!admin) {
     redirect('/dashboard')
   }
+
+  // Check if this admin also has a mosque profile
+  const supabase = await createClient()
+  const { data: mosqueProfile } = await supabase
+    .from('users')
+    .select('mosque_id, mosques(name)')
+    .eq('id', admin.user.id)
+    .single()
 
   return (
     <div className="min-h-screen bg-[#f8f7f5]">
@@ -30,7 +40,10 @@ export default async function AdminLayout({
             </span>
           </div>
         </div>
-        <SignOutButton />
+        <div className="flex items-center gap-2">
+          {mosqueProfile && <SwitchToMosqueButton mosqueName={(mosqueProfile.mosques as any)?.name} />}
+          <SignOutButton />
+        </div>
       </header>
       <main className="mx-auto max-w-6xl p-6 md:p-8">{children}</main>
     </div>
