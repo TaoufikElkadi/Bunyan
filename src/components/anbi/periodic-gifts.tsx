@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -68,6 +69,7 @@ const statusColors: Record<string, 'default' | 'secondary' | 'destructive'> = {
 }
 
 export function PeriodicGifts() {
+  const router = useRouter()
   const [agreements, setAgreements] = useState<Agreement[]>([])
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -235,6 +237,7 @@ export function PeriodicGifts() {
       }
       toast.success('Overeenkomst geannuleerd')
       fetchAgreements()
+      router.refresh()
     } catch {
       toast.error('Er is iets misgegaan')
     } finally {
@@ -260,6 +263,7 @@ export function PeriodicGifts() {
       setCountersignId(null)
       setCountersignSig(null)
       fetchAgreements()
+      router.refresh() // Update sidebar + tab badges
     } catch {
       toast.error('Er is iets misgegaan')
     } finally {

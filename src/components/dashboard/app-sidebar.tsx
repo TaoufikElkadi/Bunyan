@@ -103,9 +103,10 @@ interface AppSidebarProps {
   user: { name: string; email: string; role: string }
   mosque: { name: string; slug: string; plan: string }
   isPlatformAdmin?: boolean
+  pendingSignatures?: number
 }
 
-export function AppSidebar({ user, mosque, isPlatformAdmin }: AppSidebarProps) {
+export function AppSidebar({ user, mosque, isPlatformAdmin, pendingSignatures = 0 }: AppSidebarProps) {
   const pathname = usePathname()
   const { toggleSidebar } = useSidebar()
 
@@ -178,9 +179,13 @@ export function AppSidebar({ user, mosque, isPlatformAdmin }: AppSidebarProps) {
                           >
                             <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={1.5} />
                             <span className="text-[13px]">{item.title}</span>
-                            {isActive && (
+                            {item.href === '/anbi' && pendingSignatures > 0 ? (
+                              <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-[#261b07] px-1.5 text-[10px] font-bold text-white">
+                                {pendingSignatures}
+                              </span>
+                            ) : isActive ? (
                               <ChevronRight className="ml-auto h-3.5 w-3.5 text-[#a09888]" />
-                            )}
+                            ) : null}
                           </SidebarMenuButton>
                         </SidebarMenuItem>
                       )

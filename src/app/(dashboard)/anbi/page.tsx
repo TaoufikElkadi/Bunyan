@@ -6,7 +6,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Lock, AlertTriangle } from 'lucide-react'
 
 export default async function AnbiPage() {
-  const { mosque } = await getCachedProfile()
+  const { mosque, supabase } = await getCachedProfile()
+
+  // Count pending agreements for badge
+  let pendingCount = 0
+  if (mosque?.id) {
+    const { count } = await supabase
+      .from('periodic_gift_agreements')
+      .select('id', { count: 'exact', head: true })
+      .eq('mosque_id', mosque.id)
+      .eq('status', 'pending_board')
+    pendingCount = count ?? 0
+  }
 
   const limits = getPlanLimits(mosque?.plan ?? 'free')
   if (!limits.hasAnbi) {
@@ -60,7 +71,14 @@ export default async function AnbiPage() {
         <Tabs defaultValue="receipts">
           <TabsList variant="line">
             <TabsTrigger value="receipts">Giftenverklaringen</TabsTrigger>
-            <TabsTrigger value="periodic">Periodieke overeenkomsten</TabsTrigger>
+            <TabsTrigger value="periodic" className="gap-2">
+              Periodieke overeenkomsten
+              {pendingCount > 0 && (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#261b07] px-1.5 text-[10px] font-bold text-white">
+                  {pendingCount}
+                </span>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="receipts" className="pt-6">
