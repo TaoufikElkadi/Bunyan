@@ -6,7 +6,14 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { formatMoney } from '@/lib/money'
 import { toast } from 'sonner'
-import { DownloadIcon, EyeIcon, FileTextIcon, Loader2Icon } from 'lucide-react'
+import {
+  CheckCircle2Icon,
+  DownloadIcon,
+  EyeIcon,
+  FileTextIcon,
+  Loader2Icon,
+  MailIcon,
+} from 'lucide-react'
 
 interface FundBreakdownItem {
   fund_name: string
@@ -18,8 +25,11 @@ interface DonorPreview {
   donor_id: string
   donor_name: string
   donor_email: string | null
+  donor_address: string | null
   total_amount: number
   fund_breakdown: FundBreakdownItem[]
+  receipt_number: string | null
+  generated_at: string | null
 }
 
 interface PreviewResponse {
@@ -30,12 +40,25 @@ interface PreviewResponse {
   }
 }
 
+interface ReceiptRecord {
+  id: string
+  donor_id: string
+  donor_name: string
+  donor_email: string | null
+  year: number
+  total_amount: number
+  receipt_number: string | null
+  emailed_at: string | null
+  created_at: string
+}
+
 export function AnbiOverview() {
   const currentYear = new Date().getFullYear()
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i)
 
   const [selectedYear, setSelectedYear] = useState(currentYear - 1)
   const [preview, setPreview] = useState<PreviewResponse | null>(null)
+  const [receipts, setReceipts] = useState<ReceiptRecord[]>([])
   const [loading, setLoading] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [downloadingAll, setDownloadingAll] = useState(false)
@@ -44,17 +67,26 @@ export function AnbiOverview() {
   async function handlePreview() {
     setLoading(true)
     setPreview(null)
+    setReceipts([])
 
     try {
-      const res = await fetch(`/api/anbi/preview?year=${selectedYear}`)
-      const data = await res.json()
+      const [previewRes, receiptsRes] = await Promise.all([
+        fetch(`/api/anbi/preview?year=${selectedYear}`),
+        fetch(`/api/anbi/receipts?year=${selectedYear}`),
+      ])
 
-      if (!res.ok) {
-        toast.error(data.error || 'Fout bij ophalen preview')
+      const previewData = await previewRes.json()
+      const receiptsData = await receiptsRes.json()
+
+      if (!previewRes.ok) {
+        toast.error(previewData.error || 'Fout bij ophalen preview')
         return
       }
 
-      setPreview(data)
+      setPreview(previewData)
+      if (receiptsRes.ok && receiptsData.receipts) {
+        setReceipts(receiptsData.receipts)
+      }
     } catch {
       toast.error('Er is iets misgegaan')
     } finally {
@@ -90,6 +122,13 @@ export function AnbiOverview() {
       URL.revokeObjectURL(url)
 
       toast.success('PDF gedownload')
+
+      // Refresh receipts list
+      const receiptsRes = await fetch(`/api/anbi/receipts?year=${selectedYear}`)
+      if (receiptsRes.ok) {
+        const receiptsData = await receiptsRes.json()
+        setReceipts(receiptsData.receipts ?? [])
+      }
     } catch {
       toast.error('Er is iets misgegaan')
     } finally {
@@ -151,6 +190,13 @@ export function AnbiOverview() {
       toast.success(
         `${data.generated} giftenverklaring${data.generated === 1 ? '' : 'en'} gegenereerd`
       )
+
+      // Refresh receipts list
+      const receiptsRes = await fetch(`/api/anbi/receipts?year=${selectedYear}`)
+      if (receiptsRes.ok) {
+        const receiptsData = await receiptsRes.json()
+        setReceipts(receiptsData.receipts ?? [])
+      }
     } catch {
       toast.error('Er is iets misgegaan')
     } finally {
@@ -173,6 +219,7 @@ export function AnbiOverview() {
             onChange={(e) => {
               setSelectedYear(parseInt(e.target.value, 10))
               setPreview(null)
+              setReceipts([])
             }}
           >
             {years.map((y) => (
@@ -270,6 +317,7 @@ export function AnbiOverview() {
                       <th className="pb-3 font-medium">E-mail</th>
                       <th className="pb-3 font-medium text-right">Fondsen</th>
                       <th className="pb-3 font-medium text-right">Totaal</th>
+                      <th className="pb-3 font-medium text-center">Status</th>
                       <th className="pb-3 font-medium text-right">Actie</th>
                     </tr>
                   </thead>
@@ -290,6 +338,16 @@ export function AnbiOverview() {
                         </td>
                         <td className="py-3 text-right font-medium">
                           {formatMoney(donor.total_amount)}
+                        </td>
+                        <td className="py-3 text-center">
+                          {donor.receipt_number ? (
+                            <Badge variant="default" className="gap-1">
+                              <CheckCircle2Icon className="size-3" />
+                              Gegenereerd
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">—</span>
+                          )}
                         </td>
                         <td className="py-3 text-right">
                           <Button
@@ -317,6 +375,82 @@ export function AnbiOverview() {
                 </table>
               </div>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Receipt history */}
+      {receipts.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Gegenereerde verklaringen</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left">
+                    <th className="pb-3 font-medium">Referentie</th>
+                    <th className="pb-3 font-medium">Donateur</th>
+                    <th className="pb-3 font-medium text-right">Bedrag</th>
+                    <th className="pb-3 font-medium">Aangemaakt</th>
+                    <th className="pb-3 font-medium text-center">Status</th>
+                    <th className="pb-3 font-medium text-right">Actie</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {receipts.map((receipt) => (
+                    <tr
+                      key={receipt.id}
+                      className="border-b last:border-0"
+                    >
+                      <td className="py-3 font-mono text-xs">
+                        {receipt.receipt_number ?? '—'}
+                      </td>
+                      <td className="py-3 font-medium">{receipt.donor_name}</td>
+                      <td className="py-3 text-right font-medium">
+                        {formatMoney(receipt.total_amount)}
+                      </td>
+                      <td className="py-3 text-muted-foreground">
+                        {new Date(receipt.created_at).toLocaleDateString('nl-NL')}
+                      </td>
+                      <td className="py-3 text-center">
+                        {receipt.emailed_at ? (
+                          <Badge variant="default" className="gap-1">
+                            <MailIcon className="size-3" />
+                            Verstuurd
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="gap-1">
+                            <FileTextIcon className="size-3" />
+                            Gegenereerd
+                          </Badge>
+                        )}
+                      </td>
+                      <td className="py-3 text-right">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            handleDownloadSingle(
+                              receipt.donor_id,
+                              receipt.donor_name
+                            )
+                          }
+                          disabled={downloadingId === receipt.donor_id}
+                        >
+                          {downloadingId === receipt.donor_id ? (
+                            <Loader2Icon className="size-4 animate-spin" />
+                          ) : (
+                            <DownloadIcon className="size-4" />
+                          )}
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </CardContent>
         </Card>
       )}

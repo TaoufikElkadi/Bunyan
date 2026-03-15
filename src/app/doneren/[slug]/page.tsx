@@ -61,11 +61,14 @@ export default async function DonerenPage({ params }: Props) {
       mosqueName={mosque.name}
       welcomeMsg={mosque.welcome_msg}
       primaryColor={mosque.primary_color || undefined}
+      logoUrl={mosque.logo_url}
     >
       <DonationForm
         mosqueSlug={mosque.slug}
         mosqueName={mosque.name}
-        primaryColor={mosque.primary_color || '#10b981'}
+        primaryColor={mosque.primary_color || '#6B5E4C'}
+        welcomeMsg={mosque.welcome_msg}
+        logoUrl={mosque.logo_url}
         funds={funds || []}
       />
     </DonationPageShell>

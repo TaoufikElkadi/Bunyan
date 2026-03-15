@@ -2,12 +2,23 @@ import { Suspense } from 'react'
 import { getCachedProfile } from '@/lib/supabase/cached'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatMoney } from '@/lib/money'
-import { MonthlyChart } from '@/components/dashboard/monthly-chart'
-import { FundChart } from '@/components/dashboard/fund-chart'
+import { DonationTrendChart } from '@/components/dashboard/donation-trend-chart'
+import { FundBars } from '@/components/dashboard/fund-bars'
 import { UpgradeBanner } from '@/components/dashboard/upgrade-banner'
 import { getPlanLimits } from '@/lib/plan'
-import { TrendingUp, Repeat, Gift, UserPlus, ArrowUpRight, ArrowDownRight, Inbox, ArrowRight } from 'lucide-react'
+import {
+  TrendingUp,
+  Repeat,
+  Users,
+  ArrowUpRight,
+  ArrowDownRight,
+  ExternalLink,
+  Plus,
+  ArrowRight,
+} from 'lucide-react'
 import Link from 'next/link'
+import { DonationPageCopyButton } from '@/components/dashboard/donation-page-copy'
+import { GenerateMockButton } from '@/components/dashboard/generate-mock-button'
 
 export const revalidate = 60
 
@@ -29,104 +40,111 @@ type DashboardMetrics = {
 type MonthlyTotal = { month: string; total: number }
 type FundBreakdown = { name: string; total: number }
 
-function KPISkeleton() {
+/* ------------------------------------------------------------------ */
+/*  Skeletons                                                          */
+/* ------------------------------------------------------------------ */
+
+function DashboardSkeleton() {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="rounded-xl border border-[#e3dfd5] bg-white p-6">
-          <div className="flex items-center justify-between mb-4">
-            <Skeleton className="h-4 w-24 rounded-md" />
-            <Skeleton className="h-9 w-9 rounded-full" />
-          </div>
-          <Skeleton className="h-9 w-24 rounded-md" />
-          <div className="mt-3 flex items-center gap-2">
-            <Skeleton className="h-5 w-20 rounded-full" />
-          </div>
+    <div className="flex gap-6">
+      <div className="flex-1 min-w-0 space-y-6">
+        {/* KPI row */}
+        <div className="grid gap-4 sm:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="rounded-2xl bg-white p-5 shadow-[0_1px_3px_rgba(38,27,7,0.04)]">
+              <Skeleton className="h-3 w-20 rounded-md mb-4" />
+              <Skeleton className="h-8 w-28 rounded-md mb-3" />
+              <Skeleton className="h-4 w-36 rounded-full" />
+            </div>
+          ))}
         </div>
-      ))}
+        {/* Chart */}
+        <div className="rounded-2xl bg-white p-6 shadow-[0_1px_3px_rgba(38,27,7,0.04)]">
+          <Skeleton className="h-5 w-44 rounded-md mb-6" />
+          <Skeleton className="h-[320px] w-full rounded-xl" />
+        </div>
+        {/* Summary row */}
+        <div className="grid gap-4 sm:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="rounded-2xl bg-white p-5 shadow-[0_1px_3px_rgba(38,27,7,0.04)]">
+              <Skeleton className="h-3 w-16 rounded-md mb-3" />
+              <Skeleton className="h-6 w-20 rounded-md" />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="hidden xl:block w-[340px] shrink-0 space-y-5">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="rounded-2xl bg-white p-5 shadow-[0_1px_3px_rgba(38,27,7,0.04)]">
+            <Skeleton className="h-4 w-28 rounded-md mb-4" />
+            <Skeleton className="h-24 w-full rounded-xl" />
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
 
-function ChartSkeleton() {
-  return (
-    <div className="grid gap-4 md:grid-cols-2">
-      {Array.from({ length: 2 }).map((_, i) => (
-        <div key={i} className="rounded-xl border border-[#e3dfd5] bg-white p-6">
-          <Skeleton className="h-5 w-44 rounded-md mb-1" />
-          <Skeleton className="h-4 w-64 rounded-md mb-6" />
-          <Skeleton className="h-[300px] w-full rounded-xl" />
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function RecentSkeleton() {
-  return (
-    <div className="rounded-xl border border-[#e3dfd5] bg-white p-6">
-      <Skeleton className="h-5 w-40 rounded-md mb-1" />
-      <Skeleton className="h-4 w-52 rounded-md mb-6" />
-      {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="flex items-center gap-4 py-4">
-          <Skeleton className="h-10 w-10 rounded-full shrink-0" />
-          <div className="flex-1 space-y-1.5">
-            <Skeleton className="h-4 w-28 rounded-md" />
-            <Skeleton className="h-3 w-40 rounded-md" />
-          </div>
-          <Skeleton className="h-5 w-20 rounded-md" />
-        </div>
-      ))}
-    </div>
-  )
-}
+/* ------------------------------------------------------------------ */
+/*  Page                                                               */
+/* ------------------------------------------------------------------ */
 
 export default function DashboardPage() {
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-[28px] font-bold tracking-[-0.5px] text-[#261b07]">Dashboard</h1>
-        <p className="mt-1 text-[14px] text-[#8a8478]">
-          Overzicht van uw donaties en activiteiten
-        </p>
+    <div>
+      <div className="mb-6 flex items-end justify-between">
+        <div>
+          <h1 className="text-[26px] font-bold tracking-[-0.5px] text-[#261b07]">Dashboard</h1>
+          <p className="mt-0.5 text-[13px] text-[#a09888]">
+            Overzicht van uw donaties en activiteiten
+          </p>
+        </div>
       </div>
-      <Suspense fallback={<div className="space-y-8"><KPISkeleton /><ChartSkeleton /><RecentSkeleton /></div>}>
+      <Suspense fallback={<DashboardSkeleton />}>
         <DashboardContent />
       </Suspense>
     </div>
   )
 }
 
-const KPI_CONFIG = [
-  {
-    title: 'Deze maand',
-    icon: TrendingUp,
-    trend: '+12.5%',
-    trendUp: true,
-    subtitle: 'totaal ontvangen',
-  },
-  {
-    title: 'Maandelijks terugkerend',
-    icon: Repeat,
-    trend: '+4.2%',
-    trendUp: true,
-    subtitle: 'MRR',
-  },
-  {
-    title: 'Gemiddelde gift',
-    icon: Gift,
-    trend: '-2.1%',
-    trendUp: false,
-    subtitle: 'per donatie',
-  },
-  {
-    title: 'Nieuwe donateurs',
-    icon: UserPlus,
-    trend: '+8.3%',
-    trendUp: true,
-    subtitle: 'deze maand',
-  },
-] as const
+/* ------------------------------------------------------------------ */
+/*  Helpers                                                            */
+/* ------------------------------------------------------------------ */
+
+function calcTrend(current: number, previous: number): { value: string; up: boolean } {
+  if (previous === 0) return { value: current > 0 ? '+100%' : '0%', up: current > 0 }
+  const pct = ((current - previous) / previous) * 100
+  const sign = pct >= 0 ? '+' : ''
+  return { value: `${sign}${pct.toFixed(1)}%`, up: pct >= 0 }
+}
+
+function formatCompact(cents: number): string {
+  const euros = cents / 100
+  if (euros >= 1000) {
+    return `€${(euros / 1000).toFixed(1).replace('.0', '')}k`
+  }
+  return new Intl.NumberFormat('nl-NL', {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(euros)
+}
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'zojuist'
+  if (mins < 60) return `${mins}m geleden`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}u geleden`
+  const days = Math.floor(hours / 24)
+  return `${days}d geleden`
+}
+
+/* ------------------------------------------------------------------ */
+/*  Content                                                            */
+/* ------------------------------------------------------------------ */
 
 async function DashboardContent() {
   const { mosqueId, mosque, supabase } = await getCachedProfile()
@@ -161,13 +179,6 @@ async function DashboardContent() {
   const m = (metrics ?? {}) as DashboardMetrics
   const avgGift = m.monthly_count > 0 ? Math.round(m.total_this_month / m.monthly_count) : 0
 
-  const kpiValues = [
-    formatMoney(m.total_this_month ?? 0),
-    formatMoney(m.recurring_mrr ?? 0),
-    formatMoney(avgGift),
-    String(m.new_donors ?? 0),
-  ]
-
   const recentDonations = m.recent_donations ?? []
   const monthlyData = (monthly ?? []) as MonthlyTotal[]
   const fundData = (byFund ?? []) as FundBreakdown[]
@@ -184,135 +195,296 @@ async function DashboardContent() {
     }
   }
 
+  // Calculate trends from monthly totals data
+  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  const prevMonthKey = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, '0')}`
+  const prevTotal = monthlyData.find((d) => d.month === prevMonthKey)?.total ?? 0
+  const trendTotal = calcTrend(m.total_this_month ?? 0, prevTotal)
+  const trendMrr = calcTrend(m.recurring_mrr ?? 0, 0) // no historical MRR tracking
+  const trendDonors = calcTrend(m.new_donors ?? 0, 0) // no historical new-donor tracking
+
+  const donationPageUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://bunyan.io'}/doneren/${mosque.slug}`
+
+  // Compute one-time vs recurring donation totals for this month
+  const [{ data: recurringThisMonth }, { count: activeRecurrings }] = await Promise.all([
+    supabase
+      .from('donations')
+      .select('amount')
+      .eq('mosque_id', mosqueId)
+      .eq('status', 'completed')
+      .eq('is_recurring', true)
+      .gte('created_at', startOfMonth),
+    supabase
+      .from('recurrings')
+      .select('*', { count: 'exact', head: true })
+      .eq('mosque_id', mosqueId)
+      .eq('status', 'active'),
+  ])
+
+  const recurringTotal = (recurringThisMonth ?? []).reduce((sum, d) => sum + d.amount, 0)
+  const totalOneTime = (m.total_this_month ?? 0) - recurringTotal
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {upgradeBannerMessage && (
         <UpgradeBanner message={upgradeBannerMessage} plan={plan} />
       )}
 
-      {/* KPI Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {KPI_CONFIG.map((kpi, index) => {
-          const Icon = kpi.icon
-          return (
-            <div
-              key={kpi.title}
-              className="group relative rounded-xl border border-[#e3dfd5] bg-white p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_4px_24px_rgba(38,27,7,0.06)] hover:border-[#d5cfb8]"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-[12px] font-medium text-[#a09888] uppercase tracking-wide">
-                  {kpi.title}
-                </p>
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f3f1ec]">
-                  <Icon className="h-4 w-4 text-[#8a8478]" strokeWidth={1.5} />
+      <div className="flex gap-6">
+        {/* ---- Main column ---- */}
+        <div className="flex-1 min-w-0 space-y-5">
+
+          {/* KPI Cards */}
+          <div className="grid gap-4 sm:grid-cols-3">
+            <KPICard
+              label="Deze maand"
+              value={formatMoney(m.total_this_month ?? 0)}
+              trend={trendTotal}
+              icon={<TrendingUp className="h-4 w-4" strokeWidth={1.5} />}
+              iconBg="bg-[#C87D3A]/10"
+              iconColor="text-[#C87D3A]"
+              sub={`van ${formatCompact(prevTotal)} · vorige maand`}
+            />
+            <KPICard
+              label="Maandelijks terugkerend"
+              value={formatMoney(m.recurring_mrr ?? 0)}
+              trend={trendMrr}
+              icon={<Repeat className="h-4 w-4" strokeWidth={1.5} />}
+              iconBg="bg-[#6B8F71]/10"
+              iconColor="text-[#6B8F71]"
+              sub={`${activeRecurrings ?? 0} actieve mandaten`}
+            />
+            <KPICard
+              label="Nieuwe donateurs"
+              value={String(m.new_donors ?? 0)}
+              trend={trendDonors}
+              icon={<Users className="h-4 w-4" strokeWidth={1.5} />}
+              iconBg="bg-[#7B8EAD]/10"
+              iconColor="text-[#7B8EAD]"
+              sub="eerste donatie deze maand"
+            />
+          </div>
+
+          {/* Donation Trend Chart */}
+          <div className="rounded-2xl bg-white shadow-[0_1px_3px_rgba(38,27,7,0.04),0_1px_2px_rgba(38,27,7,0.02)]">
+            <div className="flex items-center justify-between px-6 pt-5 pb-1">
+              <div>
+                <h3 className="text-[15px] font-semibold text-[#261b07] tracking-tight">Donatie overzicht</h3>
+                <p className="text-[12px] text-[#a09888] mt-0.5">Maandelijkse donatie-inkomsten</p>
+              </div>
+            </div>
+            <div className="px-6 pb-5 pt-2">
+              <DonationTrendChart data={monthlyData} />
+            </div>
+          </div>
+
+          {/* Summary Stats Row */}
+          <div className="grid gap-4 sm:grid-cols-4">
+            <SummaryCell
+              label="Totaal donaties"
+              value={String(m.monthly_count ?? 0)}
+              color="#C87D3A"
+            />
+            <SummaryCell
+              label="Terugkerend"
+              value={formatMoney(recurringTotal)}
+              color="#6B8F71"
+            />
+            <SummaryCell
+              label="Eenmalig"
+              value={formatMoney(totalOneTime > 0 ? totalOneTime : 0)}
+              color="#7B8EAD"
+            />
+            <SummaryCell
+              label="Gemiddeld"
+              value={formatMoney(avgGift)}
+              color="#D4956A"
+            />
+          </div>
+        </div>
+
+        {/* ---- Right sidebar ---- */}
+        <div className="hidden xl:flex w-[340px] shrink-0 flex-col gap-5">
+
+          {/* Quick Actions */}
+          <div className="rounded-2xl bg-white shadow-[0_1px_3px_rgba(38,27,7,0.04),0_1px_2px_rgba(38,27,7,0.02)] p-5">
+            <h3 className="text-[13px] font-semibold text-[#261b07] mb-4">Snelle acties</h3>
+
+            {/* Donation page link */}
+            <div className="mb-3">
+              <label className="text-[11px] font-medium text-[#a09888] uppercase tracking-wide">Donatiepagina</label>
+              <div className="mt-1.5 flex items-center gap-2">
+                <div className="flex-1 min-w-0 flex items-center gap-2 rounded-lg border border-[#e3dfd5] bg-[#fafaf8] px-3 py-2">
+                  <span className="text-[12px] text-[#8a8478] truncate">{donationPageUrl}</span>
                 </div>
-              </div>
-              <p className="text-[28px] font-bold tracking-tight text-[#261b07] leading-none">{kpiValues[index]}</p>
-              <div className="mt-3 flex items-center gap-2">
-                <span
-                  className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                    kpi.trendUp
-                      ? 'bg-[#e8f0d4] text-[#4a7c10]'
-                      : 'bg-red-50 text-red-500'
-                  }`}
-                >
-                  {kpi.trendUp ? (
-                    <ArrowUpRight className="h-3 w-3" />
-                  ) : (
-                    <ArrowDownRight className="h-3 w-3" />
-                  )}
-                  {kpi.trend}
-                </span>
-                <span className="text-[11px] text-[#b5b0a5]">t.o.v. vorige maand</span>
+                <DonationPageCopyButton url={donationPageUrl} />
               </div>
             </div>
-          )
-        })}
-      </div>
 
-      {/* Charts */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-xl border border-[#e3dfd5] bg-white p-6">
-          <div className="mb-6">
-            <h3 className="text-[15px] font-semibold text-[#261b07] tracking-tight">Donaties per maand</h3>
-            <p className="text-[12px] text-[#a09888] mt-0.5">Overzicht van maandelijkse donatie-inkomsten</p>
+            {/* Action buttons */}
+            <div className="space-y-2 mt-4">
+              <Link
+                href={`/doneren/${mosque.slug}`}
+                target="_blank"
+                className="flex items-center gap-2.5 rounded-xl border border-[#e3dfd5] px-4 py-2.5 text-[13px] font-medium text-[#261b07] hover:bg-[#fafaf8] transition-colors"
+              >
+                <ExternalLink className="h-3.5 w-3.5 text-[#a09888]" strokeWidth={1.5} />
+                Bekijk donatiepagina
+              </Link>
+              <Link
+                href="/campagnes"
+                className="flex items-center gap-2.5 rounded-xl border border-[#e3dfd5] px-4 py-2.5 text-[13px] font-medium text-[#261b07] hover:bg-[#fafaf8] transition-colors"
+              >
+                <Plus className="h-3.5 w-3.5 text-[#a09888]" strokeWidth={1.5} />
+                Nieuwe campagne
+              </Link>
+            </div>
           </div>
-          <MonthlyChart data={monthlyData} />
-        </div>
-        <div className="rounded-xl border border-[#e3dfd5] bg-white p-6">
-          <div className="mb-6">
-            <h3 className="text-[15px] font-semibold text-[#261b07] tracking-tight">Verdeling per fonds</h3>
-            <p className="text-[12px] text-[#a09888] mt-0.5">Hoe donaties verdeeld zijn over fondsen</p>
-          </div>
-          <FundChart data={fundData} />
-        </div>
-      </div>
 
-      {/* Recent Donations */}
-      <div className="rounded-xl border border-[#e3dfd5] bg-white">
-        <div className="flex items-center justify-between px-6 pt-6 pb-2">
-          <div>
-            <h3 className="text-[15px] font-semibold text-[#261b07] tracking-tight">Recente donaties</h3>
-            <p className="text-[12px] text-[#a09888] mt-0.5">De laatste ontvangen donaties</p>
+          {/* Recent Donations */}
+          <div className="rounded-2xl bg-white shadow-[0_1px_3px_rgba(38,27,7,0.04),0_1px_2px_rgba(38,27,7,0.02)] p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[13px] font-semibold text-[#261b07]">Recente donaties</h3>
+              <Link
+                href="/donaties"
+                className="text-[11px] font-medium text-[#a09888] hover:text-[#261b07] transition-colors flex items-center gap-0.5"
+              >
+                Alles
+                <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+            {recentDonations.length > 0 ? (
+              <div className="space-y-0">
+                {recentDonations.slice(0, 5).map((donation) => {
+                  const name = donation.donor_name ?? 'Anoniem'
+                  const initials = name === 'Anoniem'
+                    ? '?'
+                    : name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
+
+                  return (
+                    <div
+                      key={donation.id}
+                      className="flex items-center gap-3 py-2.5 border-b border-[#e3dfd5]/50 last:border-0"
+                    >
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#f3f1ec] text-[10px] font-semibold text-[#8a8478]">
+                        {initials}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[12px] font-medium text-[#261b07] leading-none truncate">
+                          {name}
+                        </p>
+                        <p className="text-[10px] text-[#b5b0a5] mt-0.5">
+                          {timeAgo(donation.created_at)}
+                        </p>
+                      </div>
+                      <p className="text-[12px] font-semibold text-[#261b07] tabular-nums whitespace-nowrap">
+                        {formatMoney(donation.amount)}
+                      </p>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <p className="text-[12px] text-[#b5b0a5] py-6 text-center">
+                Nog geen donaties ontvangen
+              </p>
+            )}
           </div>
-          {recentDonations.length > 0 && (
-            <Link
-              href="/donaties"
-              className="inline-flex items-center gap-1 text-[12px] font-medium text-[#8a8478] hover:text-[#261b07] transition-colors"
-            >
-              Bekijk alles
-              <ArrowRight className="h-3 w-3" />
-            </Link>
+
+          {/* Fund Distribution */}
+          <div className="rounded-2xl bg-white shadow-[0_1px_3px_rgba(38,27,7,0.04),0_1px_2px_rgba(38,27,7,0.02)] p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[13px] font-semibold text-[#261b07]">Fondsverdeling</h3>
+              <Link
+                href="/fondsen"
+                className="text-[11px] font-medium text-[#a09888] hover:text-[#261b07] transition-colors"
+              >
+                Beheer
+              </Link>
+            </div>
+            <FundBars data={fundData} />
+          </div>
+
+          {/* Mock Data Generator (dev only) */}
+          {process.env.NODE_ENV !== 'production' && (
+            <GenerateMockButton />
           )}
         </div>
-        <div className="px-6 pb-6">
-          {recentDonations.length > 0 ? (
-            <div className="divide-y divide-[#e3dfd5]/60">
-              {recentDonations.map((donation) => {
-                const name = donation.donor_name ?? 'Anoniem'
-                const initials = name === 'Anoniem'
-                  ? '?'
-                  : name
-                      .split(' ')
-                      .map((w) => w[0])
-                      .slice(0, 2)
-                      .join('')
-                      .toUpperCase()
+      </div>
+    </div>
+  )
+}
 
-                return (
-                  <div
-                    key={donation.id}
-                    className="flex items-center gap-4 py-3.5 first:pt-2"
-                  >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f3f1ec] text-[11px] font-semibold text-[#8a8478]">
-                      {initials}
-                    </div>
-                    <div className="flex-1 min-w-0 space-y-0.5">
-                      <p className="text-[13px] font-medium text-[#261b07] leading-none truncate">
-                        {name}
-                      </p>
-                      <p className="text-[11px] text-[#a09888]">
-                        {donation.fund_name} &middot; {donation.method}
-                      </p>
-                    </div>
-                    <p className="text-[13px] font-semibold text-[#261b07] tabular-nums whitespace-nowrap">
-                      {formatMoney(donation.amount)}
-                    </p>
-                  </div>
-                )
-              })}
-            </div>
+/* ------------------------------------------------------------------ */
+/*  Sub-components                                                     */
+/* ------------------------------------------------------------------ */
+
+function KPICard({
+  label,
+  value,
+  trend,
+  icon,
+  iconBg,
+  iconColor,
+  sub,
+}: {
+  label: string
+  value: string
+  trend: { value: string; up: boolean }
+  icon: React.ReactNode
+  iconBg: string
+  iconColor: string
+  sub: string
+}) {
+  return (
+    <div className="rounded-2xl bg-white p-5 shadow-[0_1px_3px_rgba(38,27,7,0.04),0_1px_2px_rgba(38,27,7,0.02)] transition-shadow duration-200 hover:shadow-[0_4px_16px_rgba(38,27,7,0.06)]">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[11px] font-semibold text-[#a09888] uppercase tracking-[0.06em]">
+          {label}
+        </p>
+        <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${iconBg} ${iconColor}`}>
+          {icon}
+        </div>
+      </div>
+      <div className="flex items-baseline gap-2.5">
+        <p className="text-[28px] font-bold tracking-tight text-[#261b07] leading-none">{value}</p>
+        <span
+          className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+            trend.up
+              ? 'bg-[#e8f0d4] text-[#4a7c10]'
+              : 'bg-red-50 text-red-500'
+          }`}
+        >
+          {trend.up ? (
+            <ArrowUpRight className="h-2.5 w-2.5" />
           ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#f3f1ec] mb-3">
-                <Inbox className="h-5 w-5 text-[#a09888]" strokeWidth={1.5} />
-              </div>
-              <p className="text-[13px] font-medium text-[#8a8478]">Nog geen donaties ontvangen</p>
-              <p className="text-[11px] text-[#b5b0a5] mt-1">Donaties verschijnen hier zodra ze binnenkomen</p>
-            </div>
+            <ArrowDownRight className="h-2.5 w-2.5" />
           )}
-        </div>
+          {trend.value}
+        </span>
       </div>
+      <p className="text-[11px] text-[#b5b0a5] mt-2">{sub}</p>
+    </div>
+  )
+}
+
+function SummaryCell({
+  label,
+  value,
+  color,
+}: {
+  label: string
+  value: string
+  color: string
+}) {
+  return (
+    <div className="rounded-2xl bg-white p-4 shadow-[0_1px_3px_rgba(38,27,7,0.04),0_1px_2px_rgba(38,27,7,0.02)]">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
+        <p className="text-[11px] font-medium text-[#a09888] uppercase tracking-wide">{label}</p>
+      </div>
+      <p className="text-[20px] font-bold text-[#261b07] tracking-tight leading-none">{value}</p>
     </div>
   )
 }

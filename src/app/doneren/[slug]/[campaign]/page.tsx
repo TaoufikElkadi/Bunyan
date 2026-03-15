@@ -112,6 +112,8 @@ export default async function CampaignDonationPage({ params }: Props) {
           mosqueSlug={mosque.slug}
           mosqueName={mosque.name}
           primaryColor={primaryColor}
+          welcomeMsg={mosque.welcome_msg ?? null}
+          logoUrl={mosque.logo_url ?? null}
           funds={funds || []}
           preselectedFundId={campaign.fund_id}
         />

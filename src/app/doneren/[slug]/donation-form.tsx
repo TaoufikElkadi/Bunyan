@@ -3,14 +3,13 @@
 import { useState } from 'react'
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { getStripe } from '@/lib/stripe-client'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { calculateCoverFee } from '@/lib/fees'
 import { formatMoney } from '@/lib/money'
 import { useTranslation } from '@/lib/i18n/context'
+import { ArrowLeftIcon, Loader2Icon, HeartIcon, ShieldCheckIcon, CheckIcon } from 'lucide-react'
+import Image from 'next/image'
+import { getFundIcon, FUND_ICON_COLORS } from '@/components/fund/fund-cards'
 
 type Fund = {
   id: string
@@ -23,27 +22,36 @@ type Props = {
   mosqueSlug: string
   mosqueName: string
   primaryColor: string
+  welcomeMsg: string | null
+  logoUrl: string | null
   funds: Fund[]
   preselectedFundId?: string
 }
 
 type Frequency = 'one-time' | 'weekly' | 'monthly' | 'yearly'
 
-const AMOUNT_PRESETS = [5, 10, 25, 50, 100]
+const AMOUNT_PRESETS = [10, 25, 50, 100]
 
-const FREQUENCY_KEYS: { value: Frequency; key: string }[] = [
+const FREQUENCY_OPTIONS: { value: Frequency; key: string }[] = [
   { value: 'one-time', key: 'donate.frequency.one_time' },
   { value: 'weekly', key: 'donate.frequency.weekly' },
   { value: 'monthly', key: 'donate.frequency.monthly' },
   { value: 'yearly', key: 'donate.frequency.yearly' },
 ]
 
-export function DonationForm({ mosqueSlug, mosqueName, primaryColor, funds, preselectedFundId }: Props) {
-  const { t } = useTranslation()
+export function DonationForm({
+  mosqueSlug,
+  mosqueName,
+  primaryColor,
+  welcomeMsg,
+  logoUrl,
+  funds,
+  preselectedFundId,
+}: Props) {
+  const { t, dir } = useTranslation()
   const [step, setStep] = useState<'details' | 'payment'>('details')
   const [selectedFund, setSelectedFund] = useState<string>(preselectedFundId || funds[0]?.id || '')
   const [amount, setAmount] = useState<string>('25')
-  const [customAmount, setCustomAmount] = useState(false)
   const [frequency, setFrequency] = useState<Frequency>('one-time')
   const [donorName, setDonorName] = useState('')
   const [donorEmail, setDonorEmail] = useState('')
@@ -57,7 +65,10 @@ export function DonationForm({ mosqueSlug, mosqueName, primaryColor, funds, pres
   const feeCents = amountCents > 0 ? calculateCoverFee(amountCents, 'stripe') : 0
   const totalCents = coverFee ? amountCents + feeCents : amountCents
 
-  async function handleContinue() {
+  // Derive warm accent from primaryColor or fallback to amber
+  const accent = primaryColor || '#D4A843'
+
+  async function handleContinueToPayment() {
     setError(null)
     setLoading(true)
 
@@ -67,7 +78,6 @@ export function DonationForm({ mosqueSlug, mosqueName, primaryColor, funds, pres
       setLoading(false)
       return
     }
-
     if (isRecurring && !donorEmail) {
       setError(t('donate.email_required'))
       setLoading(false)
@@ -75,54 +85,23 @@ export function DonationForm({ mosqueSlug, mosqueName, primaryColor, funds, pres
     }
 
     try {
-      if (isRecurring) {
-        // Create subscription
-        const res = await fetch('/api/payments/subscribe', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            mosque_slug: mosqueSlug,
-            fund_id: selectedFund,
-            amount: numAmount,
-            frequency,
-            donor_name: donorName || undefined,
-            donor_email: donorEmail,
-          }),
-        })
+      const endpoint = isRecurring ? '/api/payments/subscribe' : '/api/payments/intent'
+      const body = isRecurring
+        ? { mosque_slug: mosqueSlug, fund_id: selectedFund, amount: numAmount, frequency, donor_name: donorName || undefined, donor_email: donorEmail }
+        : { mosque_slug: mosqueSlug, fund_id: selectedFund, amount: numAmount, donor_name: donorName || undefined, donor_email: donorEmail || undefined, cover_fee: coverFee, fee_amount: coverFee ? feeCents : 0 }
 
-        if (!res.ok) {
-          const data = await res.json()
-          throw new Error(data.error || t('donate.error'))
-        }
-
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) {
         const data = await res.json()
-        setClientSecret(data.clientSecret)
-        setStep('payment')
-      } else {
-        // One-time payment
-        const res = await fetch('/api/payments/intent', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            mosque_slug: mosqueSlug,
-            fund_id: selectedFund,
-            amount: numAmount,
-            donor_name: donorName || undefined,
-            donor_email: donorEmail || undefined,
-            cover_fee: coverFee,
-            fee_amount: coverFee ? feeCents : 0,
-          }),
-        })
-
-        if (!res.ok) {
-          const data = await res.json()
-          throw new Error(data.error || t('donate.error'))
-        }
-
-        const data = await res.json()
-        setClientSecret(data.clientSecret)
-        setStep('payment')
+        throw new Error(data.error || t('donate.error'))
       }
+      const data = await res.json()
+      setClientSecret(data.clientSecret)
+      setStep('payment')
     } catch (err) {
       setError(err instanceof Error ? err.message : t('donate.error'))
     } finally {
@@ -130,6 +109,7 @@ export function DonationForm({ mosqueSlug, mosqueName, primaryColor, funds, pres
     }
   }
 
+  // ─── Payment step ─────────────────────────────────────────────────────
   if (step === 'payment' && clientSecret) {
     return (
       <Elements
@@ -138,203 +118,276 @@ export function DonationForm({ mosqueSlug, mosqueName, primaryColor, funds, pres
           clientSecret,
           appearance: {
             theme: 'stripe',
-            variables: { colorPrimary: primaryColor },
+            variables: {
+              colorPrimary: accent,
+              borderRadius: '14px',
+              fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif',
+              colorBackground: '#FFFDF8',
+            },
+            rules: {
+              '.Input': { boxShadow: 'none', borderColor: '#E8E0D4', backgroundColor: '#FFFDF8' },
+              '.Input:focus': { borderColor: accent, boxShadow: `0 0 0 3px ${accent}20` },
+              '.Label': { color: '#1E293B', fontWeight: '600', fontSize: '13px' },
+            },
           },
         }}
       >
         <PaymentStep
           mosqueName={mosqueName}
           mosqueSlug={mosqueSlug}
-          amount={amount}
+          totalCents={totalCents}
           frequency={frequency}
-          primaryColor={primaryColor}
-          onBack={() => {
-            setStep('details')
-            setClientSecret(null)
-          }}
+          logoUrl={logoUrl}
+          accent={accent}
+          onBack={() => { setStep('details'); setClientSecret(null) }}
         />
       </Elements>
     )
   }
 
-  function getButtonText() {
-    if (loading) return t('donate.loading')
-    if (totalCents <= 0) return t('donate.submit', { amount: '€...' })
-    if (isRecurring) {
-      const freqLabel = t(`donate.frequency.${frequency.replace('-', '_')}`)
-      return t('donate.submit_recurring', {
-        frequency: freqLabel.toLowerCase(),
-        amount: formatMoney(totalCents),
-      })
-    }
-    return t('donate.submit', { amount: formatMoney(totalCents) })
-  }
-
+  // ─── Details step ─────────────────────────────────────────────────────
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('donate.title', { mosqueName })}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Fund selection */}
-        {funds.length > 1 && (
-          <div className="scroll-mt-4 space-y-2">
-            <Label>{t('donate.fund_label')}</Label>
-            <div className="grid gap-2">
-              {funds.map((fund) => (
-                <button
-                  key={fund.id}
-                  type="button"
-                  onClick={() => setSelectedFund(fund.id)}
-                  className={`flex items-center gap-3 rounded-lg border p-4 md:p-3 text-start transition-colors min-h-[44px] ${
-                    selectedFund === fund.id
-                      ? 'border-2 bg-muted/50'
-                      : 'hover:bg-muted/30'
-                  }`}
-                  style={
-                    selectedFund === fund.id
-                      ? { borderColor: primaryColor }
-                      : undefined
-                  }
-                >
-                  <span className="text-xl">{fund.icon || '📦'}</span>
-                  <div>
-                    <div className="font-medium">{fund.name}</div>
-                    {fund.description && (
-                      <div className="text-sm text-muted-foreground">
-                        {fund.description}
-                      </div>
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Amount */}
-        <div className="scroll-mt-4 space-y-2">
-          <Label>{t('donate.amount_label')}</Label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {AMOUNT_PRESETS.map((preset) => (
-              <button
-                key={preset}
-                type="button"
-                onClick={() => {
-                  setAmount(String(preset))
-                  setCustomAmount(false)
-                }}
-                className={`min-h-[44px] rounded-lg border px-4 py-2.5 text-base md:text-sm font-medium transition-colors ${
-                  amount === String(preset) && !customAmount
-                    ? 'text-white'
-                    : 'hover:bg-muted/50'
-                }`}
-                style={
-                  amount === String(preset) && !customAmount
-                    ? { backgroundColor: primaryColor, borderColor: primaryColor }
-                    : undefined
-                }
-              >
-                €{preset}
-              </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => {
-                setCustomAmount(true)
-                setAmount('')
-              }}
-              className={`min-h-[44px] rounded-lg border px-4 py-2.5 text-base md:text-sm font-medium transition-colors ${
-                customAmount ? 'text-white' : 'hover:bg-muted/50'
-              }`}
-              style={
-                customAmount
-                  ? { backgroundColor: primaryColor, borderColor: primaryColor }
-                  : undefined
-              }
+    <div dir={dir} className="mx-auto max-w-lg w-full px-4 pt-6 md:pt-10">
+      <div
+        className="rounded-3xl bg-white p-6 space-y-6"
+        style={{
+          boxShadow: '0 8px 40px rgba(27, 37, 65, 0.08), 0 1px 3px rgba(27, 37, 65, 0.06)',
+          border: '1px solid rgba(228, 220, 207, 0.5)',
+        }}
+      >
+        {/* Mosque branding */}
+        <div className="flex items-center gap-3.5">
+          {logoUrl ? (
+            <Image
+              src={logoUrl}
+              alt={mosqueName}
+              width={48}
+              height={48}
+              className="size-12 rounded-2xl object-cover"
+              style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+            />
+          ) : (
+            <div
+              className="size-12 rounded-2xl flex items-center justify-center text-white font-bold text-lg"
+              style={{ background: `linear-gradient(135deg, ${accent}, ${accent}CC)` }}
             >
-              {t('donate.amount_other')}
-            </button>
-          </div>
-          {customAmount && (
-            <div className="relative mt-2">
-              <span className="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                €
-              </span>
-              <Input
-                type="number"
-                inputMode="decimal"
-                min="1"
-                step="0.01"
-                placeholder="0,00"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="ps-7 text-xl md:text-base"
-                autoFocus
-              />
+              {mosqueName.charAt(0)}
             </div>
           )}
+          <div className="flex-1 min-w-0">
+            <h1 className="font-semibold text-lg tracking-tight truncate" style={{ color: '#1B2541', fontFamily: 'var(--font-display), var(--font-sans), system-ui' }}>
+              {mosqueName}
+            </h1>
+            {welcomeMsg && (
+              <p className="text-xs mt-0.5 line-clamp-1" style={{ color: '#9B8E7B' }}>{welcomeMsg}</p>
+            )}
+          </div>
         </div>
 
-        {/* Frequency selector */}
-        <div className="scroll-mt-4 space-y-2">
-          <Label>{t('donate.frequency.one_time')}</Label>
-          <div className="grid grid-cols-2 gap-2">
-            {FREQUENCY_KEYS.map((opt) => (
+        {/* Frequency tabs */}
+        <div className="flex rounded-2xl p-1" style={{ background: '#F7F3EC' }}>
+          {FREQUENCY_OPTIONS.map((opt) => {
+            const active = frequency === opt.value
+            return (
               <button
                 key={opt.value}
                 type="button"
                 onClick={() => setFrequency(opt.value)}
-                className={`min-h-[44px] rounded-lg border px-4 py-2.5 text-base md:text-sm font-medium transition-colors ${
-                  frequency === opt.value
-                    ? 'text-white'
-                    : 'hover:bg-muted/50'
-                }`}
-                style={
-                  frequency === opt.value
-                    ? { backgroundColor: primaryColor, borderColor: primaryColor }
-                    : undefined
-                }
+                className="flex-1 rounded-xl py-2.5 text-[13px] font-semibold transition-all duration-200"
+                style={active ? {
+                  background: 'white',
+                  color: '#1B2541',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                } : {
+                  color: '#9B8E7B',
+                }}
               >
                 {t(opt.key)}
               </button>
-            ))}
+            )
+          })}
+        </div>
+
+        {/* Amount input + presets */}
+        <div>
+          <label className="block text-[11px] font-bold uppercase tracking-[0.12em] mb-2.5" style={{ color: '#9B8E7B' }}>
+            {t('donate.amount_label')}
+          </label>
+          <div
+            className="flex items-center rounded-2xl h-[56px] px-4 transition-all duration-200"
+            style={{
+              background: '#FAFAF7',
+              border: '1px solid #EDE8DF',
+            }}
+          >
+            <span className="text-lg font-bold select-none" style={{ color: '#9B8E7B' }}>€</span>
+            <input
+              type="number"
+              inputMode="decimal"
+              min="1"
+              step="0.01"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0"
+              className="flex-1 bg-transparent text-2xl font-bold outline-none ml-2 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              style={{ color: '#1B2541', fontFamily: 'var(--font-display), var(--font-sans), system-ui' }}
+              onFocus={(e) => {
+                const wrapper = e.currentTarget.parentElement!
+                wrapper.style.borderColor = accent
+                wrapper.style.boxShadow = `0 0 0 3px ${accent}15`
+              }}
+              onBlur={(e) => {
+                const wrapper = e.currentTarget.parentElement!
+                wrapper.style.borderColor = '#EDE8DF'
+                wrapper.style.boxShadow = 'none'
+              }}
+            />
+          </div>
+          <div className="flex gap-2 mt-3">
+            {AMOUNT_PRESETS.map((preset) => {
+              const active = amount === String(preset)
+              return (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => setAmount(String(preset))}
+                  className="flex-1 h-10 rounded-xl text-sm font-semibold transition-all duration-200"
+                  style={active ? {
+                    background: accent,
+                    color: '#1B2541',
+                    boxShadow: `0 2px 10px ${accent}35`,
+                  } : {
+                    background: '#F7F3EC',
+                    color: '#9B8E7B',
+                  }}
+                >
+                  €{preset}
+                </button>
+              )
+            })}
           </div>
         </div>
 
-        {/* Cover fees (one-time only) */}
+        {/* Fund selection */}
+        {funds.length > 1 && (
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-[0.12em] mb-2.5" style={{ color: '#9B8E7B' }}>
+              {t('donate.fund_label')}
+            </label>
+            <div className="space-y-2">
+              {funds.map((fund, index) => {
+                const active = selectedFund === fund.id
+                const Icon = getFundIcon(fund.icon, fund.name)
+                const colorSet = FUND_ICON_COLORS[index % FUND_ICON_COLORS.length]
+                return (
+                  <button
+                    key={fund.id}
+                    type="button"
+                    onClick={() => setSelectedFund(fund.id)}
+                    className="w-full flex items-center gap-3.5 rounded-2xl p-3.5 text-start transition-all duration-200"
+                    style={active ? {
+                      background: '#1B2541',
+                      color: 'white',
+                      boxShadow: '0 4px 16px rgba(27, 37, 65, 0.2)',
+                    } : {
+                      background: '#FAFAF7',
+                      color: '#1B2541',
+                      border: '1px solid #EDE8DF',
+                    }}
+                  >
+                    <div
+                      className="flex size-9 items-center justify-center rounded-xl shrink-0"
+                      style={{
+                        background: active ? 'rgba(255,255,255,0.12)' : `${colorSet.hex}15`,
+                      }}
+                    >
+                      <Icon
+                        className="size-[18px]"
+                        strokeWidth={1.5}
+                        style={{ color: active ? 'white' : colorSet.hex }}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-sm">{fund.name}</div>
+                      {fund.description && (
+                        <div className="text-xs mt-0.5 line-clamp-1" style={{ color: active ? '#8B9CC0' : '#9B8E7B' }}>
+                          {fund.description}
+                        </div>
+                      )}
+                    </div>
+                    <div
+                      className="size-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all"
+                      style={active ? {
+                        borderColor: accent,
+                        background: accent,
+                      } : {
+                        borderColor: '#D4CFC5',
+                      }}
+                    >
+                      {active && <CheckIcon className="size-3 text-white" strokeWidth={3} />}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Cover transaction fees */}
         {!isRecurring && amountCents >= 100 && (
-          <label className="flex items-start gap-3 cursor-pointer rounded-lg border p-4 md:p-3 min-h-[48px] md:min-h-[44px]">
+          <label
+            className="flex items-center gap-3.5 cursor-pointer rounded-2xl p-4 transition-all duration-200"
+            style={{
+              background: coverFee ? `${accent}10` : '#FAFAF7',
+              border: `1px solid ${coverFee ? `${accent}30` : '#EDE8DF'}`,
+            }}
+          >
             <Checkbox
               checked={coverFee}
               onCheckedChange={(checked) => setCoverFee(checked === true)}
-              className="mt-0.5"
             />
-            <div className="text-sm leading-normal">
-              <span className="font-medium">{t('donate.cover_fees')}</span>
-              <span className="block text-muted-foreground">
-                {t('donate.cover_fees_desc', { fee: formatMoney(feeCents) })}
+            <div className="flex-1">
+              <span className="text-sm font-medium" style={{ color: '#1B2541' }}>
+                {t('donate.cover_fees')}
+              </span>
+              <span className="text-sm ml-1.5" style={{ color: '#9B8E7B' }}>
+                (+{formatMoney(feeCents)})
               </span>
             </div>
+            <HeartIcon className="size-4" style={{ color: coverFee ? accent : '#D4CFC5' }} />
           </label>
         )}
 
-        {/* Donor info */}
-        <div className="scroll-mt-4 space-y-3">
-          <Label className="text-muted-foreground">
+        {/* Donor information */}
+        <div className="space-y-3">
+          <label className="block text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: '#9B8E7B' }}>
             {isRecurring
               ? t('donate.info_label').replace(/\s*\(.*\)/, '')
               : t('donate.info_label')}
-          </Label>
-          <Input
+          </label>
+          <input
             placeholder={t('donate.name_placeholder')}
             value={donorName}
             onChange={(e) => setDonorName(e.target.value)}
             autoComplete="name"
             autoCapitalize="words"
+            className="w-full h-[52px] rounded-2xl px-4 text-sm font-medium outline-none transition-all duration-200"
+            style={{
+              background: '#FAFAF7',
+              border: '1px solid #EDE8DF',
+              color: '#1B2541',
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = accent
+              e.currentTarget.style.boxShadow = `0 0 0 3px ${accent}15`
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = '#EDE8DF'
+              e.currentTarget.style.boxShadow = 'none'
+            }}
           />
           <div>
-            <Input
+            <input
               type="email"
               inputMode="email"
               placeholder={t('donate.email_placeholder')}
@@ -342,49 +395,99 @@ export function DonationForm({ mosqueSlug, mosqueName, primaryColor, funds, pres
               onChange={(e) => setDonorEmail(e.target.value)}
               required={isRecurring}
               autoComplete="email"
+              className="w-full h-[52px] rounded-2xl px-4 text-sm font-medium outline-none transition-all duration-200"
+              style={{
+                background: '#FAFAF7',
+                border: '1px solid #EDE8DF',
+                color: '#1B2541',
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = accent
+                e.currentTarget.style.boxShadow = `0 0 0 3px ${accent}15`
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = '#EDE8DF'
+                e.currentTarget.style.boxShadow = 'none'
+              }}
             />
             {isRecurring && (
-              <p className="mt-1 text-xs text-muted-foreground">
-                {t('donate.email_required')}
-              </p>
+              <p className="text-xs mt-1.5 px-1" style={{ color: '#9B8E7B' }}>{t('donate.email_required')}</p>
             )}
           </div>
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
-      </CardContent>
-      <CardFooter>
-        <Button
-          className="w-full min-h-[48px] text-base md:text-sm md:min-h-0"
-          style={{ backgroundColor: primaryColor }}
-          onClick={handleContinue}
+        {/* Error message */}
+        {error && (
+          <div
+            className="rounded-2xl px-4 py-3 text-sm font-medium"
+            style={{ background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626' }}
+          >
+            {error}
+          </div>
+        )}
+
+        {/* Donate CTA */}
+        <button
+          type="button"
+          onClick={handleContinueToPayment}
           disabled={loading || !selectedFund || !amount}
+          className="w-full h-[58px] rounded-2xl text-base font-bold transition-all duration-200 active:scale-[0.98] disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center gap-2.5"
+          style={{
+            background: `linear-gradient(135deg, ${accent}, ${accent}E6)`,
+            color: '#1B2541',
+            boxShadow: `0 4px 20px ${accent}35`,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.boxShadow = `0 6px 28px ${accent}50`
+            e.currentTarget.style.transform = 'translateY(-1px)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.boxShadow = `0 4px 20px ${accent}35`
+            e.currentTarget.style.transform = 'translateY(0)'
+          }}
         >
-          {getButtonText()}
-        </Button>
-      </CardFooter>
-    </Card>
+          {loading && <Loader2Icon className="size-5 animate-spin" />}
+          {loading
+            ? t('donate.loading')
+            : totalCents > 0
+              ? t('donate.submit', { amount: formatMoney(totalCents) })
+              : t('donate.submit', { amount: '€...' })}
+        </button>
+
+        {/* Trust indicator */}
+        <div className="flex items-center justify-center gap-1.5 pt-1">
+          <ShieldCheckIcon className="size-3.5" style={{ color: '#C4B99A' }} />
+          <span className="text-[11px] font-medium" style={{ color: '#B5AC98' }}>
+            Veilig betalen via Stripe
+          </span>
+        </div>
+      </div>
+    </div>
   )
 }
+
+// ─── Payment Step ─────────────────────────────────────────────────────────────
 
 function PaymentStep({
   mosqueName,
   mosqueSlug,
-  amount,
+  totalCents,
   frequency,
-  primaryColor,
+  logoUrl,
+  accent,
   onBack,
 }: {
   mosqueName: string
   mosqueSlug: string
-  amount: string
+  totalCents: number
   frequency: Frequency
-  primaryColor: string
+  logoUrl: string | null
+  accent: string
   onBack: () => void
 }) {
   const stripe = useStripe()
   const elements = useElements()
-  const { t } = useTranslation()
+  const { t, dir } = useTranslation()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -393,56 +496,128 @@ function PaymentStep({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!stripe || !elements) return
-
     setLoading(true)
     setError(null)
-
     const returnUrl = `${window.location.origin}/doneren/${mosqueSlug}/bedankt`
-
     const { error: stripeError } = await stripe.confirmPayment({
       elements,
       confirmParams: { return_url: returnUrl },
     })
-
-    // Only reaches here if there's an error (otherwise redirects)
-    if (stripeError) {
-      setError(stripeError.message || t('donate.error'))
-    }
-
+    if (stripeError) setError(stripeError.message || t('donate.error'))
     setLoading(false)
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          {isRecurring
-            ? t('donate.submit_recurring', {
-                frequency: t(`donate.frequency.${frequency.replace('-', '_')}`).toLowerCase(),
-                amount: `€${amount}`,
-              })
-            : t('donate.payment_title', { amount: `€${amount}` })}
-        </CardTitle>
-      </CardHeader>
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
+    <div dir={dir} className="mx-auto max-w-lg">
+      {/* Header bar */}
+      <div className="flex items-center gap-3.5 px-5 py-4" style={{ borderBottom: '1px solid #EDE8DF' }}>
+        <button
+          type="button"
+          onClick={onBack}
+          className="size-11 rounded-2xl flex items-center justify-center transition-colors"
+          style={{ background: '#F7F3EC', color: '#1B2541' }}
+          onMouseEnter={(e) => e.currentTarget.style.background = '#EDE8DF'}
+          onMouseLeave={(e) => e.currentTarget.style.background = '#F7F3EC'}
+        >
+          <ArrowLeftIcon className="size-5" />
+        </button>
+        <div className="flex-1">
+          <p className="font-bold text-sm" style={{ color: '#1B2541' }}>
+            {t('donate.payment_title', { amount: formatMoney(totalCents) })}
+          </p>
+          <p className="text-xs" style={{ color: '#9B8E7B' }}>{mosqueName}</p>
+        </div>
+      </div>
+
+      {/* Summary + payment form */}
+      <div className="px-5 pt-5 pb-6 space-y-5">
+        {/* Donation summary card */}
+        <div
+          className="rounded-2xl p-4"
+          style={{
+            background: 'linear-gradient(135deg, #FDFBF7 0%, #FBF8F1 100%)',
+            border: '1px solid #EDE8DF',
+          }}
+        >
+          <div className="flex items-center gap-3.5">
+            {logoUrl ? (
+              <Image
+                src={logoUrl}
+                alt={mosqueName}
+                width={44}
+                height={44}
+                className="size-11 rounded-2xl object-cover"
+                style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+              />
+            ) : (
+              <div
+                className="size-11 rounded-2xl flex items-center justify-center text-white text-sm font-bold"
+                style={{ background: `linear-gradient(135deg, ${accent}, ${accent}CC)` }}
+              >
+                {mosqueName.charAt(0)}
+              </div>
+            )}
+            <div className="flex-1">
+              <p className="font-semibold text-sm" style={{ color: '#1B2541' }}>{mosqueName}</p>
+              {isRecurring && (
+                <p className="text-xs" style={{ color: '#9B8E7B' }}>{t(`donate.frequency.${frequency.replace('-', '_')}`)}</p>
+              )}
+            </div>
+            <p className="text-xl font-bold" style={{ color: accent }}>
+              {formatMoney(totalCents)}
+            </p>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
           <PaymentElement />
-          {error && <p className="text-sm text-red-600">{error}</p>}
-        </CardContent>
-        <CardFooter className="flex gap-3 md:gap-2">
-          <Button type="button" variant="outline" onClick={onBack} className="min-h-[48px] md:min-h-0">
-            {t('donate.back')}
-          </Button>
-          <Button
+
+          {error && (
+            <div
+              className="rounded-2xl px-4 py-3 text-sm font-medium"
+              style={{ background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626' }}
+            >
+              {error}
+            </div>
+          )}
+
+          <button
             type="submit"
-            className="flex-1 min-h-[48px] text-base md:text-sm md:min-h-0"
-            style={{ backgroundColor: primaryColor }}
             disabled={loading || !stripe}
+            className="w-full h-[58px] rounded-2xl text-base font-bold transition-all duration-200 active:scale-[0.98] disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center gap-2.5"
+            style={{
+              background: `linear-gradient(135deg, ${accent}, ${accent}E6)`,
+              color: '#1B2541',
+              boxShadow: `0 4px 20px ${accent}35`,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = `0 6px 28px ${accent}50`
+              e.currentTarget.style.transform = 'translateY(-1px)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = `0 4px 20px ${accent}35`
+              e.currentTarget.style.transform = 'translateY(0)'
+            }}
           >
-            {loading ? t('donate.loading') : t('donate.pay')}
-          </Button>
-        </CardFooter>
-      </form>
-    </Card>
+            {loading ? (
+              <>
+                <Loader2Icon className="size-5 animate-spin" />
+                {t('donate.loading')}
+              </>
+            ) : (
+              t('donate.pay')
+            )}
+          </button>
+
+          {/* Trust badge */}
+          <div className="flex items-center justify-center gap-1.5">
+            <ShieldCheckIcon className="size-3.5" style={{ color: '#C4B99A' }} />
+            <span className="text-[11px] font-medium" style={{ color: '#B5AC98' }}>
+              Veilig betalen via Stripe
+            </span>
+          </div>
+        </form>
+      </div>
+    </div>
   )
 }

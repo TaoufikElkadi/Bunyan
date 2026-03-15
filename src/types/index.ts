@@ -148,9 +148,24 @@ export interface AnbiReceipt {
   year: number
   total_amount: number
   fund_breakdown: Record<string, number>
+  receipt_number: string | null
   pdf_url: string | null
   emailed_at: string | null
   created_at: string
+}
+
+export interface PeriodicGiftAgreement {
+  id: string
+  mosque_id: string
+  donor_id: string
+  annual_amount: number
+  fund_id: string | null
+  start_date: string
+  end_date: string
+  status: 'active' | 'completed' | 'cancelled'
+  notes: string | null
+  created_at: string
+  updated_at: string
 }
 
 export interface QrLink {

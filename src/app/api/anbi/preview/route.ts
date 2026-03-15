@@ -11,8 +11,11 @@ interface DonorPreview {
   donor_id: string
   donor_name: string
   donor_email: string | null
+  donor_address: string | null
   total_amount: number
   fund_breakdown: FundBreakdownItem[]
+  receipt_number: string | null
+  generated_at: string | null
 }
 
 export async function GET(request: Request) {
@@ -50,10 +53,9 @@ export async function GET(request: Request) {
     const endDate = `${year + 1}-01-01T00:00:00.000Z`
 
     // Fetch all completed, non-cash donations for this mosque + year
-    // Include donor and fund info
     const { data: donations, error } = await supabase
       .from('donations')
-      .select('id, donor_id, fund_id, amount, funds(name), donors(id, name, email)')
+      .select('id, donor_id, fund_id, amount, funds(name), donors(id, name, email, address)')
       .eq('mosque_id', profile.mosque_id)
       .eq('status', 'completed')
       .neq('method', 'cash')
@@ -66,11 +68,26 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Fout bij ophalen donaties' }, { status: 500 })
     }
 
+    // Fetch existing receipts for this year
+    const { data: existingReceipts } = await supabase
+      .from('anbi_receipts')
+      .select('donor_id, receipt_number, created_at')
+      .eq('mosque_id', profile.mosque_id)
+      .eq('year', year)
+
+    const receiptByDonor = new Map<string, { receipt_number: string | null; created_at: string }>()
+    for (const r of existingReceipts ?? []) {
+      receiptByDonor.set(r.donor_id, {
+        receipt_number: r.receipt_number,
+        created_at: r.created_at,
+      })
+    }
+
     // Group by donor, then by fund
     const donorMap = new Map<string, DonorPreview>()
 
     for (const donation of donations ?? []) {
-      const donor = donation.donors as unknown as { id: string; name: string | null; email: string | null } | null
+      const donor = donation.donors as unknown as { id: string; name: string | null; email: string | null; address: string | null } | null
       if (!donor || !donor.name) continue // Skip anonymous donors
 
       const donorId = donor.id
@@ -78,12 +95,16 @@ export async function GET(request: Request) {
       const fundName = fund?.name ?? 'Onbekend fonds'
 
       if (!donorMap.has(donorId)) {
+        const receipt = receiptByDonor.get(donorId)
         donorMap.set(donorId, {
           donor_id: donorId,
           donor_name: donor.name,
           donor_email: donor.email,
+          donor_address: donor.address,
           total_amount: 0,
           fund_breakdown: [],
+          receipt_number: receipt?.receipt_number ?? null,
+          generated_at: receipt?.created_at ?? null,
         })
       }
 

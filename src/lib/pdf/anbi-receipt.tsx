@@ -10,7 +10,10 @@ export type AnbiReceiptData = {
   mosqueName: string
   mosqueAddress: string
   rsin: string
+  kvk: string | null
+  receiptNumber: string
   donorName: string
+  donorAddress: string | null
   year: number
   fundBreakdown: { fundName: string; amount: number; count: number }[]
   totalAmount: number
@@ -152,7 +155,12 @@ export function AnbiReceipt({ data }: { data: AnbiReceiptData }) {
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.mosqueName}>{data.mosqueName}</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <Text style={styles.mosqueName}>{data.mosqueName}</Text>
+            <Text style={{ fontSize: 9, color: '#666' }}>
+              Referentie: {data.receiptNumber}
+            </Text>
+          </View>
         </View>
 
         {/* Title */}
@@ -169,6 +177,12 @@ export function AnbiReceipt({ data }: { data: AnbiReceiptData }) {
             <Text style={styles.label}>RSIN:</Text>
             <Text style={styles.value}>{data.rsin}</Text>
           </View>
+          {data.kvk && (
+            <View style={styles.row}>
+              <Text style={styles.label}>KVK:</Text>
+              <Text style={styles.value}>{data.kvk}</Text>
+            </View>
+          )}
           <View style={styles.row}>
             <Text style={styles.label}>Adres:</Text>
             <Text style={styles.value}>{data.mosqueAddress}</Text>
@@ -182,6 +196,12 @@ export function AnbiReceipt({ data }: { data: AnbiReceiptData }) {
             <Text style={styles.label}>Naam:</Text>
             <Text style={styles.value}>{data.donorName}</Text>
           </View>
+          {data.donorAddress && (
+            <View style={styles.row}>
+              <Text style={styles.label}>Adres:</Text>
+              <Text style={styles.value}>{data.donorAddress}</Text>
+            </View>
+          )}
         </View>
 
         {/* Period */}

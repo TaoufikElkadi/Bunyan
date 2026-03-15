@@ -1,28 +1,16 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { AnbiReceipt } from '@/lib/pdf/anbi-receipt'
 import type { AnbiReceiptData } from '@/lib/pdf/anbi-receipt'
+import {
+  groupDonationsByDonor,
+  formatReceiptNumber,
+  parseReceiptSequence,
+  type RawDonation,
+} from '@/lib/anbi'
 import JSZip from 'jszip'
-
-interface FundRow {
-  name: string
-}
-
-interface DonorRow {
-  id: string
-  name: string | null
-  email: string | null
-}
-
-interface DonationRow {
-  id: string
-  donor_id: string
-  fund_id: string
-  amount: number
-  funds: FundRow | null
-  donors: DonorRow | null
-}
 
 export async function GET(request: Request) {
   try {
@@ -58,7 +46,7 @@ export async function GET(request: Request) {
     // Get mosque info for the receipt
     const { data: mosque } = await supabase
       .from('mosques')
-      .select('name, address, rsin, anbi_status')
+      .select('name, address, rsin, kvk, anbi_status')
       .eq('id', profile.mosque_id)
       .single()
 
@@ -79,7 +67,7 @@ export async function GET(request: Request) {
     // Fetch all completed, non-cash donations for this mosque + year
     const { data: donations, error } = await supabase
       .from('donations')
-      .select('id, donor_id, fund_id, amount, funds(name), donors(id, name, email)')
+      .select('id, donor_id, fund_id, amount, method, funds(name), donors(id, name, email, address)')
       .eq('mosque_id', profile.mosque_id)
       .eq('status', 'completed')
       .neq('method', 'cash')
@@ -92,44 +80,9 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Fout bij ophalen donaties' }, { status: 500 })
     }
 
-    // Group donations by donor, then by fund
-    const donorMap = new Map<
-      string,
-      {
-        name: string
-        email: string | null
-        totalAmount: number
-        funds: Map<string, { fundName: string; amount: number; count: number }>
-      }
-    >()
-
-    for (const donation of (donations ?? []) as unknown as DonationRow[]) {
-      const donor = donation.donors
-      if (!donor || !donor.name) continue
-
-      const donorId = donor.id
-      const fundName = donation.funds?.name ?? 'Onbekend fonds'
-
-      if (!donorMap.has(donorId)) {
-        donorMap.set(donorId, {
-          name: donor.name,
-          email: donor.email,
-          totalAmount: 0,
-          funds: new Map(),
-        })
-      }
-
-      const entry = donorMap.get(donorId)!
-      entry.totalAmount += donation.amount
-
-      const fundKey = donation.fund_id
-      if (!entry.funds.has(fundKey)) {
-        entry.funds.set(fundKey, { fundName, amount: 0, count: 0 })
-      }
-      const fundEntry = entry.funds.get(fundKey)!
-      fundEntry.amount += donation.amount
-      fundEntry.count += 1
-    }
+    const donorMap = groupDonationsByDonor(
+      (donations ?? []) as unknown as RawDonation[]
+    )
 
     if (donorMap.size === 0) {
       return NextResponse.json(
@@ -144,15 +97,40 @@ export async function GET(request: Request) {
       year: 'numeric',
     })
 
+    const admin = createAdminClient()
+
+    // Get existing receipt numbers for this mosque+year
+    const { data: existingReceipts } = await admin
+      .from('anbi_receipts')
+      .select('donor_id, receipt_number')
+      .eq('mosque_id', profile.mosque_id)
+      .like('receipt_number', `ANBI-${year}-%`)
+
+    const existingByDonor = new Map<string, string>()
+    let maxSeq = 0
+    for (const r of existingReceipts ?? []) {
+      if (r.receipt_number) {
+        existingByDonor.set(r.donor_id, r.receipt_number)
+        const seq = parseReceiptSequence(r.receipt_number)
+        if (seq > maxSeq) maxSeq = seq
+      }
+    }
+
     // Generate PDFs and bundle into ZIP
     const zip = new JSZip()
+    let seqCounter = maxSeq
 
-    for (const [, donorData] of donorMap) {
+    for (const [donorId, donorData] of donorMap) {
+      const receiptNumber = existingByDonor.get(donorId) ?? formatReceiptNumber(year, ++seqCounter)
+
       const receiptData: AnbiReceiptData = {
         mosqueName: mosque.name,
         mosqueAddress: mosque.address ?? '',
         rsin: mosque.rsin,
+        kvk: mosque.kvk ?? null,
+        receiptNumber,
         donorName: donorData.name,
+        donorAddress: donorData.address,
         year,
         fundBreakdown: Array.from(donorData.funds.values()),
         totalAmount: donorData.totalAmount,

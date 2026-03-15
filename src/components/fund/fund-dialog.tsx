@@ -16,7 +16,39 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import { eurosToCents, centsToEuros } from '@/lib/money'
+import {
+  Landmark,
+  Heart,
+  BookOpen,
+  Hammer,
+  HandHeart,
+  Wallet,
+  Home,
+  Users,
+  Star,
+  type LucideIcon,
+} from 'lucide-react'
 import type { Fund } from '@/types'
+
+/* ------------------------------------------------------------------ */
+/*  Icon options                                                       */
+/* ------------------------------------------------------------------ */
+
+const ICON_OPTIONS: { key: string; icon: LucideIcon; label: string }[] = [
+  { key: 'landmark', icon: Landmark, label: 'Moskee' },
+  { key: 'heart', icon: Heart, label: 'Liefdadigheid' },
+  { key: 'book', icon: BookOpen, label: 'Onderwijs' },
+  { key: 'hammer', icon: Hammer, label: 'Bouw' },
+  { key: 'hand_heart', icon: HandHeart, label: 'Zakat' },
+  { key: 'wallet', icon: Wallet, label: 'Algemeen' },
+  { key: 'home', icon: Home, label: 'Huisvesting' },
+  { key: 'users', icon: Users, label: 'Gemeenschap' },
+  { key: 'star', icon: Star, label: 'Speciaal' },
+]
+
+/* ------------------------------------------------------------------ */
+/*  Component                                                          */
+/* ------------------------------------------------------------------ */
 
 interface FundDialogProps {
   mode: 'create' | 'edit'
@@ -32,7 +64,7 @@ export function FundDialog({ mode, fund, trigger, onSuccess }: FundDialogProps) 
 
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [icon, setIcon] = useState('')
+  const [icon, setIcon] = useState('landmark')
   const [goalAmount, setGoalAmount] = useState('')
   const [goalDeadline, setGoalDeadline] = useState('')
 
@@ -40,13 +72,13 @@ export function FundDialog({ mode, fund, trigger, onSuccess }: FundDialogProps) 
     if (open && mode === 'edit' && fund) {
       setName(fund.name)
       setDescription(fund.description ?? '')
-      setIcon(fund.icon ?? '')
+      setIcon(fund.icon ?? 'landmark')
       setGoalAmount(fund.goal_amount ? String(centsToEuros(fund.goal_amount)) : '')
       setGoalDeadline(fund.goal_deadline ?? '')
     } else if (open && mode === 'create') {
       setName('')
       setDescription('')
-      setIcon('')
+      setIcon('landmark')
       setGoalAmount('')
       setGoalDeadline('')
     }
@@ -65,7 +97,7 @@ export function FundDialog({ mode, fund, trigger, onSuccess }: FundDialogProps) 
     const payload = {
       name: name.trim(),
       description: description.trim() || null,
-      icon: icon.trim() || null,
+      icon: icon || null,
       goal_amount: goalAmount ? eurosToCents(parseFloat(goalAmount)) : null,
       goal_deadline: goalDeadline || null,
     }
@@ -135,20 +167,35 @@ export function FundDialog({ mode, fund, trigger, onSuccess }: FundDialogProps) 
               />
             </div>
 
+            {/* Icon picker */}
             <div className="grid gap-2">
-              <Label htmlFor="fund-icon">Icoon (emoji)</Label>
-              <Input
-                id="fund-icon"
-                value={icon}
-                onChange={(e) => setIcon(e.target.value)}
-                placeholder="🕌"
-                className="w-20"
-              />
+              <Label>Icoon</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {ICON_OPTIONS.map((opt) => {
+                  const IconComp = opt.icon
+                  const isSelected = icon === opt.key
+                  return (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onClick={() => setIcon(opt.key)}
+                      title={opt.label}
+                      className={`flex h-9 w-9 items-center justify-center rounded-lg border transition-all duration-150 ${
+                        isSelected
+                          ? 'border-[#261b07] bg-[#261b07] text-white'
+                          : 'border-[#e3dfd5] bg-white text-[#8a8478] hover:border-[#261b07]/30 hover:text-[#261b07]'
+                      }`}
+                    >
+                      <IconComp className="h-4 w-4" strokeWidth={1.5} />
+                    </button>
+                  )
+                })}
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="fund-goal">Doelbedrag (€)</Label>
+                <Label htmlFor="fund-goal">Doelbedrag (&euro;)</Label>
                 <Input
                   id="fund-goal"
                   type="number"

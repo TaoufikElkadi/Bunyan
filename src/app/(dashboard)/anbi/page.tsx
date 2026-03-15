@@ -1,7 +1,8 @@
 import { getCachedProfile } from '@/lib/supabase/cached'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { AnbiOverview } from '@/components/anbi/anbi-overview'
+import { PeriodicGifts } from '@/components/anbi/periodic-gifts'
 import { getPlanLimits } from '@/lib/plan'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Lock, AlertTriangle } from 'lucide-react'
 
 export default async function AnbiPage() {
@@ -36,7 +37,7 @@ export default async function AnbiPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-[28px] font-bold tracking-[-0.5px] text-[#261b07]">ANBI Jaaroverzicht</h1>
-        <p className="text-[14px] text-[#8a8478] mt-1">Genereer giftenverklaringen voor uw donateurs</p>
+        <p className="text-[14px] text-[#8a8478] mt-1">Genereer giftenverklaringen en periodieke overeenkomsten</p>
       </div>
 
       {!hasRsin && (
@@ -56,17 +57,27 @@ export default async function AnbiPage() {
       )}
 
       {hasRsin && (
-        <>
-          <div className="rounded-xl border border-[#e3dfd5] bg-white p-6">
-            <h3 className="text-[15px] font-semibold text-[#261b07] tracking-tight">Giftenverklaringen genereren</h3>
-            <p className="text-[13px] text-[#a09888] mt-1">
-              Genereer ANBI-conforme giftenverklaringen voor uw donateurs per
-              kalenderjaar. Contante donaties worden automatisch uitgesloten.
-            </p>
-          </div>
+        <Tabs defaultValue="receipts">
+          <TabsList variant="line">
+            <TabsTrigger value="receipts">Giftenverklaringen</TabsTrigger>
+            <TabsTrigger value="periodic">Periodieke overeenkomsten</TabsTrigger>
+          </TabsList>
 
-          <AnbiOverview />
-        </>
+          <TabsContent value="receipts" className="pt-6">
+            <div className="rounded-xl border border-[#e3dfd5] bg-white p-6 mb-6">
+              <h3 className="text-[15px] font-semibold text-[#261b07] tracking-tight">Giftenverklaringen genereren</h3>
+              <p className="text-[13px] text-[#a09888] mt-1">
+                Genereer ANBI-conforme giftenverklaringen voor uw donateurs per
+                kalenderjaar. Contante donaties worden automatisch uitgesloten.
+              </p>
+            </div>
+            <AnbiOverview />
+          </TabsContent>
+
+          <TabsContent value="periodic" className="pt-6">
+            <PeriodicGifts />
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   )

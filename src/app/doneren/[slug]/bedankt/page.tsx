@@ -13,7 +13,7 @@ export default async function BedanktPage({ params }: Props) {
 
   const { data: mosque } = await admin
     .from('mosques')
-    .select('language')
+    .select('language, primary_color')
     .eq('slug', slug)
     .single()
 
@@ -21,5 +21,5 @@ export default async function BedanktPage({ params }: Props) {
 
   const defaultLocale = (mosque.language as Locale) || 'nl'
 
-  return <BedanktContent defaultLocale={defaultLocale} />
+  return <BedanktContent defaultLocale={defaultLocale} primaryColor={mosque.primary_color || undefined} />
 }
