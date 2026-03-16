@@ -8,6 +8,9 @@ type PlanLimits = {
   hasQR: boolean
   hasCampaigns: boolean
   hasCsvExport: boolean
+  hasMemberIntelligence: boolean
+  hasMemberSegments: boolean
+  hasMemberAlerts: boolean
 }
 
 const PLAN_LIMITS: Record<string, PlanLimits> = {
@@ -21,6 +24,9 @@ const PLAN_LIMITS: Record<string, PlanLimits> = {
     hasQR: false,
     hasCampaigns: false,
     hasCsvExport: false,
+    hasMemberIntelligence: false,
+    hasMemberSegments: false,
+    hasMemberAlerts: false,
   },
   starter: {
     maxFunds: null,
@@ -32,6 +38,9 @@ const PLAN_LIMITS: Record<string, PlanLimits> = {
     hasQR: true,
     hasCampaigns: true,
     hasCsvExport: false,
+    hasMemberIntelligence: true,
+    hasMemberSegments: false,
+    hasMemberAlerts: false,
   },
   growth: {
     maxFunds: null,
@@ -43,6 +52,9 @@ const PLAN_LIMITS: Record<string, PlanLimits> = {
     hasQR: true,
     hasCampaigns: true,
     hasCsvExport: true,
+    hasMemberIntelligence: true,
+    hasMemberSegments: true,
+    hasMemberAlerts: true,
   },
 }
 

@@ -178,6 +178,49 @@ export interface QrLink {
   created_at: string
 }
 
+// ---- Member Intelligence ----
+
+export type MemberStatus = 'periodic' | 'active' | 'lapsed' | 'inactive' | 'anonymous' | 'identified'
+export type ChurnRisk = 'low' | 'medium' | 'high'
+export type DonationFrequency = 'weekly' | 'monthly' | 'quarterly' | 'yearly' | 'irregular'
+export type MemberEventType =
+  | 'donation'
+  | 'recurring_started'
+  | 'recurring_cancelled'
+  | 'periodic_signed'
+  | 'periodic_expired'
+  | 'receipt_sent'
+  | 'tag_added'
+
+export interface Household {
+  id: string
+  mosque_id: string
+  name: string
+  created_at: string
+}
+
+export interface MemberEvent {
+  id: string
+  mosque_id: string
+  donor_id: string
+  event_type: MemberEventType
+  event_data: Record<string, unknown>
+  created_at: string
+}
+
+export interface MemberStats {
+  total_donors: number
+  active: number
+  lapsed: number
+  inactive: number
+  anonymous: number
+  with_periodic: number
+  with_recurring: number
+  avg_donation: number
+  total_donated_all_time: number
+  high_churn_risk: number
+}
+
 export interface AuditLogEntry {
   id: string
   mosque_id: string

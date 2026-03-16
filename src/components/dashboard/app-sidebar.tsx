@@ -60,7 +60,7 @@ const NAV_SECTIONS: NavSection[] = [
     label: 'BEHEER',
     items: [
       { title: 'Donaties', href: '/donaties', icon: HandCoins },
-      { title: 'Donateurs', href: '/donateurs', icon: Users },
+      { title: 'Leden', href: '/leden', icon: Users },
       { title: 'Fondsen', href: '/fondsen', icon: Landmark },
     ],
   },

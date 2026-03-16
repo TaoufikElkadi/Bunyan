@@ -19,6 +19,7 @@ import {
 import Link from 'next/link'
 import { DonationPageCopyButton } from '@/components/dashboard/donation-page-copy'
 import { GenerateMockButton } from '@/components/dashboard/generate-mock-button'
+import { MemberHealthCard } from '@/components/members/member-health-card'
 
 export const revalidate = 60
 
@@ -391,6 +392,9 @@ async function DashboardContent() {
               </p>
             )}
           </div>
+
+          {/* Member Health */}
+          {limits.hasMemberIntelligence && <MemberHealthCard />}
 
           {/* Fund Distribution */}
           <div className="rounded-2xl bg-white shadow-[0_1px_3px_rgba(38,27,7,0.04),0_1px_2px_rgba(38,27,7,0.02)] p-5">
