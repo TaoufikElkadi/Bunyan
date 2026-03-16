@@ -115,7 +115,7 @@ export default function HomePage() {
             <div className="mx-auto max-w-[980px] px-[30px] text-center">
               {/* Category */}
               <p className="text-[12px] font-medium tracking-[0.6px] uppercase text-[color:rgba(38,27,7,0.5)] mb-5">
-                Donatiebeheer voor moskeeën
+                Gemeenschapsbeheer voor moskeeën
               </p>
 
               {/* Headline */}
@@ -123,12 +123,12 @@ export default function HomePage() {
                 className="text-[42px] sm:text-[56px] md:text-[64.8px] lg:text-[72px] font-[584] leading-[1.125] tracking-[-1.44px] text-[#261b07] mb-6"
                 style={{ fontFamily: "var(--font-display), sans-serif" }}
               >
-                Elke donatie beheerd, elke euro verantwoord
+                Ken uw gemeenschap, maximaliseer elke gift
               </h1>
 
               {/* Subtitle */}
               <p className="mx-auto max-w-[534px] text-[16px] sm:text-[18px] leading-[1.5] text-[color:rgba(38,27,7,0.72)] mb-10">
-                Beheer donaties, genereer ANBI-rapporten en versterk de band met uw gemeenschap — alles in één platform.
+                Van donaties en belastingvoordeel tot ledeninzicht — het platform waarmee moskeeën hun gemeenschap écht leren kennen.
               </p>
 
               {/* CTA buttons */}
@@ -186,7 +186,7 @@ export default function HomePage() {
                 Prijzen &amp; Pakketten
               </h2>
               <p className="mx-auto max-w-[380px] text-[15px] leading-[1.65] text-[color:rgba(26,21,16,0.5)]">
-                Donatiebeheer drijft groei. Bunyan helpt moskeeën betere financiële beslissingen nemen, administratie verminderen en de band met donateurs versterken.
+                Bunyan geeft moskeeën zicht op hun gemeenschap — wie doneert, wie afhaakt, en waar belastingvoordeel op tafel blijft liggen.
               </p>
             </div>
 
@@ -211,7 +211,7 @@ export default function HomePage() {
                         Gratis
                       </h3>
                       <p className="text-[13px] leading-[1.55] text-[color:rgba(26,21,16,0.5)] flex-1 mb-7">
-                        Voor kleine moskeeën die willen starten met online donaties—begin uw gratis account.
+                        Voor moskeeën die hun gemeenschap willen leren kennen — begin gratis met donaties en ledeninzicht.
                       </p>
                       <Link
                         href="/signup"
@@ -271,7 +271,7 @@ export default function HomePage() {
                         Starter
                       </h3>
                       <p className="text-[13px] leading-[1.55] text-[color:rgba(26,21,16,0.5)] flex-1 mb-7">
-                        Voor groeiende moskeeën die hun donatiebeheer willen professionaliseren.
+                        Voor moskeeën die belastingvoordeel willen activeren en zicht willen houden op hun leden.
                       </p>
                       <Link
                         href="/signup"
@@ -334,7 +334,7 @@ export default function HomePage() {
                       Enterprise
                     </h3>
                     <p className="text-[13px] leading-[1.55] text-[color:rgba(26,21,16,0.5)] mb-7">
-                      Voor koepelorganisaties en netwerken die meerdere moskeeën willen beheren.
+                      Voor koepelorganisaties die gemeenschapsinzicht over meerdere moskeeën willen bundelen.
                     </p>
                     <a
                       href="mailto:info@bunyan.io"
@@ -471,11 +471,11 @@ export default function HomePage() {
               </span>
               <ul className="space-y-3">
                 {[
+                  { label: "Gemeenschapsinzicht", href: "#product" },
                   { label: "Donatiebeheer", href: "#product" },
-                  { label: "ANBI-rapportage", href: "#product" },
-                  { label: "Fondsbeheer", href: "#product" },
-                  { label: "QR-codes", href: "#product" },
-                  { label: "Donorprofielen", href: "#product" },
+                  { label: "ANBI & belastingvoordeel", href: "#product" },
+                  { label: "Ledenprofielen", href: "#product" },
+                  { label: "Periodieke giften", href: "#product" },
                 ].map(({ label, href }) => (
                   <li key={label}>
                     <a href={href} className="text-[15px] text-[#1a1510] hover:opacity-50 transition-opacity">
@@ -545,7 +545,7 @@ export default function HomePage() {
         <div className="border-t border-[#e3dfd5] mt-6">
           <div className="mx-auto max-w-[1216px] px-[30px] py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <p className="text-[11px] text-[color:rgba(26,21,16,0.38)]">
-              Copyright &copy; 2026 Bunyan — Donatiebeheer voor moskeeën in Nederland
+              Copyright &copy; 2026 Bunyan — Gemeenschapsbeheer voor moskeeën in Nederland
             </p>
             <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5">
               {[
