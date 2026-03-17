@@ -1,5 +1,5 @@
 import { formatMoney } from '@/lib/money'
-import { HandCoins, Repeat, FileText, Tag, XCircle } from 'lucide-react'
+import { HandCoins, Repeat, FileText, Tag, XCircle, Wallet } from 'lucide-react'
 import type { MemberEvent, MemberEventType } from '@/types'
 
 const EVENT_CONFIG: Record<MemberEventType, { icon: typeof HandCoins; label: string; color: string }> = {
@@ -10,6 +10,9 @@ const EVENT_CONFIG: Record<MemberEventType, { icon: typeof HandCoins; label: str
   periodic_expired: { icon: FileText, label: 'Periodieke gift verlopen', color: 'text-[#8a6d00] bg-[#fef3cd]' },
   receipt_sent: { icon: FileText, label: 'Giftenverklaring verstuurd', color: 'text-[#8a8478] bg-[#f3f1ec]' },
   tag_added: { icon: Tag, label: 'Tag toegevoegd', color: 'text-[#8a8478] bg-[#f3f1ec]' },
+  shard_started: { icon: Wallet, label: 'Contributie gestart', color: 'text-[#0d9488] bg-[#d1fae5]' },
+  shard_payment: { icon: Wallet, label: 'Contributie betaald', color: 'text-[#4a7c10] bg-[#e8f0d4]' },
+  shard_cancelled: { icon: XCircle, label: 'Contributie gestopt', color: 'text-red-500 bg-red-50' },
 }
 
 function formatDate(dateStr: string): string {

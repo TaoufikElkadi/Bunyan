@@ -11,6 +11,7 @@ type PlanLimits = {
   hasMemberIntelligence: boolean
   hasMemberSegments: boolean
   hasMemberAlerts: boolean
+  hasShard: boolean
 }
 
 const PLAN_LIMITS: Record<string, PlanLimits> = {
@@ -27,6 +28,7 @@ const PLAN_LIMITS: Record<string, PlanLimits> = {
     hasMemberIntelligence: false,
     hasMemberSegments: false,
     hasMemberAlerts: false,
+    hasShard: false,
   },
   starter: {
     maxFunds: null,
@@ -41,6 +43,7 @@ const PLAN_LIMITS: Record<string, PlanLimits> = {
     hasMemberIntelligence: true,
     hasMemberSegments: false,
     hasMemberAlerts: false,
+    hasShard: true,
   },
   growth: {
     maxFunds: null,
@@ -55,6 +58,7 @@ const PLAN_LIMITS: Record<string, PlanLimits> = {
     hasMemberIntelligence: true,
     hasMemberSegments: true,
     hasMemberAlerts: true,
+    hasShard: true,
   },
 }
 

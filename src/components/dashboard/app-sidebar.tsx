@@ -16,6 +16,8 @@ import {
   PanelLeft,
   ChevronRight,
   Shield,
+  Banknote,
+  Wallet,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -60,6 +62,8 @@ const NAV_SECTIONS: NavSection[] = [
     label: 'BEHEER',
     items: [
       { title: 'Donaties', href: '/donaties', icon: HandCoins },
+      { title: 'Collecte', href: '/collecte', icon: Banknote },
+      { title: 'Contributie', href: '/contributie', icon: Wallet },
       { title: 'Leden', href: '/leden', icon: Users },
       { title: 'Fondsen', href: '/fondsen', icon: Landmark },
     ],

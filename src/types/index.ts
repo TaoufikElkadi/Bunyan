@@ -191,6 +191,47 @@ export type MemberEventType =
   | 'periodic_expired'
   | 'receipt_sent'
   | 'tag_added'
+  | 'shard_started'
+  | 'shard_payment'
+  | 'shard_cancelled'
+
+export type ShardCommitmentStatus = 'active' | 'paused' | 'cancelled'
+export type ShardPaymentStatus = 'paid' | 'unpaid' | 'partial'
+
+export interface ShardCommitment {
+  id: string
+  mosque_id: string
+  donor_id: string
+  monthly_amount: number
+  status: ShardCommitmentStatus
+  start_date: string
+  end_date: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ShardPayment {
+  id: string
+  mosque_id: string
+  commitment_id: string
+  donor_id: string
+  month: string
+  amount_paid: number
+  status: ShardPaymentStatus
+  method: string | null
+  paid_at: string | null
+  marked_by: string | null
+  notes: string | null
+}
+
+export interface ShardStats {
+  active_members: number
+  monthly_expected: number
+  collected_this_month: number
+  paid_this_month: number
+  unpaid_this_month: number
+}
 
 export interface Household {
   id: string

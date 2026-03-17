@@ -95,7 +95,7 @@ export default function SignupPage() {
         Account aanmaken
       </h1>
       <p className="text-[15px] text-[#a09888] mb-8">
-        Start met het beheren van donaties voor uw moskee
+        Leer uw gemeenschap kennen — begin met donaties
       </p>
 
       <form onSubmit={handleSignup} className="space-y-4">

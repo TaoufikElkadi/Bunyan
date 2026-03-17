@@ -20,6 +20,8 @@ import Link from 'next/link'
 import { DonationPageCopyButton } from '@/components/dashboard/donation-page-copy'
 import { GenerateMockButton } from '@/components/dashboard/generate-mock-button'
 import { MemberHealthCard } from '@/components/members/member-health-card'
+import { TaxSavingsCard } from '@/components/members/tax-savings-card'
+import { ShardCollectionCard } from '@/components/shard/shard-collection-card'
 
 export const revalidate = 60
 
@@ -303,6 +305,17 @@ async function DashboardContent() {
               color="#D4956A"
             />
           </div>
+
+          {/* Member Intelligence Row */}
+          {limits.hasMemberIntelligence && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <MemberHealthCard />
+              <TaxSavingsCard />
+            </div>
+          )}
+
+          {/* Shard Collection */}
+          {limits.hasShard && <ShardCollectionCard />}
         </div>
 
         {/* ---- Right sidebar ---- */}
@@ -392,9 +405,6 @@ async function DashboardContent() {
               </p>
             )}
           </div>
-
-          {/* Member Health */}
-          {limits.hasMemberIntelligence && <MemberHealthCard />}
 
           {/* Fund Distribution */}
           <div className="rounded-2xl bg-white shadow-[0_1px_3px_rgba(38,27,7,0.04),0_1px_2px_rgba(38,27,7,0.02)] p-5">

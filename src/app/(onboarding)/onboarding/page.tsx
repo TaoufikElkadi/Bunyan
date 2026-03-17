@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import QRCode from 'qrcode'
+import { Copy, Check, ExternalLink } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -25,9 +27,9 @@ function isValidSlug(slug: string): boolean {
 // Constants
 // ---------------------------------------------------------------------------
 
-const TOTAL_STEPS = 4
+const TOTAL_STEPS = 3
 
-const STEP_LABELS = ['Gegevens', 'Branding', 'Fondsen', 'ANBI']
+const STEP_LABELS = ['Gegevens', 'Fondsen', 'Live!']
 
 const DEFAULT_FUNDS = [
   { name: 'Algemeen', description: 'Algemene bijdrage aan de moskee', icon: '\u{1F54C}' },
@@ -42,19 +44,19 @@ const COLOR_PRESETS = [
   { value: '#f59e0b', label: 'Goud' },
   { value: '#ef4444', label: 'Rood' },
   { value: '#06b6d4', label: 'Cyaan' },
-  { value: '#ec4899', label: 'Roze' },
-  { value: '#14b8a6', label: 'Teal' },
 ]
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://bunyan.io'
+
 // ---------------------------------------------------------------------------
-// Shared input class
+// Shared styles
 // ---------------------------------------------------------------------------
 
 const inputClass =
   'w-full rounded-lg border border-[#e3dfd5] bg-white px-4 py-3 text-[14px] text-[#261b07] placeholder:text-[#b5b0a5] outline-none focus:border-[#261b07]/30 focus:ring-1 focus:ring-[#261b07]/10 transition-colors'
 
 // ---------------------------------------------------------------------------
-// Step dots
+// Sub-components
 // ---------------------------------------------------------------------------
 
 function StepDots({ current, total }: { current: number; total: number }) {
@@ -81,13 +83,33 @@ function StepDots({ current, total }: { current: number; total: number }) {
   )
 }
 
-// ---------------------------------------------------------------------------
-// Field error
-// ---------------------------------------------------------------------------
-
 function FieldError({ message }: { message?: string }) {
   if (!message) return null
   return <p className="text-[12px] text-red-600 mt-1">{message}</p>
+}
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false)
+
+  async function handleCopy() {
+    await navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <button
+      onClick={handleCopy}
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#e3dfd5] bg-white text-[#8a8478] hover:bg-[#f3f1ec] hover:text-[#261b07] transition-colors"
+      aria-label="Kopieer link"
+    >
+      {copied ? (
+        <Check className="h-3.5 w-3.5 text-[#4a7c10]" strokeWidth={2} />
+      ) : (
+        <Copy className="h-3.5 w-3.5" strokeWidth={1.5} />
+      )}
+    </button>
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -100,11 +122,10 @@ export default function OnboardingPage() {
   const [isAnimating, setIsAnimating] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [showSuccess, setShowSuccess] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
-  // Step 1: Basics
+  // Step 1: Basics + branding
   const [mosqueName, setMosqueName] = useState('')
   const [city, setCity] = useState('')
   const [slug, setSlug] = useState('')
@@ -112,21 +133,18 @@ export default function OnboardingPage() {
   const [nameError, setNameError] = useState('')
   const [cityError, setCityError] = useState('')
   const [slugError, setSlugError] = useState('')
-
-  // Step 2: Branding
   const [primaryColor, setPrimaryColor] = useState('#10b981')
-  const [customHex, setCustomHex] = useState('')
-  const [welcomeMsg, setWelcomeMsg] = useState('')
 
-  // Step 3: Funds
+  // Step 2: Funds + ANBI
   const [funds, setFunds] = useState(DEFAULT_FUNDS.map((f) => ({ ...f })))
   const [fundToRemove, setFundToRemove] = useState<number | null>(null)
   const dragItem = useRef<number | null>(null)
   const dragOverItem = useRef<number | null>(null)
-
-  // Step 4: ANBI
   const [anbiStatus, setAnbiStatus] = useState(false)
   const [rsin, setRsin] = useState('')
+
+  // Step 3: Live — generated after submit
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
 
   // Navigation
   const goTo = useCallback(
@@ -142,6 +160,7 @@ export default function OnboardingPage() {
     [step, isAnimating]
   )
 
+  // Step 1 handlers
   function handleNameChange(name: string) {
     setMosqueName(name)
     if (nameError) setNameError('')
@@ -152,8 +171,7 @@ export default function OnboardingPage() {
   }
 
   function handleSlugChange(value: string) {
-    const processed = slugify(value)
-    setSlug(processed)
+    setSlug(slugify(value))
     setSlugTouched(true)
     if (slugError) setSlugError('')
   }
@@ -187,7 +205,7 @@ export default function OnboardingPage() {
     return valid
   }
 
-  // Fund management
+  // Step 2 handlers — funds
   function addFund() {
     setFunds([...funds, { name: '', description: '', icon: '\u{1F4E6}' }])
   }
@@ -223,18 +241,7 @@ export default function OnboardingPage() {
     dragOverItem.current = null
   }
 
-  // Color picker
-  function handleCustomHexChange(value: string) {
-    let hex = value.startsWith('#') ? value : `#${value}`
-    setCustomHex(value)
-    if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
-      setPrimaryColor(hex.toLowerCase())
-    }
-  }
-
-  const isCustomColor = !COLOR_PRESETS.some((p) => p.value === primaryColor)
-
-  // Submit
+  // Submit — creates mosque, then transitions to step 3
   async function handleComplete() {
     setError(null)
     setLoading(true)
@@ -255,7 +262,7 @@ export default function OnboardingPage() {
             slug,
             city,
             primary_color: primaryColor,
-            welcome_msg: welcomeMsg || null,
+            welcome_msg: null,
             anbi_status: anbiStatus,
             rsin: anbiStatus ? rsin : null,
           },
@@ -272,39 +279,24 @@ export default function OnboardingPage() {
         throw new Error(data.error || 'Er is iets misgegaan')
       }
 
-      setShowSuccess(true)
-      setTimeout(() => {
-        router.push('/dashboard')
-        router.refresh()
-      }, 2000)
+      // Generate QR code for the donation page
+      const donationUrl = `${APP_URL}/doneren/${slug}`
+      const dataUrl = await QRCode.toDataURL(donationUrl, {
+        width: 300,
+        margin: 2,
+        color: { dark: '#261b07', light: '#ffffff' },
+      })
+      setQrDataUrl(dataUrl)
+
+      setLoading(false)
+      goTo(3)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Er is iets misgegaan')
       setLoading(false)
     }
   }
 
-  // Success screen
-  if (showSuccess) {
-    return (
-      <div className="w-full max-w-[480px] text-center py-20">
-        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#e8f0d4]">
-          <svg className="w-8 h-8 text-[#6aab35]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-          </svg>
-        </div>
-        <h2
-          className="text-[24px] font-[584] tracking-[-0.48px] text-[#261b07] mb-2"
-          style={{ fontFamily: 'var(--font-display), sans-serif' }}
-        >
-          Uw moskee is aangemaakt!
-        </h2>
-        <p className="text-[15px] text-[#a09888] mb-6">U wordt doorgestuurd naar het dashboard...</p>
-        <div className="flex justify-center">
-          <div className="w-5 h-5 rounded-full border-2 border-[#261b07] border-t-transparent animate-spin" />
-        </div>
-      </div>
-    )
-  }
+  const donationUrl = `${APP_URL}/doneren/${slug}`
 
   // Transition
   const transitionClass = isAnimating
@@ -316,12 +308,12 @@ export default function OnboardingPage() {
   return (
     <div className="w-full max-w-[480px] py-8">
       <div className={`transition-all duration-300 ease-in-out ${transitionClass}`}>
+
         {/* ================================================================= */}
-        {/* STEP 1 — Mosque Basics                                           */}
+        {/* STEP 1 — Basics + Branding                                       */}
         {/* ================================================================= */}
         {step === 1 && (
           <div className="text-center">
-            {/* Step pill */}
             <span className="inline-block rounded-full border border-[#e3dfd5] px-4 py-1 text-[12px] font-medium text-[#8a8478] mb-4">
               {STEP_LABELS[0]}
             </span>
@@ -380,6 +372,31 @@ export default function OnboardingPage() {
                   </p>
                 )}
               </div>
+
+              {/* Color picker — compact */}
+              <div>
+                <label className="block text-[13px] font-medium text-[#261b07] mb-2.5">Kleur</label>
+                <div className="flex flex-wrap gap-2.5">
+                  {COLOR_PRESETS.map((preset) => (
+                    <button
+                      key={preset.value}
+                      type="button"
+                      title={preset.label}
+                      className={`relative h-9 w-9 rounded-full border-2 transition-all duration-200 hover:scale-110 ${
+                        primaryColor === preset.value ? 'border-[#261b07] scale-110' : 'border-transparent'
+                      }`}
+                      style={{ backgroundColor: preset.value }}
+                      onClick={() => setPrimaryColor(preset.value)}
+                    >
+                      {primaryColor === preset.value && (
+                        <svg className="absolute inset-0 m-auto h-4 w-4 text-white drop-shadow-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <button
@@ -396,109 +413,12 @@ export default function OnboardingPage() {
         )}
 
         {/* ================================================================= */}
-        {/* STEP 2 — Branding                                                */}
+        {/* STEP 2 — Funds + ANBI                                            */}
         {/* ================================================================= */}
         {step === 2 && (
           <div className="text-center">
             <span className="inline-block rounded-full border border-[#e3dfd5] px-4 py-1 text-[12px] font-medium text-[#8a8478] mb-4">
               {STEP_LABELS[1]}
-            </span>
-
-            <h1
-              className="text-[24px] font-[584] tracking-[-0.48px] text-[#261b07] mb-1"
-              style={{ fontFamily: 'var(--font-display), sans-serif' }}
-            >
-              Personaliseer uw pagina
-            </h1>
-            <p className="text-[14px] text-[#a09888] mb-8">Kies een kleur en welkomstbericht.</p>
-
-            <div className="text-left space-y-5">
-              {/* Color presets */}
-              <div>
-                <label className="block text-[13px] font-medium text-[#261b07] mb-3">Primaire kleur</label>
-                <div className="flex flex-wrap gap-3">
-                  {COLOR_PRESETS.map((preset) => (
-                    <button
-                      key={preset.value}
-                      type="button"
-                      title={preset.label}
-                      className={`relative h-10 w-10 rounded-full border-2 transition-all duration-200 hover:scale-110 ${
-                        primaryColor === preset.value ? 'border-[#261b07] scale-110' : 'border-transparent'
-                      }`}
-                      style={{ backgroundColor: preset.value }}
-                      onClick={() => {
-                        setPrimaryColor(preset.value)
-                        setCustomHex('')
-                      }}
-                    >
-                      {primaryColor === preset.value && (
-                        <svg className="absolute inset-0 m-auto h-5 w-5 text-white drop-shadow-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                      )}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Custom hex */}
-                <div className="flex items-center gap-3 mt-3">
-                  <div
-                    className="h-10 w-10 shrink-0 rounded-full border-2 transition-colors duration-200"
-                    style={{
-                      backgroundColor: primaryColor,
-                      borderColor: isCustomColor ? '#261b07' : 'transparent',
-                    }}
-                  />
-                  <input
-                    placeholder="#1a2b3c"
-                    value={customHex}
-                    onChange={(e) => handleCustomHexChange(e.target.value)}
-                    maxLength={7}
-                    className={`${inputClass} font-mono`}
-                  />
-                  <span className="text-[12px] text-[#a09888] whitespace-nowrap hidden sm:inline">Eigen kleur</span>
-                </div>
-              </div>
-
-              {/* Welcome message */}
-              <div>
-                <label className="block text-[13px] font-medium text-[#261b07] mb-1.5">
-                  Welkomstbericht <span className="text-[#b5b0a5] font-normal">(optioneel)</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="bijv. Welkom bij onze moskee. Uw donatie maakt het verschil."
-                  value={welcomeMsg}
-                  onChange={(e) => setWelcomeMsg(e.target.value)}
-                  className={inputClass}
-                />
-                <p className="text-[12px] text-[#a09888] mt-1">Dit bericht verschijnt bovenaan uw donatiepagina.</p>
-              </div>
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => goTo(1)}
-                className="flex-1 rounded-lg border border-[#e3dfd5] py-3 text-[14px] font-medium text-[#261b07] hover:bg-[#f0ede6] transition-colors"
-              >
-                Terug
-              </button>
-              <button onClick={() => goTo(3)} className="flex-1 rounded-lg bg-[#261b07] py-3 text-[14px] font-semibold text-[#f8f7f5] hover:bg-[#3a2c14] transition-colors">
-                Doorgaan
-              </button>
-            </div>
-
-            <StepDots current={2} total={TOTAL_STEPS} />
-          </div>
-        )}
-
-        {/* ================================================================= */}
-        {/* STEP 3 — Funds                                                   */}
-        {/* ================================================================= */}
-        {step === 3 && (
-          <div className="text-center">
-            <span className="inline-block rounded-full border border-[#e3dfd5] px-4 py-1 text-[12px] font-medium text-[#8a8478] mb-4">
-              {STEP_LABELS[2]}
             </span>
 
             <h1
@@ -592,46 +512,9 @@ export default function OnboardingPage() {
               </button>
             </div>
 
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => goTo(2)}
-                className="flex-1 rounded-lg border border-[#e3dfd5] py-3 text-[14px] font-medium text-[#261b07] hover:bg-[#f0ede6] transition-colors"
-              >
-                Terug
-              </button>
-              <button
-                onClick={() => goTo(4)}
-                disabled={funds.every((f) => !f.name.trim())}
-                className="flex-1 rounded-lg bg-[#261b07] py-3 text-[14px] font-semibold text-[#f8f7f5] hover:bg-[#3a2c14] disabled:opacity-50 transition-colors"
-              >
-                Doorgaan
-              </button>
-            </div>
-
-            <StepDots current={3} total={TOTAL_STEPS} />
-          </div>
-        )}
-
-        {/* ================================================================= */}
-        {/* STEP 4 — ANBI                                                    */}
-        {/* ================================================================= */}
-        {step === 4 && (
-          <div className="text-center">
-            <span className="inline-block rounded-full border border-[#e3dfd5] px-4 py-1 text-[12px] font-medium text-[#8a8478] mb-4">
-              {STEP_LABELS[3]}
-            </span>
-
-            <h1
-              className="text-[24px] font-[584] tracking-[-0.48px] text-[#261b07] mb-1"
-              style={{ fontFamily: 'var(--font-display), sans-serif' }}
-            >
-              Heeft u ANBI-status?
-            </h1>
-            <p className="text-[14px] text-[#a09888] mb-8">Donateurs kunnen hun gift dan aftrekken van de belasting.</p>
-
-            <div className="text-left space-y-4">
-              {/* ANBI toggle */}
-              <label className="flex items-start gap-3.5 cursor-pointer rounded-lg border border-[#e3dfd5] bg-white p-4 transition-colors hover:border-[#d0cbc0]">
+            {/* ANBI toggle — compact, at bottom of step 2 */}
+            <div className="mt-6 pt-5 border-t border-[#e3dfd5]">
+              <label className="flex items-start gap-3.5 cursor-pointer text-left rounded-lg border border-[#e3dfd5] bg-white p-4 transition-colors hover:border-[#d0cbc0]">
                 <div className="pt-0.5">
                   <div
                     onClick={(e) => {
@@ -650,16 +533,15 @@ export default function OnboardingPage() {
                   </div>
                 </div>
                 <div>
-                  <p className="text-[14px] font-medium text-[#261b07]">Onze moskee heeft ANBI-status</p>
+                  <p className="text-[14px] font-medium text-[#261b07]">Wij hebben ANBI-status</p>
                   <p className="text-[12px] text-[#a09888] mt-0.5">
-                    Donateurs ontvangen dan automatisch een fiscale ontvangstbevestiging
+                    Donateurs ontvangen automatisch een fiscale jaaropgave
                   </p>
                 </div>
               </label>
 
-              {/* RSIN */}
               {anbiStatus && (
-                <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="mt-3 animate-in fade-in slide-in-from-top-2 duration-300 text-left">
                   <label className="block text-[13px] font-medium text-[#261b07] mb-1.5">RSIN nummer</label>
                   <input
                     placeholder="123456789"
@@ -674,41 +556,25 @@ export default function OnboardingPage() {
                   </p>
                 </div>
               )}
-
-              {/* No ANBI */}
-              {!anbiStatus && (
-                <div className="rounded-lg border border-dashed border-[#d5cfb8] bg-[#f8f7f5] p-4 text-center">
-                  <p className="text-[13px] text-[#a09888]">Geen ANBI-status? Geen probleem.</p>
-                  <p className="text-[12px] text-[#b5b0a5] mt-1">U kunt dit later instellen via Instellingen.</p>
-                </div>
-              )}
-
-              {/* Stripe info */}
-              <div className="rounded-lg border border-[#e3dfd5] bg-[#f8f7f5] p-4">
-                <p className="text-[13px] font-medium text-[#261b07]">Online betalingen</p>
-                <p className="text-[12px] text-[#a09888] mt-1">
-                  Betalingen worden veilig verwerkt via Stripe (iDEAL, creditcard, SEPA).
-                </p>
-              </div>
-
-              {/* Error */}
-              {error && (
-                <div className="rounded-lg border border-red-200 bg-red-50 p-3">
-                  <p className="text-[13px] text-red-600">{error}</p>
-                </div>
-              )}
             </div>
+
+            {/* Error */}
+            {error && (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-3 mt-4">
+                <p className="text-[13px] text-red-600">{error}</p>
+              </div>
+            )}
 
             <div className="flex gap-3 mt-6">
               <button
-                onClick={() => goTo(3)}
+                onClick={() => goTo(1)}
                 className="flex-1 rounded-lg border border-[#e3dfd5] py-3 text-[14px] font-medium text-[#261b07] hover:bg-[#f0ede6] transition-colors"
               >
                 Terug
               </button>
               <button
                 onClick={handleComplete}
-                disabled={loading}
+                disabled={loading || funds.every((f) => !f.name.trim())}
                 className="flex-1 rounded-lg bg-[#261b07] py-3 text-[14px] font-semibold text-[#f8f7f5] hover:bg-[#3a2c14] disabled:opacity-50 transition-colors"
               >
                 {loading ? (
@@ -722,7 +588,103 @@ export default function OnboardingPage() {
               </button>
             </div>
 
-            <StepDots current={4} total={TOTAL_STEPS} />
+            <StepDots current={2} total={TOTAL_STEPS} />
+          </div>
+        )}
+
+        {/* ================================================================= */}
+        {/* STEP 3 — "U bent live!" share moment                             */}
+        {/* ================================================================= */}
+        {step === 3 && (
+          <div className="text-center">
+            {/* Success icon */}
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#e8f0d4]">
+              <svg className="w-8 h-8 text-[#6aab35]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+
+            <h1
+              className="text-[24px] font-[584] tracking-[-0.48px] text-[#261b07] mb-1"
+              style={{ fontFamily: 'var(--font-display), sans-serif' }}
+            >
+              {mosqueName} is live!
+            </h1>
+            <p className="text-[14px] text-[#a09888] mb-8">
+              Uw donatiepagina is klaar. Deel de link met uw gemeenschap.
+            </p>
+
+            {/* Donation page link */}
+            <div className="text-left mb-5">
+              <label className="block text-[11px] font-medium text-[#a09888] uppercase tracking-wide mb-1.5">Donatiepagina</label>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 min-w-0 flex items-center rounded-lg border border-[#e3dfd5] bg-[#fafaf8] px-4 py-3">
+                  <span className="text-[13px] text-[#261b07] font-medium truncate">{donationUrl}</span>
+                </div>
+                <CopyButton text={donationUrl} />
+              </div>
+            </div>
+
+            {/* QR code */}
+            {qrDataUrl && (
+              <div className="mx-auto mb-5 flex flex-col items-center">
+                <div className="rounded-xl border border-[#e3dfd5] bg-white p-4">
+                  <img
+                    src={qrDataUrl}
+                    alt="QR code voor donatiepagina"
+                    className="w-[180px] h-[180px]"
+                  />
+                </div>
+                <p className="text-[11px] text-[#b5b0a5] mt-2">Scan om te doneren</p>
+              </div>
+            )}
+
+            {/* Action buttons */}
+            <div className="space-y-2.5">
+              {/* Try it yourself */}
+              <a
+                href={donationUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full rounded-lg border-2 border-dashed border-[#C87D3A]/40 bg-[#C87D3A]/5 py-3.5 text-[14px] font-semibold text-[#C87D3A] hover:bg-[#C87D3A]/10 hover:border-[#C87D3A]/60 transition-colors"
+              >
+                Probeer het: doneer €1 aan uzelf
+                <ExternalLink className="h-3.5 w-3.5" strokeWidth={2} />
+              </a>
+
+              {/* WhatsApp share */}
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(`Doneer aan ${mosqueName}: ${donationUrl}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full rounded-lg bg-[#25D366] py-3 text-[14px] font-semibold text-white hover:bg-[#20bd5a] transition-colors"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                </svg>
+                Deel via WhatsApp
+              </a>
+            </div>
+
+            {/* Stripe info note */}
+            <div className="mt-6 rounded-lg border border-[#e3dfd5] bg-[#fafaf8] p-4">
+              <p className="text-[12px] text-[#8a8478] leading-relaxed">
+                Betalingen worden veilig verwerkt via Stripe (iDEAL, creditcard, SEPA). Na de pilot helpen wij u met het koppelen van uw eigen bankrekening.
+              </p>
+            </div>
+
+            {/* Go to dashboard */}
+            <button
+              onClick={() => {
+                router.push('/dashboard')
+                router.refresh()
+              }}
+              className="w-full mt-5 rounded-lg bg-[#261b07] py-3 text-[14px] font-semibold text-[#f8f7f5] hover:bg-[#3a2c14] transition-colors"
+            >
+              Ga naar het dashboard
+            </button>
+
+            <StepDots current={3} total={TOTAL_STEPS} />
           </div>
         )}
       </div>

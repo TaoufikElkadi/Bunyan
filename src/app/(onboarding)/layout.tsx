@@ -8,7 +8,7 @@ export default async function OnboardingLayout({
 }: {
   children: React.ReactNode
 }) {
-  const { user, profile } = await getCachedProfile()
+  const { user, profile, supabase } = await getCachedProfile()
 
   if (!user) {
     redirect('/login')
@@ -18,6 +18,10 @@ export default async function OnboardingLayout({
   if (profile) {
     redirect('/dashboard')
   }
+
+  const { data: { user: authUser } } = await supabase.auth.getUser()
+  const userName = authUser?.user_metadata?.name ?? authUser?.email ?? ''
+  const initial = userName.charAt(0).toUpperCase() || '?'
 
   return (
     <div className="flex min-h-screen flex-col bg-[#f8f7f5]">
@@ -38,7 +42,7 @@ export default async function OnboardingLayout({
           </span>
         </Link>
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#edeae4] text-[12px] font-medium text-[#a09888]">
-          U
+          {initial}
         </div>
       </div>
 

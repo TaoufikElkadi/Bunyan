@@ -48,6 +48,7 @@ export default async function LedenPage({
     status?: string
     risk?: string
     anonymous?: string
+    periodic?: string
   }>
 }) {
   const { mosqueId, mosque, supabase } = await getCachedProfile()
@@ -80,28 +81,25 @@ export default async function LedenPage({
   }
 
   const params = await searchParams
-  const page = Math.max(1, parseInt(params.page ?? '1', 10) || 1)
   const statusFilter = (params.status ?? '') as MemberStatus | ''
   const riskFilter = (params.risk ?? '') as ChurnRisk | ''
   const showAnonymous = params.anonymous === '1' || statusFilter === 'anonymous'
-  const from = (page - 1) * PAGE_SIZE
-  const to = from + PAGE_SIZE - 1
 
-  // Build query
+  // Fetch all donors (status/risk are computed, so we can't filter in DB)
   let query = supabase
     .from('donors')
-    .select('*', { count: 'exact' })
+    .select('*')
     .eq('mosque_id', mosqueId)
 
   if (!showAnonymous) {
     query = query.or('email.not.is.null,name.not.is.null')
   }
 
-  query = query.order('total_donated', { ascending: false }).range(from, to)
+  query = query.order('total_donated', { ascending: false })
 
-  const { data: donors, count } = await query
+  const { data: donors } = await query
 
-  // Batch fetch recurring & periodic status
+  // Batch fetch recurring & periodic status for all donors
   const donorIds = (donors ?? []).map((d) => d.id)
 
   const [{ data: activeRecurrings }, { data: activePeriodics }] = donorIds.length > 0
@@ -110,14 +108,12 @@ export default async function LedenPage({
           .from('recurrings')
           .select('donor_id')
           .eq('mosque_id', mosqueId)
-          .eq('status', 'active')
-          .in('donor_id', donorIds),
+          .eq('status', 'active'),
         supabase
           .from('periodic_gift_agreements')
           .select('donor_id')
           .eq('mosque_id', mosqueId)
-          .eq('status', 'active')
-          .in('donor_id', donorIds),
+          .eq('status', 'active'),
       ])
     : [{ data: [] }, { data: [] }]
 
@@ -138,18 +134,26 @@ export default async function LedenPage({
       member_status: computeMemberStatus(input),
       churn_risk: computeChurnRisk(input),
       days_since_last: daysSince(donor.last_donated_at),
+      has_active_periodic: periodicSet.has(donor.id),
     }
   })
 
-  // Apply computed filters
+  // Apply computed filters BEFORE pagination
   if (statusFilter) {
     members = members.filter((m) => m.member_status === statusFilter)
   }
   if (riskFilter) {
     members = members.filter((m) => m.churn_risk === riskFilter)
   }
+  if (params.periodic === 'no') {
+    members = members.filter((m) => !m.has_active_periodic)
+  }
 
-  const totalPages = Math.ceil((count ?? 0) / PAGE_SIZE)
+  const filteredCount = members.length
+  const totalPages = Math.ceil(filteredCount / PAGE_SIZE)
+  const page = Math.max(1, Math.min(parseInt(params.page ?? '1', 10) || 1, totalPages || 1))
+  const from = (page - 1) * PAGE_SIZE
+  members = members.slice(from, from + PAGE_SIZE)
 
   // Build filter URL helper
   function filterUrl(overrides: Record<string, string>) {
@@ -235,8 +239,8 @@ export default async function LedenPage({
           <h3 className="text-[15px] font-semibold text-[#261b07]">
             {statusFilter || riskFilter ? 'Gefilterde leden' : 'Alle leden'}
           </h3>
-          {(count ?? 0) > 0 && (
-            <span className="text-[12px] text-[#a09888] tabular-nums">{count} totaal</span>
+          {filteredCount > 0 && (
+            <span className="text-[12px] text-[#a09888] tabular-nums">{filteredCount} totaal</span>
           )}
         </div>
 
@@ -312,7 +316,7 @@ export default async function LedenPage({
             {totalPages > 1 && (
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-4 border-t border-[#e3dfd5]">
                 <p className="text-[13px] text-[#8a8478]">
-                  <span className="font-medium text-[#261b07]">{count}</span> leden
+                  <span className="font-medium text-[#261b07]">{filteredCount}</span> leden
                   <span className="mx-1.5 text-[#e3dfd5]">|</span>
                   pagina <span className="font-medium text-[#261b07]">{page}</span> van <span className="font-medium text-[#261b07]">{totalPages}</span>
                 </p>

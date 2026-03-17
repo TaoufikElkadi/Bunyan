@@ -7,6 +7,8 @@ const DASHBOARD_ROUTES = [
   '/donateurs',
   '/fondsen',
   '/campagnes',
+  '/collecte',
+  '/contributie',
   '/anbi',
   '/instellingen',
   '/onboarding',
