@@ -24,9 +24,9 @@ export default async function OnboardingLayout({
   const initial = userName.charAt(0).toUpperCase() || '?'
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#f8f7f5]">
+    <div className="flex min-h-dvh flex-col bg-[#f8f7f5]">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-8 pt-6">
+      <div className="flex items-center justify-between px-4 pt-4 sm:px-8 sm:pt-6">
         <Link
           href="/"
           className="flex items-center gap-2.5"
@@ -47,12 +47,12 @@ export default async function OnboardingLayout({
       </div>
 
       {/* Content */}
-      <div className="flex flex-1 items-center justify-center px-4">
+      <div className="flex flex-1 items-start sm:items-center justify-center px-5 sm:px-6 pt-4 sm:pt-0">
         {children}
       </div>
 
       {/* Bottom bar */}
-      <div className="flex items-center justify-center gap-6 px-8 pb-6">
+      <div className="flex items-center justify-center gap-6 px-4 pb-4 sm:px-8 sm:pb-6">
         <a href="#" className="text-[13px] text-[#b5b0a5] hover:text-[#8a8478] transition-colors">Voorwaarden</a>
         <a href="#" className="text-[13px] text-[#b5b0a5] hover:text-[#8a8478] transition-colors">Privacy</a>
       </div>

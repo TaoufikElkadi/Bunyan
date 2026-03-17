@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import QRCode from 'qrcode'
-import { Copy, Check, ExternalLink } from 'lucide-react'
+import { Copy, Check, ExternalLink, GripVertical } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -53,7 +53,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://bunyan.io'
 // ---------------------------------------------------------------------------
 
 const inputClass =
-  'w-full rounded-lg border border-[#e3dfd5] bg-white px-4 py-3 text-[14px] text-[#261b07] placeholder:text-[#b5b0a5] outline-none focus:border-[#261b07]/30 focus:ring-1 focus:ring-[#261b07]/10 transition-colors'
+  'w-full rounded-lg border border-[#e3dfd5] bg-white px-4 py-3 text-[16px] sm:text-[14px] text-[#261b07] placeholder:text-[#b5b0a5] outline-none focus:border-[#261b07]/30 focus:ring-1 focus:ring-[#261b07]/10 transition-colors'
 
 // ---------------------------------------------------------------------------
 // Sub-components
@@ -100,7 +100,7 @@ function CopyButton({ text }: { text: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#e3dfd5] bg-white text-[#8a8478] hover:bg-[#f3f1ec] hover:text-[#261b07] transition-colors"
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[#e3dfd5] bg-white text-[#8a8478] hover:bg-[#f3f1ec] hover:text-[#261b07] active:bg-[#f3f1ec] transition-colors"
       aria-label="Kopieer link"
     >
       {copied ? (
@@ -241,6 +241,15 @@ export default function OnboardingPage() {
     dragOverItem.current = null
   }
 
+  // Touch reorder for mobile
+  function moveFund(from: number, to: number) {
+    if (to < 0 || to >= funds.length) return
+    const updated = [...funds]
+    const [item] = updated.splice(from, 1)
+    updated.splice(to, 0, item)
+    setFunds(updated)
+  }
+
   // Submit — creates mosque, then transitions to step 3
   async function handleComplete() {
     setError(null)
@@ -306,7 +315,7 @@ export default function OnboardingPage() {
     : 'opacity-100 translate-x-0'
 
   return (
-    <div className="w-full max-w-[480px] py-8">
+    <div className="w-full max-w-[480px] py-4 sm:py-8 pb-8">
       <div className={`transition-all duration-300 ease-in-out ${transitionClass}`}>
 
         {/* ================================================================= */}
@@ -403,7 +412,7 @@ export default function OnboardingPage() {
               onClick={() => {
                 if (validateStep1()) goTo(2)
               }}
-              className="w-full mt-6 rounded-lg bg-[#261b07] py-3 text-[14px] font-semibold text-[#f8f7f5] hover:bg-[#3a2c14] transition-colors"
+              className="w-full mt-6 rounded-xl bg-[#261b07] py-3.5 text-[15px] font-semibold text-[#f8f7f5] hover:bg-[#3a2c14] active:bg-[#3a2c14] transition-colors"
             >
               Doorgaan
             </button>
@@ -433,80 +442,99 @@ export default function OnboardingPage() {
               {funds.map((fund, i) => (
                 <div
                   key={i}
-                  className="group flex items-center gap-2.5 rounded-lg border border-[#e3dfd5] bg-white p-2.5 transition-colors hover:border-[#d0cbc0]"
+                  className="group rounded-lg border border-[#e3dfd5] bg-white p-3 transition-colors hover:border-[#d0cbc0]"
                   draggable
                   onDragStart={() => handleDragStart(i)}
                   onDragEnter={() => handleDragEnter(i)}
                   onDragEnd={handleDragEnd}
                   onDragOver={(e) => e.preventDefault()}
                 >
-                  {/* Drag handle */}
-                  <button
-                    type="button"
-                    className="cursor-grab touch-none p-0.5 text-[#b5b0a5] hover:text-[#8a8478] active:cursor-grabbing"
-                    tabIndex={-1}
-                  >
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                      <circle cx="9" cy="6" r="1.5" />
-                      <circle cx="15" cy="6" r="1.5" />
-                      <circle cx="9" cy="12" r="1.5" />
-                      <circle cx="15" cy="12" r="1.5" />
-                      <circle cx="9" cy="18" r="1.5" />
-                      <circle cx="15" cy="18" r="1.5" />
-                    </svg>
-                  </button>
+                  <div className="flex items-center gap-2.5">
+                    {/* Reorder buttons for touch + drag handle for desktop */}
+                    <div className="flex flex-col items-center shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => moveFund(i, i - 1)}
+                        disabled={i === 0}
+                        className="p-1 text-[#b5b0a5] hover:text-[#8a8478] disabled:opacity-20 sm:hidden"
+                        aria-label="Omhoog"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        className="hidden sm:block cursor-grab p-0.5 text-[#b5b0a5] hover:text-[#8a8478] active:cursor-grabbing"
+                        tabIndex={-1}
+                      >
+                        <GripVertical className="w-4 h-4" strokeWidth={1.5} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveFund(i, i + 1)}
+                        disabled={i === funds.length - 1}
+                        className="p-1 text-[#b5b0a5] hover:text-[#8a8478] disabled:opacity-20 sm:hidden"
+                        aria-label="Omlaag"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                    </div>
 
-                  {/* Icon */}
-                  <input
-                    value={fund.icon}
-                    onChange={(e) => updateFund(i, 'icon', e.target.value)}
-                    className="w-10 text-center rounded-md border border-[#e3dfd5] bg-[#f8f7f5] py-1.5 text-[14px] outline-none focus:border-[#261b07]/30"
-                  />
+                    {/* Icon */}
+                    <input
+                      value={fund.icon}
+                      onChange={(e) => updateFund(i, 'icon', e.target.value)}
+                      className="w-11 h-11 text-center rounded-lg border border-[#e3dfd5] bg-[#f8f7f5] text-[16px] outline-none focus:border-[#261b07]/30 shrink-0"
+                    />
 
-                  {/* Name */}
-                  <input
-                    value={fund.name}
-                    onChange={(e) => updateFund(i, 'name', e.target.value)}
-                    placeholder="Fondsnaam"
-                    className="flex-1 rounded-md border border-[#e3dfd5] bg-white px-3 py-1.5 text-[13px] text-[#261b07] placeholder:text-[#b5b0a5] outline-none focus:border-[#261b07]/30"
-                  />
+                    {/* Name */}
+                    <input
+                      value={fund.name}
+                      onChange={(e) => updateFund(i, 'name', e.target.value)}
+                      placeholder="Fondsnaam"
+                      className="flex-1 min-w-0 rounded-lg border border-[#e3dfd5] bg-white px-3 py-2.5 text-[14px] text-[#261b07] placeholder:text-[#b5b0a5] outline-none focus:border-[#261b07]/30"
+                    />
 
-                  {/* Remove */}
-                  {funds.length > 1 && (
-                    <>
-                      {fundToRemove === i ? (
-                        <div className="flex items-center gap-1">
+                    {/* Remove */}
+                    {funds.length > 1 && (
+                      <>
+                        {fundToRemove === i ? (
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              onClick={() => removeFund(i)}
+                              className="rounded-md px-2.5 py-1.5 text-[12px] font-medium bg-red-50 text-red-600 hover:bg-red-100 active:bg-red-100 transition-colors"
+                            >
+                              Ja
+                            </button>
+                            <button
+                              onClick={() => setFundToRemove(null)}
+                              className="rounded-md px-2.5 py-1.5 text-[12px] font-medium text-[#8a8478] hover:bg-[#f0ede6] active:bg-[#f0ede6] transition-colors"
+                            >
+                              Nee
+                            </button>
+                          </div>
+                        ) : (
                           <button
-                            onClick={() => removeFund(i)}
-                            className="rounded px-2 py-1 text-[11px] font-medium bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                            onClick={() => setFundToRemove(i)}
+                            className="p-2 -mr-1 text-[#b5b0a5] hover:text-red-500 active:text-red-500 transition-colors shrink-0"
                           >
-                            Ja
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
                           </button>
-                          <button
-                            onClick={() => setFundToRemove(null)}
-                            className="rounded px-2 py-1 text-[11px] font-medium text-[#8a8478] hover:bg-[#f0ede6] transition-colors"
-                          >
-                            Nee
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setFundToRemove(i)}
-                          className="p-1 text-[#b5b0a5] hover:text-red-500 transition-colors"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      )}
-                    </>
-                  )}
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
               ))}
 
               <button
                 onClick={addFund}
-                className="w-full rounded-lg border border-dashed border-[#d5cfb8] py-2.5 text-[13px] font-medium text-[#8a8478] hover:bg-[#f0ede6] hover:border-[#c0b9a6] transition-colors"
+                className="w-full rounded-lg border border-dashed border-[#d5cfb8] py-3.5 text-[14px] font-medium text-[#8a8478] hover:bg-[#f0ede6] hover:border-[#c0b9a6] active:bg-[#f0ede6] transition-colors"
               >
                 + Fonds toevoegen
               </button>
@@ -568,14 +596,14 @@ export default function OnboardingPage() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => goTo(1)}
-                className="flex-1 rounded-lg border border-[#e3dfd5] py-3 text-[14px] font-medium text-[#261b07] hover:bg-[#f0ede6] transition-colors"
+                className="flex-1 rounded-xl border border-[#e3dfd5] py-3.5 text-[15px] font-medium text-[#261b07] hover:bg-[#f0ede6] active:bg-[#f0ede6] transition-colors"
               >
                 Terug
               </button>
               <button
                 onClick={handleComplete}
                 disabled={loading || funds.every((f) => !f.name.trim())}
-                className="flex-1 rounded-lg bg-[#261b07] py-3 text-[14px] font-semibold text-[#f8f7f5] hover:bg-[#3a2c14] disabled:opacity-50 transition-colors"
+                className="flex-1 rounded-xl bg-[#261b07] py-3.5 text-[15px] font-semibold text-[#f8f7f5] hover:bg-[#3a2c14] active:bg-[#3a2c14] disabled:opacity-50 transition-colors"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -618,8 +646,8 @@ export default function OnboardingPage() {
             <div className="text-left mb-5">
               <label className="block text-[11px] font-medium text-[#a09888] uppercase tracking-wide mb-1.5">Donatiepagina</label>
               <div className="flex items-center gap-2">
-                <div className="flex-1 min-w-0 flex items-center rounded-lg border border-[#e3dfd5] bg-[#fafaf8] px-4 py-3">
-                  <span className="text-[13px] text-[#261b07] font-medium truncate">{donationUrl}</span>
+                <div className="flex-1 min-w-0 flex items-center rounded-lg border border-[#e3dfd5] bg-[#fafaf8] px-3.5 py-3">
+                  <span className="text-[13px] sm:text-[13px] text-[#261b07] font-medium truncate block overflow-hidden">{donationUrl}</span>
                 </div>
                 <CopyButton text={donationUrl} />
               </div>
@@ -628,11 +656,11 @@ export default function OnboardingPage() {
             {/* QR code */}
             {qrDataUrl && (
               <div className="mx-auto mb-5 flex flex-col items-center">
-                <div className="rounded-xl border border-[#e3dfd5] bg-white p-4">
+                <div className="rounded-xl border border-[#e3dfd5] bg-white p-3 sm:p-4">
                   <img
                     src={qrDataUrl}
                     alt="QR code voor donatiepagina"
-                    className="w-[180px] h-[180px]"
+                    className="w-[150px] h-[150px] sm:w-[180px] sm:h-[180px]"
                   />
                 </div>
                 <p className="text-[11px] text-[#b5b0a5] mt-2">Scan om te doneren</p>
@@ -646,7 +674,7 @@ export default function OnboardingPage() {
                 href={donationUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full rounded-lg border-2 border-dashed border-[#C87D3A]/40 bg-[#C87D3A]/5 py-3.5 text-[14px] font-semibold text-[#C87D3A] hover:bg-[#C87D3A]/10 hover:border-[#C87D3A]/60 transition-colors"
+                className="flex items-center justify-center gap-2 w-full rounded-xl border-2 border-dashed border-[#C87D3A]/40 bg-[#C87D3A]/5 py-3.5 text-[14px] font-semibold text-[#C87D3A] hover:bg-[#C87D3A]/10 hover:border-[#C87D3A]/60 active:bg-[#C87D3A]/10 transition-colors"
               >
                 Probeer het: doneer €1 aan uzelf
                 <ExternalLink className="h-3.5 w-3.5" strokeWidth={2} />
@@ -657,7 +685,7 @@ export default function OnboardingPage() {
                 href={`https://wa.me/?text=${encodeURIComponent(`Doneer aan ${mosqueName}: ${donationUrl}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full rounded-lg bg-[#25D366] py-3 text-[14px] font-semibold text-white hover:bg-[#20bd5a] transition-colors"
+                className="flex items-center justify-center gap-2 w-full rounded-xl bg-[#25D366] py-3.5 text-[14px] font-semibold text-white hover:bg-[#20bd5a] active:bg-[#20bd5a] transition-colors"
               >
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
@@ -679,7 +707,7 @@ export default function OnboardingPage() {
                 router.push('/dashboard')
                 router.refresh()
               }}
-              className="w-full mt-5 rounded-lg bg-[#261b07] py-3 text-[14px] font-semibold text-[#f8f7f5] hover:bg-[#3a2c14] transition-colors"
+              className="w-full mt-5 rounded-xl bg-[#261b07] py-3.5 text-[15px] font-semibold text-[#f8f7f5] hover:bg-[#3a2c14] active:bg-[#3a2c14] transition-colors"
             >
               Ga naar het dashboard
             </button>
