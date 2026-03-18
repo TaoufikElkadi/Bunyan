@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { rateLimit, getClientIp } from '@/lib/rate-limit'
 
 /**
  * Cancels a recurring donation by cancel_token.
@@ -8,6 +9,12 @@ import { createAdminClient } from '@/lib/supabase/admin'
  */
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request)
+    const { success } = rateLimit(`cancel:${ip}`, 5, 60_000)
+    if (!success) {
+      return NextResponse.json({ error: 'Te veel verzoeken, probeer later opnieuw' }, { status: 429 })
+    }
+
     const body = await request.json()
     const { cancel_token } = body
 

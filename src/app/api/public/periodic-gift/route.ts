@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { validatePeriodicGift } from '@/lib/anbi'
 import { parseSignatureBase64, getClientIp } from '@/lib/signatures'
+import { rateLimit } from '@/lib/rate-limit'
 
 /**
  * Public endpoint for donors to submit a signed periodic gift agreement.
@@ -9,6 +10,12 @@ import { parseSignatureBase64, getClientIp } from '@/lib/signatures'
  */
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request)
+    const { success } = rateLimit(`periodic-gift:${ip}`, 5, 60_000)
+    if (!success) {
+      return NextResponse.json({ error: 'Te veel verzoeken, probeer later opnieuw' }, { status: 429 })
+    }
+
     const body = await request.json()
     const {
       mosque_slug,

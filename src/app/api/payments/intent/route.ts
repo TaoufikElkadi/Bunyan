@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { rateLimit, getClientIp } from '@/lib/rate-limit'
 
 /**
  * Creates a Stripe PaymentIntent + a pending donation row.
@@ -8,6 +9,12 @@ import { createAdminClient } from '@/lib/supabase/admin'
  */
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request)
+    const { success } = rateLimit(`payment-intent:${ip}`, 10, 60_000)
+    if (!success) {
+      return NextResponse.json({ error: 'Te veel verzoeken, probeer later opnieuw' }, { status: 429 })
+    }
+
     const body = await request.json()
     const { mosque_slug, fund_id, amount, donor_name, donor_email, cover_fee, fee_amount } = body
 
@@ -31,6 +38,13 @@ export async function POST(request: Request) {
     if (amountCents < 100) {
       return NextResponse.json(
         { error: 'Minimum donatie is €1,00' },
+        { status: 400 }
+      )
+    }
+
+    if (amountCents > 10_000_00) {
+      return NextResponse.json(
+        { error: 'Maximum donatie is €10.000' },
         { status: 400 }
       )
     }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { stripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { rateLimit, getClientIp } from '@/lib/rate-limit'
 import crypto from 'crypto'
 
 /**
@@ -10,6 +11,12 @@ import crypto from 'crypto'
  */
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request)
+    const { success } = rateLimit(`subscribe:${ip}`, 5, 60_000)
+    if (!success) {
+      return NextResponse.json({ error: 'Te veel verzoeken, probeer later opnieuw' }, { status: 429 })
+    }
+
     const body = await request.json()
     const { mosque_slug, fund_id, amount, frequency, donor_name, donor_email } = body
 
@@ -40,6 +47,13 @@ export async function POST(request: Request) {
     if (amountCents < 100) {
       return NextResponse.json(
         { error: 'Minimum donatie is €1,00' },
+        { status: 400 }
+      )
+    }
+
+    if (amountCents > 10_000_00) {
+      return NextResponse.json(
+        { error: 'Maximum donatie is €10.000' },
         { status: 400 }
       )
     }
