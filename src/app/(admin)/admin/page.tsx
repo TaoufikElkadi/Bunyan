@@ -2,14 +2,20 @@ import { getPlatformAdmin } from '@/lib/supabase/platform-admin'
 import { redirect } from 'next/navigation'
 import { AdminDashboard } from './admin-dashboard'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AdminPage() {
   const admin = await getPlatformAdmin()
   if (!admin) redirect('/dashboard')
 
-  const { data: mosques } = await admin.adminClient
+  const { data: mosques, error: mosquesError } = await admin.adminClient
     .from('mosques')
     .select('id, name, slug, city, plan, status, created_at')
     .order('created_at', { ascending: false })
+
+  if (mosquesError) {
+    console.error('[Admin] Failed to fetch mosques:', mosquesError)
+  }
 
   const mosqueIds = (mosques ?? []).map((m: any) => m.id)
 
