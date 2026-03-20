@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { getCachedProfile } from '@/lib/supabase/cached'
 
+export const maxDuration = 60 // seconds (needed for bulk operations on prod)
+
 /* ------------------------------------------------------------------ */
 /*  REALISTIC NAME POOLS (Dutch Muslim community)                      */
 /* ------------------------------------------------------------------ */
@@ -453,7 +455,7 @@ function randomAmountInRange(min: number, max: number): number {
 /*  ROUTE HANDLERS                                                     */
 /* ------------------------------------------------------------------ */
 
-const TARGET_DONORS = 320
+const TARGET_DONORS = 160
 const BATCH_SIZE = 50 // Supabase insert batch size
 
 export async function POST() {
@@ -706,7 +708,10 @@ export async function POST() {
   }
 
   // ── 5. Update donor aggregates (triggers may not fire for bulk inserts) ──
-  for (const donor of allDonors) {
+  // Process in parallel batches of 20 to avoid overwhelming the DB
+  const PARALLEL_BATCH = 20
+
+  async function updateDonorAggregate(donor: { id: string }) {
     const { data: agg } = await supabase
       .from('donations')
       .select('amount, created_at')
@@ -719,11 +724,10 @@ export async function POST() {
       const dates = agg.map((d) => new Date(d.created_at).getTime())
       const avgAmount = Math.round(totalDonated / agg.length)
 
-      // Compute frequency from intervals
       const sortedDates = [...dates].sort((a, b) => a - b)
       const intervals: number[] = []
       for (let i = 1; i < sortedDates.length; i++) {
-        intervals.push((sortedDates[i] - sortedDates[i - 1]) / 86400000) // days
+        intervals.push((sortedDates[i] - sortedDates[i - 1]) / 86400000)
       }
 
       let frequency: string | null = null
@@ -757,6 +761,11 @@ export async function POST() {
         })
         .eq('id', donor.id)
     }
+  }
+
+  for (let i = 0; i < allDonors.length; i += PARALLEL_BATCH) {
+    const batch = allDonors.slice(i, i + PARALLEL_BATCH)
+    await Promise.all(batch.map(updateDonorAggregate))
   }
 
   return NextResponse.json({
@@ -808,26 +817,27 @@ export async function DELETE() {
     .eq('mosque_id', mosqueId)
     .like('cancel_token', 'mock_cancel_%')
 
-  // Delete member_events for mock donors
-  for (let i = 0; i < mockDonorIds.length; i++) {
-    await supabase
-      .from('member_events')
-      .delete()
-      .eq('donor_id', mockDonorIds[i])
-      .eq('mosque_id', mosqueId)
+  // Delete member_events for mock donors in parallel batches
+  for (let i = 0; i < mockDonorIds.length; i += 20) {
+    const batch = mockDonorIds.slice(i, i + 20)
+    await Promise.all(batch.map(id =>
+      supabase.from('member_events').delete().eq('donor_id', id).eq('mosque_id', mosqueId)
+    ))
   }
 
-  // Delete donors that have no non-mock donations left
-  for (let i = 0; i < mockDonorIds.length; i++) {
-    const donorId = mockDonorIds[i]
-    const { count } = await supabase
-      .from('donations')
-      .select('*', { count: 'exact', head: true })
-      .eq('donor_id', donorId)
+  // Delete donors that have no non-mock donations left (parallel batches)
+  for (let i = 0; i < mockDonorIds.length; i += 20) {
+    const batch = mockDonorIds.slice(i, i + 20)
+    await Promise.all(batch.map(async (donorId) => {
+      const { count } = await supabase
+        .from('donations')
+        .select('*', { count: 'exact', head: true })
+        .eq('donor_id', donorId)
 
-    if (count === 0) {
-      await supabase.from('donors').delete().eq('id', donorId)
-    }
+      if (count === 0) {
+        await supabase.from('donors').delete().eq('id', donorId)
+      }
+    }))
   }
 
   return NextResponse.json({ success: true })
