@@ -73,7 +73,7 @@ export default async function CampagnesPage() {
       </div>
 
       {campaigns && campaigns.length > 0 ? (
-        <CampaignCards campaigns={campaigns} funds={funds ?? []} role={profile.role} />
+        <CampaignCards campaigns={campaigns} funds={funds ?? []} mosqueSlug={mosque?.slug ?? ''} role={profile.role} />
       ) : (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[#e3dfd5] bg-white py-16">
           <div className="rounded-full bg-[#f3f1ec] p-5 mb-5">

@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { mosque_slug, fund_id, amount, donor_name, donor_email, cover_fee, fee_amount } = body
+    const { mosque_slug, fund_id, amount, donor_name, donor_email, cover_fee, fee_amount, campaign_id } = body
 
     // Validate
     if (!mosque_slug || !fund_id || !amount || amount <= 0) {
@@ -130,6 +130,7 @@ export async function POST(request: Request) {
         donor_id: donorId || '',
         donor_name: donor_name || '',
         donor_email: donor_email || '',
+        campaign_id: campaign_id || '',
       },
       // Enable common Dutch payment methods
       automatic_payment_methods: { enabled: true },
@@ -146,6 +147,7 @@ export async function POST(request: Request) {
         fund_id,
         amount: amountCents,
         fee_covered: feeCents,
+        campaign_id: campaign_id || null,
         method: 'stripe',
         status: 'pending',
         stripe_payment_intent_id: paymentIntent.id,

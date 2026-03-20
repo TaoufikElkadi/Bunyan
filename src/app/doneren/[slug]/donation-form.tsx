@@ -29,6 +29,7 @@ type Props = {
   logoUrl: string | null
   funds: Fund[]
   preselectedFundId?: string
+  campaignId?: string
   anbiEnabled?: boolean
 }
 
@@ -51,6 +52,7 @@ export function DonationForm({
   logoUrl,
   funds,
   preselectedFundId,
+  campaignId,
   anbiEnabled,
 }: Props) {
   const { t, dir } = useTranslation()
@@ -93,8 +95,8 @@ export function DonationForm({
     try {
       const endpoint = isRecurring ? '/api/payments/subscribe' : '/api/payments/intent'
       const body = isRecurring
-        ? { mosque_slug: mosqueSlug, fund_id: selectedFund, amount: numAmount, frequency, donor_name: donorName || undefined, donor_email: donorEmail }
-        : { mosque_slug: mosqueSlug, fund_id: selectedFund, amount: numAmount, donor_name: donorName || undefined, donor_email: donorEmail || undefined, cover_fee: coverFee, fee_amount: coverFee ? feeCents : 0 }
+        ? { mosque_slug: mosqueSlug, fund_id: selectedFund, amount: numAmount, frequency, donor_name: donorName || undefined, donor_email: donorEmail, campaign_id: campaignId || undefined }
+        : { mosque_slug: mosqueSlug, fund_id: selectedFund, amount: numAmount, donor_name: donorName || undefined, donor_email: donorEmail || undefined, cover_fee: coverFee, fee_amount: coverFee ? feeCents : 0, campaign_id: campaignId || undefined }
 
       const res = await fetch(endpoint, {
         method: 'POST',

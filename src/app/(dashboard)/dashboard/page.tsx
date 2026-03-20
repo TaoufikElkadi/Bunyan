@@ -161,7 +161,7 @@ async function DashboardContent() {
   const plan = mosque.plan ?? 'free'
   const limits = getPlanLimits(plan)
 
-  const [{ data: metrics }, { data: monthly }, { data: byFund }, { data: usageRows }] = await Promise.all([
+  const [{ data: metrics }, { data: monthly }, { data: byFund }, { data: usageRows }, { data: activeCampaigns }] = await Promise.all([
     supabase.rpc('get_dashboard_metrics', {
       p_mosque_id: mosqueId,
       p_month_start: startOfMonth,
@@ -177,6 +177,13 @@ async function DashboardContent() {
       .eq('mosque_id', mosqueId)
       .eq('month', monthStr)
       .maybeSingle(),
+    supabase
+      .from('campaigns')
+      .select('id, title, slug, goal_amount, is_active, funds(name)')
+      .eq('mosque_id', mosqueId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(5),
   ])
 
   const m = (metrics ?? {}) as DashboardMetrics
@@ -355,6 +362,55 @@ async function DashboardContent() {
               </Link>
             </div>
           </div>
+
+          {/* Active Campaigns */}
+          {activeCampaigns && activeCampaigns.length > 0 && (
+            <div className="rounded-2xl bg-white shadow-[0_1px_3px_rgba(38,27,7,0.04),0_1px_2px_rgba(38,27,7,0.02)] p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-[13px] font-semibold text-[#261b07]">Actieve campagnes</h3>
+                <Link
+                  href="/campagnes"
+                  className="text-[11px] font-medium text-[#a09888] hover:text-[#261b07] transition-colors flex items-center gap-0.5"
+                >
+                  Beheer
+                  <ArrowRight className="h-3 w-3" />
+                </Link>
+              </div>
+              <div className="space-y-2.5">
+                {activeCampaigns.map((campaign: any) => {
+                  const campaignUrl = `${donationPageUrl.replace(/\/doneren\/.*/, '')}/doneren/${mosque.slug}/${campaign.slug}`
+                  return (
+                    <div key={campaign.id} className="rounded-xl border border-[#e3dfd5] p-3">
+                      <div className="flex items-start justify-between gap-2 mb-1.5">
+                        <p className="text-[13px] font-medium text-[#261b07] leading-tight">{campaign.title}</p>
+                        {campaign.goal_amount && (
+                          <span className="text-[11px] text-[#a09888] whitespace-nowrap">
+                            {formatCompact(campaign.goal_amount)}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-[#b5b0a5] mb-2">
+                        {(campaign.funds as any)?.name ?? 'Algemeen'}
+                      </p>
+                      <div className="flex items-center gap-1.5">
+                        <div className="flex-1 min-w-0 flex items-center rounded-md bg-[#fafaf8] border border-[#e3dfd5]/60 px-2 py-1">
+                          <span className="text-[10px] text-[#a09888] truncate">/doneren/{mosque.slug}/{campaign.slug}</span>
+                        </div>
+                        <DonationPageCopyButton url={campaignUrl} />
+                        <Link
+                          href={`/doneren/${mosque.slug}/${campaign.slug}`}
+                          target="_blank"
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#e3dfd5] text-[#a09888] hover:bg-[#fafaf8] hover:text-[#261b07] transition-colors"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                        </Link>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Recent Donations */}
           <div className="rounded-2xl bg-white shadow-[0_1px_3px_rgba(38,27,7,0.04),0_1px_2px_rgba(38,27,7,0.02)] p-5">

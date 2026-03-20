@@ -1,7 +1,9 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import { DonationForm } from '../donation-form'
+import { DonationPageShell } from '../donation-page-shell'
 import { CampaignProgress } from '@/components/campaign/campaign-progress'
+import type { Locale } from '@/types'
 
 export const revalidate = 300 // ISR: revalidate every 5 minutes
 
@@ -43,7 +45,7 @@ export default async function CampaignDonationPage({ params }: Props) {
 
   const { data: mosque } = await admin
     .from('mosques')
-    .select('id, name, slug, primary_color, welcome_msg, logo_url, status')
+    .select('id, name, slug, primary_color, welcome_msg, logo_url, language, anbi_status, rsin, status')
     .eq('slug', slug)
     .single()
 
@@ -84,32 +86,41 @@ export default async function CampaignDonationPage({ params }: Props) {
     raised: totalsByFund.get(f.id) ?? 0,
   }))
 
-  // Calculate campaign progress
+  // Calculate campaign-specific progress (only donations through this campaign)
   let raised = 0
-  if (campaign.goal_amount && campaign.fund_id) {
-    raised = totalsByFund.get(campaign.fund_id) ?? 0
+  if (campaign.goal_amount) {
+    const { data: campaignDonations } = await admin
+      .from('donations')
+      .select('amount')
+      .eq('mosque_id', mosque.id)
+      .eq('campaign_id', campaign.id)
+      .eq('status', 'completed')
+
+    raised = (campaignDonations ?? []).reduce((sum, d) => sum + d.amount, 0)
   }
 
   const primaryColor = mosque.primary_color || '#10b981'
+  const defaultLocale = (mosque.language as Locale) || 'nl'
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-lg px-4 py-6 md:py-12">
-        <div className="mb-6 md:mb-8 text-center">
-          <h1
-            className="text-2xl md:text-3xl font-bold"
-            style={{ color: primaryColor }}
-          >
-            {mosque.name}
-          </h1>
-          <h2 className="mt-2 text-lg md:text-xl font-semibold">{campaign.title}</h2>
+    <DonationPageShell
+      defaultLocale={defaultLocale}
+      mosqueName={mosque.name}
+      welcomeMsg={mosque.welcome_msg}
+      primaryColor={primaryColor}
+      logoUrl={mosque.logo_url}
+    >
+      <div className="mx-auto max-w-lg w-full px-4 pt-4">
+        {/* Campaign header */}
+        <div className="mb-5 text-center">
+          <h2 className="text-[18px] font-bold text-[#261b07]">{campaign.title}</h2>
           {campaign.description && (
-            <p className="mt-2 text-sm md:text-base text-muted-foreground">{campaign.description}</p>
+            <p className="mt-1.5 text-[13px] text-[#a09888]">{campaign.description}</p>
           )}
         </div>
 
         {campaign.goal_amount && (
-          <div className="mb-6">
+          <div className="mb-5">
             <CampaignProgress
               raised={raised}
               goal={campaign.goal_amount}
@@ -117,17 +128,19 @@ export default async function CampaignDonationPage({ params }: Props) {
             />
           </div>
         )}
-
-        <DonationForm
-          mosqueSlug={mosque.slug}
-          mosqueName={mosque.name}
-          primaryColor={primaryColor}
-          welcomeMsg={mosque.welcome_msg ?? null}
-          logoUrl={mosque.logo_url ?? null}
-          funds={fundsWithProgress}
-          preselectedFundId={campaign.fund_id}
-        />
       </div>
-    </div>
+
+      <DonationForm
+        mosqueSlug={mosque.slug}
+        mosqueName={mosque.name}
+        primaryColor={primaryColor}
+        welcomeMsg={null}
+        logoUrl={mosque.logo_url ?? null}
+        funds={fundsWithProgress}
+        preselectedFundId={campaign.fund_id}
+        campaignId={campaign.id}
+        anbiEnabled={!!mosque.anbi_status && !!mosque.rsin}
+      />
+    </DonationPageShell>
   )
 }

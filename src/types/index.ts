@@ -102,6 +102,7 @@ export interface Donation {
   currency: string
   method: DonationMethod
   status: DonationStatus
+  campaign_id: string | null
   is_recurring: boolean
   recurring_id: string | null
   stripe_payment_intent_id: string | null

@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { mosque_slug, fund_id, amount, frequency, donor_name, donor_email } = body
+    const { mosque_slug, fund_id, amount, frequency, donor_name, donor_email, campaign_id } = body
 
     // Validate required fields
     if (!mosque_slug || !fund_id || !amount || amount <= 0) {
@@ -204,6 +204,7 @@ export async function POST(request: Request) {
         mosque_id: mosque.id,
         fund_id,
         donor_id: donorId,
+        campaign_id: campaign_id || '',
       },
       ...transferParams,
     }) as Stripe.Subscription & {
@@ -302,6 +303,7 @@ export async function POST(request: Request) {
           mosque_id: mosque.id,
           fund_id,
           donor_id: donorId,
+          campaign_id: campaign_id || '',
         },
       })
       clientSecret = pi.client_secret

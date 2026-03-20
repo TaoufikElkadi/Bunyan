@@ -185,6 +185,9 @@ async function handleFirstSubscriptionPayment(
 
   if (existing) return
 
+  // Get campaign_id from PI metadata or subscription metadata
+  const campaignId = pi.metadata?.campaign_id || null
+
   // Create the first donation record
   const { error: insertError } = await admin
     .from('donations')
@@ -193,6 +196,7 @@ async function handleFirstSubscriptionPayment(
       donor_id: recurring.donor_id,
       fund_id: recurring.fund_id,
       amount: recurring.amount,
+      campaign_id: campaignId || null,
       method: 'stripe',
       status: 'completed',
       is_recurring: true,
@@ -304,6 +308,15 @@ async function handleInvoicePaymentSucceeded(
     if (existingDonation) return // Already processed
   }
 
+  // Get campaign_id from the subscription metadata
+  let campaignId: string | null = null
+  try {
+    const sub = await stripe.subscriptions.retrieve(subscriptionId) as any
+    campaignId = sub.metadata?.campaign_id || null
+  } catch {
+    // Non-critical — proceed without campaign tracking
+  }
+
   // Create a new donation record for this recurring payment
   const { error: insertError } = await admin
     .from('donations')
@@ -312,6 +325,7 @@ async function handleInvoicePaymentSucceeded(
       donor_id: recurring.donor_id,
       fund_id: recurring.fund_id,
       amount: recurring.amount,
+      campaign_id: campaignId || null,
       method: 'stripe',
       status: 'completed',
       is_recurring: true,
