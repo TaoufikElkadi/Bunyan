@@ -555,7 +555,7 @@ export async function POST() {
     })
   }
 
-  // Insert donors in batches
+  // Insert donors in batches (tag with __mock__ for easy cleanup)
   const donorInserts = donorProfiles.map(p => ({
     mosque_id: mosqueId,
     name: p.name,
@@ -563,7 +563,7 @@ export async function POST() {
     phone: p.phone,
     address: p.address,
     iban_hint: p.iban_hint,
-    tags: p.tags,
+    tags: [...p.tags, '__mock__'],
   }))
 
   const allDonors: { id: string; name: string | null }[] = []
@@ -787,51 +787,76 @@ export async function DELETE() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
   }
 
-  // Get donor IDs that have mock donations
+  // Find mock donors by tag (reliable even if mock donations were already deleted)
+  const { data: mockDonors } = await supabase
+    .from('donors')
+    .select('id')
+    .eq('mosque_id', mosqueId)
+    .contains('tags', ['__mock__'])
+
+  const mockDonorIds = (mockDonors ?? []).map(d => d.id)
+
+  // Also find donors by mock donations (for older data without the tag)
   const { data: mockDonations } = await supabase
     .from('donations')
     .select('donor_id')
     .eq('mosque_id', mosqueId)
     .eq('notes', '__mock__')
 
-  const mockDonorIds = Array.from(new Set((mockDonations ?? []).map((d: { donor_id: string }) => d.donor_id).filter(Boolean)))
+  const donationMockIds = (mockDonations ?? []).map(d => d.donor_id).filter(Boolean)
 
-  // Find mock donors that also have real (non-mock) donations — keep those donors
-  const { data: donorsWithRealDonations } = await supabase
+  // Fallback: find orphaned mock donors by @example.com email (older generations)
+  const { data: exampleEmailDonors } = await supabase
+    .from('donors')
+    .select('id')
+    .eq('mosque_id', mosqueId)
+    .like('email', '%@example.com')
+
+  const exampleEmailIds = (exampleEmailDonors ?? []).map(d => d.id)
+
+  // Fallback: find orphaned donors with no remaining donations (from previous partial deletes)
+  // Only targets donors that genuinely have zero donations in the DB
+  const { data: donorsWithDonations } = await supabase
     .from('donations')
     .select('donor_id')
     .eq('mosque_id', mosqueId)
-    .neq('notes', '__mock__')
-    .in('donor_id', mockDonorIds)
 
-  const keepDonorIds = new Set((donorsWithRealDonations ?? []).map(d => d.donor_id))
-  const deletableDonorIds = mockDonorIds.filter(id => !keepDonorIds.has(id))
+  const donorIdsWithDonations = new Set((donorsWithDonations ?? []).map(d => d.donor_id))
 
-  // Delete pure-mock donors in batches (child records cascade via ON DELETE CASCADE)
-  for (let i = 0; i < deletableDonorIds.length; i += BATCH_SIZE) {
-    const batch = deletableDonorIds.slice(i, i + BATCH_SIZE)
+  const { data: allMosqueDonors } = await supabase
+    .from('donors')
+    .select('id')
+    .eq('mosque_id', mosqueId)
+
+  const orphanedDonorIds = (allMosqueDonors ?? [])
+    .filter(d => !donorIdsWithDonations.has(d.id))
+    .map(d => d.id)
+
+  const allMockDonorIds = Array.from(new Set([...mockDonorIds, ...donationMockIds, ...exampleEmailIds, ...orphanedDonorIds]))
+
+  // Delete mock donations, periodic gifts, and recurrings first
+  await supabase
+    .from('donations')
+    .delete()
+    .eq('mosque_id', mosqueId)
+    .eq('notes', '__mock__')
+
+  await supabase
+    .from('periodic_gift_agreements')
+    .delete()
+    .eq('mosque_id', mosqueId)
+    .eq('notes', '__mock__')
+
+  await supabase
+    .from('recurrings')
+    .delete()
+    .eq('mosque_id', mosqueId)
+    .like('cancel_token', 'mock_cancel_%')
+
+  // Delete mock donors in batches (remaining child records cascade via ON DELETE CASCADE)
+  for (let i = 0; i < allMockDonorIds.length; i += BATCH_SIZE) {
+    const batch = allMockDonorIds.slice(i, i + BATCH_SIZE)
     await supabase.from('donors').delete().in('id', batch)
-  }
-
-  // For kept donors, clean up their mock donations/recurrings/periodic gifts
-  if (keepDonorIds.size > 0) {
-    await supabase
-      .from('donations')
-      .delete()
-      .eq('mosque_id', mosqueId)
-      .eq('notes', '__mock__')
-
-    await supabase
-      .from('periodic_gift_agreements')
-      .delete()
-      .eq('mosque_id', mosqueId)
-      .eq('notes', '__mock__')
-
-    await supabase
-      .from('recurrings')
-      .delete()
-      .eq('mosque_id', mosqueId)
-      .like('cancel_token', 'mock_cancel_%')
   }
 
   return NextResponse.json({ success: true })

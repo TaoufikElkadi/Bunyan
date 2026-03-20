@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSWRConfig } from 'swr'
 import { FlaskConical, Loader2, Trash2 } from 'lucide-react'
 
 export function GenerateMockButton() {
@@ -9,6 +10,14 @@ export function GenerateMockButton() {
   const [deleting, setDeleting] = useState(false)
   const [result, setResult] = useState<string | null>(null)
   const router = useRouter()
+  const { mutate } = useSWRConfig()
+
+  function revalidateAll() {
+    // Refresh server components
+    router.refresh()
+    // Invalidate all SWR caches (member stats, tax opportunity, etc.)
+    mutate(() => true, undefined, { revalidate: true })
+  }
 
   async function handleGenerate() {
     setLoading(true)
@@ -19,7 +28,7 @@ export function GenerateMockButton() {
 
     if (res.ok) {
       setResult(`${data.created.donors} donateurs, ${data.created.donations} donaties, ${data.created.recurrings} terugkerend`)
-      router.refresh()
+      revalidateAll()
     } else {
       setResult(data.error ?? 'Er ging iets mis')
     }
@@ -34,7 +43,7 @@ export function GenerateMockButton() {
 
     if (res.ok) {
       setResult('Mock data verwijderd')
-      router.refresh()
+      revalidateAll()
     } else {
       const data = await res.json()
       setResult(data.error ?? 'Er ging iets mis')
