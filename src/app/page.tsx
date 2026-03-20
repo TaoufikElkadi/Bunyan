@@ -337,7 +337,7 @@ export default function HomePage() {
                       Voor koepelorganisaties die gemeenschapsinzicht over meerdere moskeeën willen bundelen.
                     </p>
                     <a
-                      href="mailto:info@bunyan.io"
+                      href="mailto:info@bunyan.nl"
                       className="self-start inline-flex items-center justify-center rounded-[8px] bg-[#1a1510] px-5 py-[9px] text-[13px] font-semibold text-white hover:bg-[#2c2018] transition-colors"
                     >
                       Contact opnemen
@@ -452,7 +452,7 @@ export default function HomePage() {
               <ul className="space-y-3">
                 {[
                   { label: "Over ons", href: "#over-ons" },
-                  { label: "Contact", href: "mailto:info@bunyan.io" },
+                  { label: "Contact", href: "mailto:info@bunyan.nl" },
                   { label: "Prijzen", href: "#prijzen" },
                 ].map(({ label, href }) => (
                   <li key={label}>

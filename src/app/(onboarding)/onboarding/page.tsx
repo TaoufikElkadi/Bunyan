@@ -46,7 +46,7 @@ const COLOR_PRESETS = [
   { value: '#06b6d4', label: 'Cyaan' },
 ]
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://bunyan.io'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://bunyan.nl'
 
 // ---------------------------------------------------------------------------
 // Shared styles
@@ -377,7 +377,7 @@ export default function OnboardingPage() {
                 {slug && !slugError && (
                   <p className="text-[12px] text-[#a09888] mt-1">
                     Uw donatiepagina:{' '}
-                    <span className="font-medium text-[#261b07]">bunyan.io/doneren/{slug}</span>
+                    <span className="font-medium text-[#261b07]">bunyan.nl/doneren/{slug}</span>
                   </p>
                 )}
               </div>

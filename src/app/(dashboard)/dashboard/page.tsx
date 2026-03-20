@@ -207,7 +207,7 @@ async function DashboardContent() {
   const trendMrr = calcTrend(m.recurring_mrr ?? 0, 0) // no historical MRR tracking
   const trendDonors = calcTrend(m.new_donors ?? 0, 0) // no historical new-donor tracking
 
-  const donationPageUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://bunyan.io'}/doneren/${mosque.slug}`
+  const donationPageUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://bunyan.nl'}/doneren/${mosque.slug}`
 
   // Compute one-time vs recurring donation totals for this month
   const [{ data: recurringThisMonth }, { count: activeRecurrings }] = await Promise.all([

@@ -375,7 +375,7 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
               <div className="space-y-1.5">
                 <Label htmlFor="mosque-slug" className="text-[13px] font-medium text-[#261b07]">Slug</Label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[14px] text-[#b5b0a5]">bunyan.io/doneren/</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[14px] text-[#b5b0a5]">bunyan.nl/doneren/</span>
                   <input
                     id="mosque-slug"
                     value={mosqueSlug}
@@ -519,7 +519,7 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        navigator.clipboard.writeText(`bunyan.io/doneren/${mosque.slug}`)
+                        navigator.clipboard.writeText(`bunyan.nl/doneren/${mosque.slug}`)
                       }}
                       className="hidden md:inline-block opacity-0 group-hover:opacity-100 transition-opacity"
                       title="Kopieer URL"

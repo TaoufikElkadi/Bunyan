@@ -162,7 +162,7 @@ export function CampaignDialog({ mode, campaign, funds, trigger, onSuccess }: Ca
                 placeholder="ramadan-2026"
               />
               <p className="text-xs text-muted-foreground">
-                Bereikbaar via [moskee].bunyan.io/{slug || '...'}
+                Bereikbaar via bunyan.nl/doneren/[moskee]/{slug || '...'}
               </p>
             </div>
 
