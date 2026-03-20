@@ -21,6 +21,7 @@ export interface Mosque {
   kvk: string | null
   language: Locale
   stripe_account_id: string | null
+  stripe_connected_at: string | null
   stripe_customer_id: string | null
   plan: MosquePlan
   plan_started_at: string | null

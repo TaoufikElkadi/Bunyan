@@ -64,14 +64,14 @@ export async function POST(request: Request) {
 
     const admin = createAdminClient()
 
-    // Fetch mosque (must be ANBI)
+    // Fetch mosque (must be ANBI and approved)
     const { data: mosque } = await admin
       .from('mosques')
-      .select('id, name, address, rsin, kvk, anbi_status')
+      .select('id, name, address, rsin, kvk, anbi_status, status')
       .eq('slug', mosque_slug)
       .single()
 
-    if (!mosque) {
+    if (!mosque || mosque.status !== 'active') {
       return NextResponse.json({ error: 'Moskee niet gevonden' }, { status: 404 })
     }
     if (!mosque.anbi_status || !mosque.rsin) {

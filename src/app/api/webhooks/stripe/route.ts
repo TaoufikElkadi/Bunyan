@@ -64,6 +64,12 @@ export async function POST(request: Request) {
         break
       }
 
+      case 'account.updated': {
+        const account = event.data.object as Stripe.Account
+        await handleAccountUpdated(admin, account)
+        break
+      }
+
       default:
         break
     }
@@ -321,5 +327,41 @@ async function handleCheckoutSessionCompleted(
 
   if (updateError) {
     throw new Error(`Failed to update mosque ${mosqueId} plan to ${plan}: ${updateError.message}`)
+  }
+}
+
+async function handleAccountUpdated(
+  admin: AdminClient,
+  account: Stripe.Account
+) {
+  const mosqueId = account.metadata?.mosque_id
+  if (!mosqueId) return
+
+  // Only mark as connected when charges are enabled (onboarding complete)
+  if (!account.charges_enabled) return
+
+  // Find the mosque and check if already marked as connected
+  const { data: mosque } = await admin
+    .from('mosques')
+    .select('id, stripe_connected_at')
+    .eq('id', mosqueId)
+    .eq('stripe_account_id', account.id)
+    .single()
+
+  if (!mosque) return
+
+  // Idempotency: skip if already connected
+  if (mosque.stripe_connected_at) return
+
+  const { error: updateError } = await admin
+    .from('mosques')
+    .update({
+      stripe_connected_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', mosque.id)
+
+  if (updateError) {
+    throw new Error(`Failed to mark mosque ${mosque.id} as Stripe connected: ${updateError.message}`)
   }
 }

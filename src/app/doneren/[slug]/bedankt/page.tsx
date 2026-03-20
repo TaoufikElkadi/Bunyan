@@ -13,11 +13,11 @@ export default async function BedanktPage({ params }: Props) {
 
   const { data: mosque } = await admin
     .from('mosques')
-    .select('language, primary_color')
+    .select('language, primary_color, status')
     .eq('slug', slug)
     .single()
 
-  if (!mosque) notFound()
+  if (!mosque || mosque.status !== 'active') notFound()
 
   const defaultLocale = (mosque.language as Locale) || 'nl'
 

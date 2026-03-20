@@ -457,10 +457,6 @@ const TARGET_DONORS = 320
 const BATCH_SIZE = 50 // Supabase insert batch size
 
 export async function POST() {
-  if (process.env.NODE_ENV === 'production') {
-    return NextResponse.json({ error: 'Mock data is not available in production' }, { status: 403 })
-  }
-
   const { mosqueId, supabase, profile } = await getCachedProfile()
 
   if (!mosqueId || !profile || profile.role !== 'admin') {
@@ -776,10 +772,6 @@ export async function POST() {
 
 // DELETE endpoint to clean up mock data
 export async function DELETE() {
-  if (process.env.NODE_ENV === 'production') {
-    return NextResponse.json({ error: 'Mock data is not available in production' }, { status: 403 })
-  }
-
   const { mosqueId, supabase, profile } = await getCachedProfile()
 
   if (!mosqueId || !profile || profile.role !== 'admin') {

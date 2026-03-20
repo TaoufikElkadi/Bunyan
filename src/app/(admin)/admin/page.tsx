@@ -8,7 +8,7 @@ export default async function AdminPage() {
 
   const { data: mosques } = await admin.adminClient
     .from('mosques')
-    .select('id, name, slug, city, plan, created_at')
+    .select('id, name, slug, city, plan, status, created_at')
     .order('created_at', { ascending: false })
 
   const mosqueIds = (mosques ?? []).map((m: any) => m.id)

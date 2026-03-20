@@ -60,6 +60,7 @@ interface Mosque {
   slug: string
   city: string
   plan: string
+  status: 'pending' | 'active' | 'rejected'
   created_at: string
   users: User[]
 }
@@ -75,6 +76,12 @@ const PLAN_STYLES: Record<string, { bg: string; text: string; dot: string }> = {
   free: { bg: 'bg-[#f3f1ec]', text: 'text-[#8a8478]', dot: 'bg-[#b5b0a5]' },
   starter: { bg: 'bg-[#e8f5e9]', text: 'text-[#2e7d32]', dot: 'bg-[#4caf50]' },
   growth: { bg: 'bg-[#fff8e1]', text: 'text-[#f57f17]', dot: 'bg-[#f9a600]' },
+}
+
+const STATUS_STYLES: Record<string, { bg: string; text: string; dot: string; label: string }> = {
+  pending: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-400', label: 'Wacht op goedkeuring' },
+  active: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500', label: 'Actief' },
+  rejected: { bg: 'bg-red-50', text: 'text-red-600', dot: 'bg-red-400', label: 'Afgewezen' },
 }
 
 function timeAgo(dateStr: string): string {
@@ -189,6 +196,25 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
         alert(data.error || 'Failed to delete mosque')
+        return
+      }
+      router.refresh()
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleStatusChange(mosqueId: string, newStatus: string) {
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/admin/mosques/${mosqueId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        alert(data.error || 'Failed to update status')
         return
       }
       router.refresh()
@@ -525,6 +551,17 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
                     {mosque.users.length}
                   </div>
 
+                  {/* Status badge */}
+                  {mosque.status !== 'active' && (() => {
+                    const statusStyle = STATUS_STYLES[mosque.status] ?? STATUS_STYLES.pending
+                    return (
+                      <div className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusStyle.bg} ${statusStyle.text}`}>
+                        <div className={`h-1.5 w-1.5 rounded-full ${statusStyle.dot}`} />
+                        {statusStyle.label}
+                      </div>
+                    )
+                  })()}
+
                   {/* Plan badge */}
                   <div className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${planStyle.bg} ${planStyle.text}`}>
                     <div className={`h-1.5 w-1.5 rounded-full ${planStyle.dot}`} />
@@ -544,6 +581,49 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
                       <>
                         <div className="fixed inset-0 z-10" onClick={() => setActionMenuId(null)} />
                         <div className="absolute right-0 top-full mt-1 z-20 w-48 rounded-xl border border-[#e3dfd5] bg-white py-1 shadow-lg shadow-black/[0.08]">
+                          {mosque.status === 'pending' && (
+                            <>
+                              <button
+                                onClick={() => {
+                                  handleStatusChange(mosque.id, 'active')
+                                  setActionMenuId(null)
+                                }}
+                                disabled={loading}
+                                className="flex w-full items-center gap-2.5 px-3.5 py-2 text-[13px] text-emerald-600 hover:bg-emerald-50 transition-colors font-medium"
+                              >
+                                <ShieldCheck className="h-3.5 w-3.5" />
+                                Goedkeuren
+                              </button>
+                              <button
+                                onClick={() => {
+                                  handleStatusChange(mosque.id, 'rejected')
+                                  setActionMenuId(null)
+                                }}
+                                disabled={loading}
+                                className="flex w-full items-center gap-2.5 px-3.5 py-2 text-[13px] text-red-500 hover:bg-red-50 transition-colors"
+                              >
+                                <Ban className="h-3.5 w-3.5" />
+                                Afwijzen
+                              </button>
+                              <div className="my-1 border-t border-[#f0ede8]" />
+                            </>
+                          )}
+                          {mosque.status === 'rejected' && (
+                            <>
+                              <button
+                                onClick={() => {
+                                  handleStatusChange(mosque.id, 'active')
+                                  setActionMenuId(null)
+                                }}
+                                disabled={loading}
+                                className="flex w-full items-center gap-2.5 px-3.5 py-2 text-[13px] text-emerald-600 hover:bg-emerald-50 transition-colors font-medium"
+                              >
+                                <ShieldCheck className="h-3.5 w-3.5" />
+                                Alsnog goedkeuren
+                              </button>
+                              <div className="my-1 border-t border-[#f0ede8]" />
+                            </>
+                          )}
                           <button
                             onClick={() => {
                               window.open(`/doneren/${mosque.slug}`, '_blank')

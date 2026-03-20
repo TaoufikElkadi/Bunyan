@@ -15,11 +15,11 @@ export async function generateMetadata({ params }: Props) {
 
   const { data: mosque } = await admin
     .from('mosques')
-    .select('id, name')
+    .select('id, name, status')
     .eq('slug', slug)
     .single()
 
-  if (!mosque) return { title: 'Doneren — Bunyan' }
+  if (!mosque || mosque.status !== 'active') return { title: 'Doneren — Bunyan' }
 
   const { data: campaign } = await admin
     .from('campaigns')
@@ -43,11 +43,11 @@ export default async function CampaignDonationPage({ params }: Props) {
 
   const { data: mosque } = await admin
     .from('mosques')
-    .select('id, name, slug, primary_color, welcome_msg, logo_url')
+    .select('id, name, slug, primary_color, welcome_msg, logo_url, status')
     .eq('slug', slug)
     .single()
 
-  if (!mosque) notFound()
+  if (!mosque || mosque.status !== 'active') notFound()
 
   const { data: campaign } = await admin
     .from('campaigns')

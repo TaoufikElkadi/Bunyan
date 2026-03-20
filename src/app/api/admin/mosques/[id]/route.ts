@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getPlatformAdmin } from '@/lib/supabase/platform-admin'
 
 const VALID_PLANS = ['free', 'starter', 'growth']
+const VALID_STATUSES = ['pending', 'active', 'rejected']
 
 export async function PATCH(
   request: Request,
@@ -13,30 +14,54 @@ export async function PATCH(
 
     const { id } = await params
     const body = await request.json()
-    const { plan } = body
+    const { plan, status } = body
 
-    if (!plan || !VALID_PLANS.includes(plan)) {
-      return NextResponse.json(
-        { error: `Invalid plan. Must be one of: ${VALID_PLANS.join(', ')}` },
-        { status: 400 }
-      )
+    // Must provide at least one field to update
+    if (!plan && !status) {
+      return NextResponse.json({ error: 'Provide plan or status' }, { status: 400 })
+    }
+
+    const updates: Record<string, unknown> = {}
+
+    if (plan) {
+      if (!VALID_PLANS.includes(plan)) {
+        return NextResponse.json(
+          { error: `Invalid plan. Must be one of: ${VALID_PLANS.join(', ')}` },
+          { status: 400 }
+        )
+      }
+      updates.plan = plan
+    }
+
+    if (status) {
+      if (!VALID_STATUSES.includes(status)) {
+        return NextResponse.json(
+          { error: `Invalid status. Must be one of: ${VALID_STATUSES.join(', ')}` },
+          { status: 400 }
+        )
+      }
+      updates.status = status
+      if (status === 'active') {
+        updates.approved_at = new Date().toISOString()
+        updates.approved_by = admin.user.id
+      }
     }
 
     const { data, error } = await admin.adminClient
       .from('mosques')
-      .update({ plan })
+      .update(updates)
       .eq('id', id)
       .select()
       .single()
 
     if (error) {
-      console.error('Update mosque plan error:', error)
-      return NextResponse.json({ error: 'Failed to update plan' }, { status: 500 })
+      console.error('Update mosque error:', error)
+      return NextResponse.json({ error: 'Failed to update mosque' }, { status: 500 })
     }
 
     return NextResponse.json(data)
   } catch (err) {
-    console.error('Update mosque plan error:', err)
+    console.error('Update mosque error:', err)
     return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
   }
 }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { rateLimit, getClientIp } from '@/lib/rate-limit'
+import { buildTransferParams } from '@/lib/stripe-connect'
 
 /**
  * Creates a Stripe PaymentIntent + a pending donation row.
@@ -51,14 +52,14 @@ export async function POST(request: Request) {
 
     const admin = createAdminClient()
 
-    // Look up mosque by slug
+    // Look up mosque by slug (must be approved)
     const { data: mosque } = await admin
       .from('mosques')
-      .select('id, name')
+      .select('id, name, status')
       .eq('slug', mosque_slug)
       .single()
 
-    if (!mosque) {
+    if (!mosque || mosque.status !== 'active') {
       return NextResponse.json({ error: 'Moskee niet gevonden' }, { status: 404 })
     }
 
@@ -114,6 +115,9 @@ export async function POST(request: Request) {
       }
     }
 
+    // Build Connect transfer params (routes funds to mosque's Stripe account)
+    const transferParams = await buildTransferParams(mosque.id)
+
     // Create Stripe PaymentIntent
     const paymentIntent = await stripe.paymentIntents.create({
       amount: chargeCents,
@@ -130,6 +134,7 @@ export async function POST(request: Request) {
       // Enable common Dutch payment methods
       automatic_payment_methods: { enabled: true },
       description: `Donatie aan ${mosque.name} — ${fund.name}`,
+      ...transferParams,
     })
 
     // Create pending donation row

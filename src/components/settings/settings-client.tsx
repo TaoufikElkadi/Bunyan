@@ -11,7 +11,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import type { Mosque } from '@/types'
 
 interface Props {
-  mosque: Mosque & { stripe_account_id?: string | null; stripe_connected_at?: string | null }
+  mosque: Mosque
   userId: string
   userRole: string
   hasStripeKey: boolean
@@ -72,7 +72,7 @@ export function SettingsClient({ mosque, userId, userRole, hasStripeKey }: Props
 
         <TabsContent value="betalingen">
           <div className="max-w-2xl space-y-6">
-            <StripeCard mosque={mosque} hasStripeKey={hasStripeKey} />
+            <StripeCard mosque={mosque} hasStripeKey={hasStripeKey} isAdmin={isAdmin} />
           </div>
         </TabsContent>
 

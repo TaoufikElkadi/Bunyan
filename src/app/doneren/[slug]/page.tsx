@@ -22,11 +22,11 @@ export async function generateMetadata({ params }: Props) {
   const admin = createAdminClient()
   const { data: mosque } = await admin
     .from('mosques')
-    .select('name')
+    .select('name, status')
     .eq('slug', slug)
     .single()
 
-  if (!mosque) return { title: 'Doneren — Bunyan' }
+  if (!mosque || mosque.status !== 'active') return { title: 'Doneren — Bunyan' }
 
   return {
     title: `Doneer aan ${mosque.name} — Bunyan`,
@@ -40,11 +40,11 @@ export default async function DonerenPage({ params }: Props) {
 
   const { data: mosque } = await admin
     .from('mosques')
-    .select('id, name, slug, primary_color, welcome_msg, logo_url, language, anbi_status, rsin')
+    .select('id, name, slug, primary_color, welcome_msg, logo_url, language, anbi_status, rsin, status')
     .eq('slug', slug)
     .single()
 
-  if (!mosque) notFound()
+  if (!mosque || mosque.status !== 'active') notFound()
 
   const { data: funds } = await admin
     .from('funds')
