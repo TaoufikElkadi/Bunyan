@@ -796,48 +796,42 @@ export async function DELETE() {
 
   const mockDonorIds = Array.from(new Set((mockDonations ?? []).map((d: { donor_id: string }) => d.donor_id).filter(Boolean)))
 
-  // Delete mock periodic gift agreements
-  await supabase
-    .from('periodic_gift_agreements')
-    .delete()
-    .eq('mosque_id', mosqueId)
-    .eq('notes', '__mock__')
-
-  // Delete mock donations
-  await supabase
+  // Find mock donors that also have real (non-mock) donations — keep those donors
+  const { data: donorsWithRealDonations } = await supabase
     .from('donations')
-    .delete()
+    .select('donor_id')
     .eq('mosque_id', mosqueId)
-    .eq('notes', '__mock__')
+    .neq('notes', '__mock__')
+    .in('donor_id', mockDonorIds)
 
-  // Delete mock recurring mandates
-  await supabase
-    .from('recurrings')
-    .delete()
-    .eq('mosque_id', mosqueId)
-    .like('cancel_token', 'mock_cancel_%')
+  const keepDonorIds = new Set((donorsWithRealDonations ?? []).map(d => d.donor_id))
+  const deletableDonorIds = mockDonorIds.filter(id => !keepDonorIds.has(id))
 
-  // Delete member_events for mock donors in parallel batches
-  for (let i = 0; i < mockDonorIds.length; i += 20) {
-    const batch = mockDonorIds.slice(i, i + 20)
-    await Promise.all(batch.map(id =>
-      supabase.from('member_events').delete().eq('donor_id', id).eq('mosque_id', mosqueId)
-    ))
+  // Delete pure-mock donors in batches (child records cascade via ON DELETE CASCADE)
+  for (let i = 0; i < deletableDonorIds.length; i += BATCH_SIZE) {
+    const batch = deletableDonorIds.slice(i, i + BATCH_SIZE)
+    await supabase.from('donors').delete().in('id', batch)
   }
 
-  // Delete donors that have no non-mock donations left (parallel batches)
-  for (let i = 0; i < mockDonorIds.length; i += 20) {
-    const batch = mockDonorIds.slice(i, i + 20)
-    await Promise.all(batch.map(async (donorId) => {
-      const { count } = await supabase
-        .from('donations')
-        .select('*', { count: 'exact', head: true })
-        .eq('donor_id', donorId)
+  // For kept donors, clean up their mock donations/recurrings/periodic gifts
+  if (keepDonorIds.size > 0) {
+    await supabase
+      .from('donations')
+      .delete()
+      .eq('mosque_id', mosqueId)
+      .eq('notes', '__mock__')
 
-      if (count === 0) {
-        await supabase.from('donors').delete().eq('id', donorId)
-      }
-    }))
+    await supabase
+      .from('periodic_gift_agreements')
+      .delete()
+      .eq('mosque_id', mosqueId)
+      .eq('notes', '__mock__')
+
+    await supabase
+      .from('recurrings')
+      .delete()
+      .eq('mosque_id', mosqueId)
+      .like('cancel_token', 'mock_cancel_%')
   }
 
   return NextResponse.json({ success: true })
