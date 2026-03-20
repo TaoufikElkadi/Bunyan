@@ -334,10 +334,10 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
   return (
     <div className="space-y-8">
       {/* Page header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-[24px] font-bold tracking-[-0.5px] text-[#261b07]">Mosques</h1>
-          <p className="text-[14px] text-[#a09888] mt-0.5">
+          <h1 className="text-[22px] sm:text-[24px] font-bold tracking-[-0.5px] text-[#261b07]">Mosques</h1>
+          <p className="text-[13px] sm:text-[14px] text-[#a09888] mt-0.5">
             Beheer alle moskeeën op het platform
           </p>
         </div>
@@ -419,43 +419,43 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
       </div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-4 gap-3">
-        <div className="rounded-xl border border-[#e3dfd5] bg-white px-5 py-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="rounded-xl border border-[#e3dfd5] bg-white px-4 py-3 md:px-5 md:py-4">
           <div className="flex items-center gap-2 mb-1">
             <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[#f3f1ec]">
               <Building2 className="h-3 w-3 text-[#8a8478]" strokeWidth={2} />
             </div>
             <span className="text-[11px] font-medium text-[#a09888] uppercase tracking-wide">Moskeeën</span>
           </div>
-          <p className="text-[22px] font-bold tracking-tight text-[#261b07]">{metrics.totalMosques}</p>
+          <p className="text-[20px] md:text-[22px] font-bold tracking-tight text-[#261b07]">{metrics.totalMosques}</p>
         </div>
-        <div className="rounded-xl border border-[#e3dfd5] bg-white px-5 py-4">
+        <div className="rounded-xl border border-[#e3dfd5] bg-white px-4 py-3 md:px-5 md:py-4">
           <div className="flex items-center gap-2 mb-1">
             <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[#f3f1ec]">
               <Users className="h-3 w-3 text-[#8a8478]" strokeWidth={2} />
             </div>
             <span className="text-[11px] font-medium text-[#a09888] uppercase tracking-wide">Gebruikers</span>
           </div>
-          <p className="text-[22px] font-bold tracking-tight text-[#261b07]">{metrics.totalUsers}</p>
+          <p className="text-[20px] md:text-[22px] font-bold tracking-tight text-[#261b07]">{metrics.totalUsers}</p>
         </div>
-        <div className="rounded-xl border border-[#e3dfd5] bg-white px-5 py-4">
+        <div className="rounded-xl border border-[#e3dfd5] bg-white px-4 py-3 md:px-5 md:py-4">
           <div className="flex items-center gap-2 mb-1">
             <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[#f3f1ec]">
               <Heart className="h-3 w-3 text-[#8a8478]" strokeWidth={2} />
             </div>
             <span className="text-[11px] font-medium text-[#a09888] uppercase tracking-wide">Totale omzet</span>
           </div>
-          <p className="text-[22px] font-bold tracking-tight text-[#261b07]">{formatEur(metrics.totalRevenue)}</p>
+          <p className="text-[20px] md:text-[22px] font-bold tracking-tight text-[#261b07]">{formatEur(metrics.totalRevenue)}</p>
           <p className="text-[11px] text-[#b5b0a5] mt-0.5">{metrics.totalDonations} donaties</p>
         </div>
-        <div className="rounded-xl border border-[#e3dfd5] bg-white px-5 py-4">
+        <div className="rounded-xl border border-[#e3dfd5] bg-white px-4 py-3 md:px-5 md:py-4">
           <div className="flex items-center gap-2 mb-1">
             <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[#f3f1ec]">
               <TrendingUp className="h-3 w-3 text-[#8a8478]" strokeWidth={2} />
             </div>
             <span className="text-[11px] font-medium text-[#a09888] uppercase tracking-wide">Deze maand</span>
           </div>
-          <p className="text-[22px] font-bold tracking-tight text-[#261b07]">{formatEur(metrics.monthlyRevenue)}</p>
+          <p className="text-[20px] md:text-[22px] font-bold tracking-tight text-[#261b07]">{formatEur(metrics.monthlyRevenue)}</p>
         </div>
       </div>
 
@@ -502,77 +502,93 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
             <div key={mosque.id}>
               {/* Mosque row */}
               <div
-                className={`group flex items-center gap-4 px-5 py-4 transition-colors cursor-pointer ${
+                className={`group flex items-center gap-3 md:gap-4 px-4 md:px-5 py-3.5 md:py-4 transition-colors cursor-pointer ${
                   isExpanded ? 'bg-[#fafaf8]' : 'hover:bg-[#fdfcfb]'
                 }`}
                 onClick={() => toggleExpanded(mosque.id)}
               >
                 {/* Avatar */}
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f3f1ec] border border-[#e3dfd5]">
+                <div className="flex h-9 w-9 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-full bg-[#f3f1ec] border border-[#e3dfd5]">
                   <Building2 className="h-4 w-4 text-[#8a8478]" strokeWidth={1.5} />
                 </div>
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-[14px] font-semibold text-[#261b07] truncate">{mosque.name}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[13px] md:text-[14px] font-semibold text-[#261b07] truncate">{mosque.name}</span>
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
                         navigator.clipboard.writeText(`bunyan.io/doneren/${mosque.slug}`)
                       }}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="hidden md:inline-block opacity-0 group-hover:opacity-100 transition-opacity"
                       title="Kopieer URL"
                     >
                       <Copy className="h-3 w-3 text-[#b5b0a5] hover:text-[#261b07]" />
                     </button>
                   </div>
-                  <div className="flex items-center gap-2.5 mt-0.5">
-                    <span className="text-[12px] text-[#a09888]">/doneren/{mosque.slug}</span>
+                  <div className="flex items-center gap-1.5 md:gap-2.5 mt-0.5 flex-wrap">
                     {mosque.city && (
-                      <>
-                        <span className="text-[12px] text-[#e3dfd5]">&middot;</span>
-                        <span className="flex items-center gap-0.5 text-[12px] text-[#a09888]">
-                          <MapPin className="h-2.5 w-2.5" />
-                          {mosque.city}
-                        </span>
-                      </>
+                      <span className="flex items-center gap-0.5 text-[11px] md:text-[12px] text-[#a09888]">
+                        <MapPin className="h-2.5 w-2.5" />
+                        {mosque.city}
+                      </span>
                     )}
-                    <span className="text-[12px] text-[#e3dfd5]">&middot;</span>
-                    <span className="text-[12px] text-[#a09888]">{timeAgo(mosque.created_at)}</span>
+                    <span className="hidden md:inline text-[12px] text-[#e3dfd5]">&middot;</span>
+                    <span className="hidden md:inline text-[12px] text-[#a09888]">/doneren/{mosque.slug}</span>
+                    <span className="text-[11px] md:text-[12px] text-[#e3dfd5]">&middot;</span>
+                    <span className="text-[11px] md:text-[12px] text-[#a09888]">{timeAgo(mosque.created_at)}</span>
+                  </div>
+                  {/* Mobile badges */}
+                  <div className="flex items-center gap-1.5 mt-1.5 md:hidden">
+                    {mosque.status !== 'active' && (() => {
+                      const statusStyle = STATUS_STYLES[mosque.status] ?? STATUS_STYLES.pending
+                      return (
+                        <div className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusStyle.bg} ${statusStyle.text}`}>
+                          <div className={`h-1.5 w-1.5 rounded-full ${statusStyle.dot}`} />
+                          {statusStyle.label}
+                        </div>
+                      )
+                    })()}
+                    <div className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${planStyle.bg} ${planStyle.text}`}>
+                      <div className={`h-1.5 w-1.5 rounded-full ${planStyle.dot}`} />
+                      {mosque.plan}
+                    </div>
                   </div>
                 </div>
 
-                {/* Right side: plan + users + actions */}
-                <div className="flex items-center gap-3 shrink-0">
+                {/* Right side: plan + users + actions (desktop) */}
+                <div className="flex items-center gap-2 md:gap-3 shrink-0">
                   {/* User count pill */}
-                  <div className="flex items-center gap-1.5 rounded-full bg-[#f3f1ec] px-2.5 py-1 text-[11px] font-medium text-[#8a8478]">
+                  <div className="hidden sm:flex items-center gap-1.5 rounded-full bg-[#f3f1ec] px-2.5 py-1 text-[11px] font-medium text-[#8a8478]">
                     <Users className="h-3 w-3" />
                     {mosque.users.length}
                   </div>
 
-                  {/* Status badge */}
-                  {mosque.status !== 'active' && (() => {
-                    const statusStyle = STATUS_STYLES[mosque.status] ?? STATUS_STYLES.pending
-                    return (
-                      <div className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusStyle.bg} ${statusStyle.text}`}>
-                        <div className={`h-1.5 w-1.5 rounded-full ${statusStyle.dot}`} />
-                        {statusStyle.label}
-                      </div>
-                    )
-                  })()}
+                  {/* Status badge (desktop) */}
+                  <div className="hidden md:block">
+                    {mosque.status !== 'active' && (() => {
+                      const statusStyle = STATUS_STYLES[mosque.status] ?? STATUS_STYLES.pending
+                      return (
+                        <div className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusStyle.bg} ${statusStyle.text}`}>
+                          <div className={`h-1.5 w-1.5 rounded-full ${statusStyle.dot}`} />
+                          {statusStyle.label}
+                        </div>
+                      )
+                    })()}
+                  </div>
 
-                  {/* Plan badge */}
-                  <div className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${planStyle.bg} ${planStyle.text}`}>
+                  {/* Plan badge (desktop) */}
+                  <div className={`hidden md:flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${planStyle.bg} ${planStyle.text}`}>
                     <div className={`h-1.5 w-1.5 rounded-full ${planStyle.dot}`} />
                     {mosque.plan}
                   </div>
 
-                  {/* Actions dropdown */}
+                  {/* Actions dropdown - always visible on mobile */}
                   <div className="relative" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => setActionMenuId(actionMenuId === mosque.id ? null : mosque.id)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-[#b5b0a5] opacity-0 group-hover:opacity-100 hover:bg-[#f3f1ec] hover:text-[#261b07] transition-all"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-[#b5b0a5] md:opacity-0 md:group-hover:opacity-100 hover:bg-[#f3f1ec] hover:text-[#261b07] transition-all"
                     >
                       <MoreVertical className="h-4 w-4" />
                     </button>
@@ -682,7 +698,7 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
               {/* Expanded: users section */}
               {isExpanded && (
                 <div className="border-t border-[#f0ede8] bg-[#fafaf8]">
-                  <div className="px-5 py-3 flex items-center justify-between">
+                  <div className="px-4 md:px-5 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Users className="h-3.5 w-3.5 text-[#a09888]" />
                       <span className="text-[12px] font-semibold text-[#261b07] uppercase tracking-wide">
@@ -784,23 +800,23 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
                   </div>
 
                   {mosque.users.length === 0 ? (
-                    <div className="px-5 pb-4">
+                    <div className="px-4 md:px-5 pb-4">
                       <p className="text-[13px] text-[#a09888] py-3 text-center">
                         Nog geen gebruikers toegewezen.
                       </p>
                     </div>
                   ) : (
-                    <div className="px-5 pb-4 space-y-1">
+                    <div className="px-4 md:px-5 pb-4 space-y-1">
                       {mosque.users.map((user) => (
                         <div
                           key={user.id}
-                          className={`group/user flex items-center justify-between rounded-lg px-3 py-2.5 text-[13px] transition-colors ${
+                          className={`group/user flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-lg px-3 py-2.5 text-[13px] transition-colors gap-2 sm:gap-0 ${
                             user.banned
                               ? 'bg-red-50/80'
                               : 'hover:bg-white'
                           }`}
                         >
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
                             <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${
                               user.banned
                                 ? 'bg-red-100 text-red-600'
@@ -808,9 +824,9 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
                             }`}>
                               {user.name?.charAt(0)?.toUpperCase() ?? '?'}
                             </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium text-[#261b07]">{user.name}</span>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-medium text-[#261b07] truncate">{user.name}</span>
                                 <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-medium ${
                                   user.role === 'admin'
                                     ? 'bg-[#f3f1ec] text-[#8a8478]'
@@ -824,11 +840,11 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
                                   </span>
                                 )}
                               </div>
-                              <span className="text-[12px] text-[#a09888]">{user.email}</span>
+                              <span className="text-[12px] text-[#a09888] truncate block">{user.email}</span>
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-0.5 opacity-0 group-hover/user:opacity-100 transition-opacity">
+                          <div className="flex items-center gap-0.5 sm:opacity-0 sm:group-hover/user:opacity-100 transition-opacity ml-11 sm:ml-0 shrink-0">
                             <select
                               value={user.role}
                               onChange={(e) => handleRoleChange(mosque.id, user.id, e.target.value)}
