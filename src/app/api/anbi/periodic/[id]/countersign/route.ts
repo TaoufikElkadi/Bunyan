@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { parseSignatureBase64 } from '@/lib/signatures'
+import { sendMosqueEmail } from '@/lib/email/send'
+import { emailLayout } from '@/lib/email/templates/layout'
+import { formatMoney } from '@/lib/money'
 
 /**
  * Board member countersigns a periodic gift agreement.
@@ -89,8 +92,58 @@ export async function POST(
       return NextResponse.json({ error: 'Fout bij ondertekenen' }, { status: 500 })
     }
 
-    // TODO: Send confirmation email to donor with final PDF (Resend blocked)
-    console.log(`[email-stub] Agreement countersigned: ${id}, by ${profile.name}`)
+    // Send confirmation email to donor
+    try {
+      const { data: agreement } = await supabase
+        .from('periodic_gift_agreements')
+        .select('annual_amount, start_date, end_date, donors(name, email), mosques(name, contact_email)')
+        .eq('id', id)
+        .single()
+
+      const donor = (agreement?.donors as any)
+      const mosque = (agreement?.mosques as any)
+
+      if (donor?.email && mosque?.name) {
+        const html = emailLayout({
+          title: `Periodieke gift bevestigd — ${mosque.name}`,
+          body: `
+            <h1 style="margin: 0 0 8px 0; font-size: 20px; font-weight: 600; color: #18181b;">${mosque.name}</h1>
+            <p style="margin: 0 0 24px 0; font-size: 16px; color: #3f3f46; line-height: 1.6;">
+              Beste ${donor.name || 'donateur'},
+            </p>
+            <p style="margin: 0 0 16px 0; font-size: 16px; color: #3f3f46; line-height: 1.6;">
+              Uw periodieke gift overeenkomst is door het bestuur ondertekend en nu actief.
+            </p>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; border-radius: 6px; margin-bottom: 24px;">
+              <tr><td style="padding: 16px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="padding: 4px 0; font-size: 14px; color: #71717a; width: 140px;">Jaarbedrag</td>
+                    <td style="padding: 4px 0; font-size: 14px; color: #18181b; font-weight: 500;">${formatMoney(agreement!.annual_amount)}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 4px 0; font-size: 14px; color: #71717a;">Looptijd</td>
+                    <td style="padding: 4px 0; font-size: 14px; color: #18181b; font-weight: 500;">${new Date(agreement!.start_date).toLocaleDateString('nl-NL')} t/m ${new Date(agreement!.end_date).toLocaleDateString('nl-NL')}</td>
+                  </tr>
+                </table>
+              </td></tr>
+            </table>
+            <p style="margin: 0; font-size: 16px; color: #3f3f46; line-height: 1.6;">
+              Bewaar dit bericht voor uw belastingaangifte. U kunt hiermee extra belastingvoordeel behalen.
+            </p>`,
+        })
+
+        await sendMosqueEmail({
+          to: donor.email,
+          subject: `Periodieke gift bevestigd — ${mosque.name}`,
+          html,
+          mosqueName: mosque.name,
+          mosqueContactEmail: mosque.contact_email,
+        })
+      }
+    } catch (emailErr) {
+      console.error('Countersign confirmation email error:', emailErr)
+    }
 
     return NextResponse.json({ success: true })
   } catch (err) {

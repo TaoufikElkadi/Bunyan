@@ -19,6 +19,7 @@ export interface Mosque {
   anbi_status: boolean
   rsin: string | null
   kvk: string | null
+  contact_email: string | null
   language: Locale
   stripe_account_id: string | null
   stripe_connected_at: string | null

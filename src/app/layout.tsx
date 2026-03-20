@@ -16,8 +16,8 @@ const outfit = Outfit({
 })
 
 export const metadata: Metadata = {
-  title: "Bunyan — Donatiebeheer voor moskeeën",
-  description: "Alles-in-één platform voor moskee donatiebeheer, ANBI-giftenverklaringen en donateursbeheer.",
+  title: "Bunyan — Moskee software voor donaties, ANBI & ledenbeheer",
+  description: "Bunyan is hét platform waarmee moskeeën in Nederland donaties beheren, ANBI-giftenverklaringen genereren en hun gemeenschap in kaart brengen. Start gratis met iDEAL, periodieke giften en donorprofielen.",
 }
 
 export default function RootLayout({

@@ -3,6 +3,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { validatePeriodicGift } from '@/lib/anbi'
 import { parseSignatureBase64, getClientIp } from '@/lib/signatures'
 import { rateLimit } from '@/lib/rate-limit'
+import { sendEmail } from '@/lib/email/send'
+import { emailLayout } from '@/lib/email/templates/layout'
+import { formatMoney } from '@/lib/money'
 
 /**
  * Public endpoint for donors to submit a signed periodic gift agreement.
@@ -158,8 +161,59 @@ export async function POST(request: Request) {
       })
       .eq('id', agreement.id)
 
-    // TODO: Send notification email to mosque admin (Resend blocked)
-    console.log(`[email-stub] Periodic gift pending: agreement=${agreement.id}, mosque=${mosque.name}, donor=${donor_name}`)
+    // Notify mosque admin(s) about the new periodic gift
+    try {
+      const { data: admins } = await admin
+        .from('users')
+        .select('email')
+        .eq('mosque_id', mosque.id)
+        .eq('role', 'admin')
+
+      const amountCentsForEmail = amountCents
+      const adminEmails = (admins ?? []).map((a: any) => a.email).filter(Boolean)
+
+      if (adminEmails.length > 0) {
+        const html = emailLayout({
+          title: `Nieuwe periodieke gift — ${mosque.name}`,
+          body: `
+            <h1 style="margin: 0 0 8px 0; font-size: 20px; font-weight: 600; color: #18181b;">Nieuwe periodieke gift</h1>
+            <p style="margin: 0 0 24px 0; font-size: 16px; color: #3f3f46; line-height: 1.6;">
+              Er is een nieuwe periodieke gift overeenkomst ingediend die wacht op uw goedkeuring.
+            </p>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; border-radius: 6px; margin-bottom: 24px;">
+              <tr><td style="padding: 16px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="padding: 4px 0; font-size: 14px; color: #71717a; width: 120px;">Donateur</td>
+                    <td style="padding: 4px 0; font-size: 14px; color: #18181b; font-weight: 500;">${donor_name}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 4px 0; font-size: 14px; color: #71717a;">Jaarbedrag</td>
+                    <td style="padding: 4px 0; font-size: 14px; color: #18181b; font-weight: 500;">${formatMoney(amountCentsForEmail)}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 4px 0; font-size: 14px; color: #71717a;">Looptijd</td>
+                    <td style="padding: 4px 0; font-size: 14px; color: #18181b; font-weight: 500;">${new Date(start_date).toLocaleDateString('nl-NL')} t/m ${new Date(end_date).toLocaleDateString('nl-NL')}</td>
+                  </tr>
+                </table>
+              </td></tr>
+            </table>
+            <p style="margin: 0; font-size: 16px; color: #3f3f46; line-height: 1.6;">
+              Ga naar het ANBI-tabblad in uw dashboard om de overeenkomst te ondertekenen.
+            </p>`,
+        })
+
+        for (const email of adminEmails) {
+          await sendEmail({
+            to: email,
+            subject: `Nieuwe periodieke gift van ${donor_name} — ${mosque.name}`,
+            html,
+          })
+        }
+      }
+    } catch (emailErr) {
+      console.error('Periodic gift admin notification error:', emailErr)
+    }
 
     return NextResponse.json({ success: true, agreement_id: agreement.id }, { status: 201 })
   } catch (err) {

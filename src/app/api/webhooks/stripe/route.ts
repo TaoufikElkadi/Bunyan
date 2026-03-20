@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { stripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sendMosqueEmail } from '@/lib/email/send'
+import { donationConfirmationEmail } from '@/lib/email/templates/donation-confirmation'
+import { recurringCancelledEmail } from '@/lib/email/templates/recurring-cancelled'
 
 type AdminClient = ReturnType<typeof createAdminClient>
 
@@ -93,7 +96,9 @@ async function handlePaymentSuccess(
     .single()
 
   if (!donation) {
-    console.error(`Webhook: payment ${pi.id} not found in database`)
+    // This PI might be the first payment of a subscription.
+    // Look up via Stripe to check if it belongs to an invoice/subscription.
+    await handleFirstSubscriptionPayment(admin, pi.id)
     return
   }
 
@@ -114,22 +119,115 @@ async function handlePaymentSuccess(
 
   // Increment plan usage counter for online donations
   if (pi.metadata.mosque_id) {
-    const monthStart = new Date()
-    monthStart.setDate(1)
-    monthStart.setHours(0, 0, 0, 0)
-    const monthStr = monthStart.toISOString().slice(0, 10)
+    await incrementPlanUsage(admin, pi.metadata.mosque_id)
+  }
 
-    const { error: rpcError } = await admin.rpc('increment_plan_usage', {
-      p_mosque_id: pi.metadata.mosque_id,
-      p_month: monthStr,
-    })
-
-    if (rpcError) {
-      console.error(`Failed to increment plan usage for mosque ${pi.metadata.mosque_id}:`, rpcError)
-    }
+  // Send donation confirmation email (non-blocking — don't fail the webhook)
+  try {
+    await sendDonationConfirmation(admin, pi.id, pi.metadata)
+  } catch (emailErr) {
+    console.error('Donation confirmation email error:', emailErr)
   }
 
   // Donor aggregates are updated automatically via DB trigger
+}
+
+/**
+ * Handles the first payment of a subscription.
+ * When a subscription is created with payment_behavior: 'default_incomplete',
+ * the first charge triggers payment_intent.succeeded (not invoice.payment_succeeded).
+ * We create the first donation row here.
+ */
+async function handleFirstSubscriptionPayment(
+  admin: AdminClient,
+  paymentIntentId: string
+) {
+  // Retrieve the PI from Stripe to find the subscription
+  const pi = await stripe.paymentIntents.retrieve(paymentIntentId) as any
+
+  let subscriptionId: string | null = null
+
+  // Path 1: PI is linked to an invoice (standard subscription flow)
+  const invoiceId = typeof pi.invoice === 'string' ? pi.invoice : pi.invoice?.id
+  if (invoiceId) {
+    const invoice = await stripe.invoices.retrieve(invoiceId) as any
+    subscriptionId =
+      invoice.subscription
+      ?? invoice.parent?.subscription_details?.subscription
+      ?? null
+  }
+
+  // Path 2: Standalone PI with subscription_id in metadata (Method 5 fallback)
+  if (!subscriptionId && pi.metadata?.subscription_id) {
+    subscriptionId = pi.metadata.subscription_id
+  }
+
+  if (!subscriptionId) return
+
+  // Find the recurring record
+  const { data: recurring } = await admin
+    .from('recurrings')
+    .select('id, mosque_id, donor_id, fund_id, amount, frequency')
+    .eq('stripe_subscription_id', subscriptionId)
+    .single()
+
+  if (!recurring) {
+    console.error(`Webhook: subscription ${subscriptionId} not found in recurrings (first payment)`)
+    return
+  }
+
+  // Idempotency: check if donation for this PI already exists
+  const { data: existing } = await admin
+    .from('donations')
+    .select('id')
+    .eq('stripe_payment_intent_id', paymentIntentId)
+    .single()
+
+  if (existing) return
+
+  // Create the first donation record
+  const { error: insertError } = await admin
+    .from('donations')
+    .insert({
+      mosque_id: recurring.mosque_id,
+      donor_id: recurring.donor_id,
+      fund_id: recurring.fund_id,
+      amount: recurring.amount,
+      method: 'stripe',
+      status: 'completed',
+      is_recurring: true,
+      recurring_id: recurring.id,
+      stripe_payment_intent_id: paymentIntentId,
+    })
+
+  if (insertError) {
+    throw new Error(`Failed to insert first recurring donation: ${insertError.message}`)
+  }
+
+  await incrementPlanUsage(admin, recurring.mosque_id)
+
+  // Send confirmation email (non-blocking)
+  try {
+    await sendRecurringPaymentConfirmation(admin, recurring)
+  } catch (emailErr) {
+    console.error('First recurring payment confirmation email error:', emailErr)
+  }
+}
+
+async function incrementPlanUsage(admin: AdminClient, mosqueId: string) {
+  const monthStart = new Date()
+  monthStart.setDate(1)
+  monthStart.setHours(0, 0, 0, 0)
+  const monthStr = monthStart.toISOString().slice(0, 10)
+
+  const { error } = await admin.rpc('increment_plan_usage', {
+    p_mosque_id: mosqueId,
+    p_month: monthStr,
+  })
+
+  if (error) {
+    console.error(`Failed to increment plan usage for mosque ${mosqueId}:`, error)
+  }
 }
 
 async function handlePaymentFailed(
@@ -169,7 +267,14 @@ async function handleInvoicePaymentSucceeded(
       ? subDetails.subscription
       : subDetails?.subscription?.id ?? null
 
-  if (!subscriptionId) return
+  if (!subscriptionId) {
+    console.log('Webhook invoice.payment_succeeded: no subscriptionId found', {
+      invoiceId: invoice.id,
+      parent: JSON.stringify(invoice.parent),
+      subscription: (invoice as any).subscription,
+    })
+    return
+  }
 
   // Extract payment_intent ID from the invoice's payments list
   // In Stripe v20, payment_intent is not directly on Invoice
@@ -218,20 +323,7 @@ async function handleInvoicePaymentSucceeded(
     throw new Error(`Failed to insert recurring donation: ${insertError.message}`)
   }
 
-  // Increment plan usage counter for online donations
-  const monthStart = new Date()
-  monthStart.setDate(1)
-  monthStart.setHours(0, 0, 0, 0)
-  const monthStr = monthStart.toISOString().slice(0, 10)
-
-  const { error: rpcError } = await admin.rpc('increment_plan_usage', {
-    p_mosque_id: recurring.mosque_id,
-    p_month: monthStr,
-  })
-
-  if (rpcError) {
-    console.error(`Failed to increment plan usage for mosque ${recurring.mosque_id}:`, rpcError)
-  }
+  await incrementPlanUsage(admin, recurring.mosque_id)
 
   // Calculate next_charge_at based on frequency
   const now = new Date()
@@ -265,6 +357,13 @@ async function handleInvoicePaymentSucceeded(
   if (recurringUpdateError) {
     throw new Error(`Failed to update recurring ${recurring.id}: ${recurringUpdateError.message}`)
   }
+
+  // Send recurring payment confirmation email (non-blocking)
+  try {
+    await sendRecurringPaymentConfirmation(admin, recurring)
+  } catch (emailErr) {
+    console.error('Recurring payment confirmation email error:', emailErr)
+  }
 }
 
 async function handleSubscriptionDeleted(
@@ -290,6 +389,13 @@ async function handleSubscriptionDeleted(
 
   if (updateError) {
     throw new Error(`Failed to cancel recurring ${recurring.id}: ${updateError.message}`)
+  }
+
+  // Send cancellation confirmation email (non-blocking)
+  try {
+    await sendRecurringCancelEmail(admin, recurring.id)
+  } catch (emailErr) {
+    console.error('Recurring cancel email error:', emailErr)
   }
 }
 
@@ -328,6 +434,158 @@ async function handleCheckoutSessionCompleted(
   if (updateError) {
     throw new Error(`Failed to update mosque ${mosqueId} plan to ${plan}: ${updateError.message}`)
   }
+}
+
+async function sendDonationConfirmation(
+  admin: AdminClient,
+  paymentIntentId: string,
+  metadata: Record<string, string>
+) {
+  const { mosque_id, fund_name, donor_email, donor_name } = metadata
+  if (!donor_email || !mosque_id) return
+
+  const { data: mosque } = await admin
+    .from('mosques')
+    .select('name, contact_email')
+    .eq('id', mosque_id)
+    .single()
+
+  if (!mosque) return
+
+  // Fetch the donation record for accurate amount + recurring info
+  const { data: donation } = await admin
+    .from('donations')
+    .select('amount, is_recurring, recurring_id')
+    .eq('stripe_payment_intent_id', paymentIntentId)
+    .single()
+
+  // If recurring, look up cancel token and frequency
+  let cancelUrl: string | undefined
+  let frequency: string | undefined
+  if (donation?.is_recurring && donation.recurring_id) {
+    const { data: recurring } = await admin
+      .from('recurrings')
+      .select('cancel_token, frequency')
+      .eq('id', donation.recurring_id)
+      .single()
+
+    if (recurring?.cancel_token) {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+      cancelUrl = `${appUrl}/annuleren/${recurring.cancel_token}`
+      frequency = recurring.frequency
+    }
+  }
+
+  const html = donationConfirmationEmail({
+    mosqueName: mosque.name,
+    donorName: donor_name || undefined,
+    amount: donation?.amount ?? 0,
+    fundName: fund_name || 'Algemeen',
+    method: 'Online',
+    date: new Date().toLocaleDateString('nl-NL'),
+    isRecurring: !!donation?.is_recurring,
+    frequency,
+    cancelUrl,
+  })
+
+  await sendMosqueEmail({
+    to: donor_email,
+    subject: `Donatiebevestiging — ${mosque.name}`,
+    html,
+    mosqueName: mosque.name,
+    mosqueContactEmail: mosque.contact_email,
+  })
+}
+
+async function sendRecurringPaymentConfirmation(
+  admin: AdminClient,
+  recurring: { id: string; mosque_id: string; donor_id: string; fund_id: string; amount: number; frequency: string }
+) {
+  const { data: donor } = await admin
+    .from('donors')
+    .select('name, email')
+    .eq('id', recurring.donor_id)
+    .single()
+
+  if (!donor?.email) return
+
+  const { data: mosque } = await admin
+    .from('mosques')
+    .select('name, contact_email')
+    .eq('id', recurring.mosque_id)
+    .single()
+
+  if (!mosque) return
+
+  const { data: fund } = await admin
+    .from('funds')
+    .select('name')
+    .eq('id', recurring.fund_id)
+    .single()
+
+  const { data: rec } = await admin
+    .from('recurrings')
+    .select('cancel_token')
+    .eq('id', recurring.id)
+    .single()
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  const cancelUrl = rec?.cancel_token ? `${appUrl}/annuleren/${rec.cancel_token}` : undefined
+
+  const html = donationConfirmationEmail({
+    mosqueName: mosque.name,
+    donorName: donor.name || undefined,
+    amount: recurring.amount,
+    fundName: fund?.name || 'Algemeen',
+    method: 'Online',
+    date: new Date().toLocaleDateString('nl-NL'),
+    isRecurring: true,
+    frequency: recurring.frequency,
+    cancelUrl,
+  })
+
+  await sendMosqueEmail({
+    to: donor.email,
+    subject: `Donatiebevestiging — ${mosque.name}`,
+    html,
+    mosqueName: mosque.name,
+    mosqueContactEmail: mosque.contact_email,
+  })
+}
+
+async function sendRecurringCancelEmail(
+  admin: AdminClient,
+  recurringId: string
+) {
+  const { data: recurring } = await admin
+    .from('recurrings')
+    .select('amount, frequency, fund_id, donor_id, mosque_id, funds(name), donors(name, email), mosques(name, contact_email)')
+    .eq('id', recurringId)
+    .single()
+
+  if (!recurring) return
+
+  const donor = recurring.donors as any
+  const mosque = recurring.mosques as any
+  const fund = recurring.funds as any
+
+  if (!donor?.email) return
+
+  const html = recurringCancelledEmail({
+    mosqueName: mosque?.name || 'Uw moskee',
+    donorName: donor.name || undefined,
+    amount: recurring.amount,
+    frequency: recurring.frequency,
+    fundName: fund?.name || 'Algemeen',
+  })
+
+  await sendMosqueEmail({
+    to: donor.email,
+    subject: `Donatie stopgezet — ${mosque?.name || 'Bunyan'}`,
+    html,
+    mosqueName: mosque?.name || 'Bunyan',
+    mosqueContactEmail: mosque?.contact_email,
+  })
 }
 
 async function handleAccountUpdated(

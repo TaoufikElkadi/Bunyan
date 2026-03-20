@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sendTeamInviteEmail } from '@/lib/email/team-invite'
 import type { UserRole } from '@/types'
 
 const VALID_ROLES: UserRole[] = ['admin', 'treasurer', 'viewer']
@@ -35,7 +36,7 @@ export async function POST(request: Request) {
     // Verify caller is an admin
     const { data: caller } = await supabase
       .from('users')
-      .select('id, mosque_id, role')
+      .select('id, mosque_id, role, name, mosques(name)')
       .eq('id', user.id)
       .single()
 
@@ -166,8 +167,19 @@ export async function POST(request: Request) {
       console.log(`[Team Invite] Invite URL for ${normalizedEmail}: ${inviteUrl}`)
     }
 
-    // TODO: Send invite email via Resend when domain is configured
-    // await sendTeamInviteEmail({ to: normalizedEmail, name, mosqueName, inviteUrl, role })
+    // Send invite email
+    const mosqueName = (caller.mosques as any)?.name || 'Uw moskee'
+    const inviterName = caller.name || 'Een beheerder'
+    if (inviteUrl) {
+      await sendTeamInviteEmail({
+        to: normalizedEmail,
+        name: name.trim(),
+        mosqueName,
+        inviterName,
+        role,
+        inviteUrl,
+      })
+    }
 
     return NextResponse.json({
       success: true,

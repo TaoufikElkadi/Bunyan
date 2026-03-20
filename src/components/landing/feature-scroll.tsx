@@ -15,8 +15,8 @@ const features = [
         <rect x="6" y="16" width="5" height="3" rx="0.75" fill="#261b07" stroke="none" opacity="0.2" />
       </svg>
     ),
-    title: "Donaties als startpunt",
-    desc: "Van iDEAL tot periodieke giften — elke transactie bouwt automatisch een profiel op van uw gemeenschap.",
+    title: "Ontvang donaties via iDEAL, kaart of SEPA",
+    desc: "Deel uw QR-code of donatiepagina en ontvang giften direct op uw rekening. Elke betaling wordt automatisch gekoppeld aan een donorprofiel — zo bouwt u ongemerkt een compleet overzicht van uw gemeenschap op.",
   },
   {
     id: "dashboard",
@@ -27,8 +27,8 @@ const features = [
         <rect x="20" y="4" width="5" height="20" rx="1" />
       </svg>
     ),
-    title: "Weet wie uw gemeenschap is",
-    desc: "Zie wie trouw doneert, wie dreigt af te haken en waar periodieke giften nog onbenut blijven.",
+    title: "Eén dashboard, volledig inzicht in uw leden",
+    desc: "Bekijk per lid hoeveel er gedoneerd is, welke fondsen populair zijn en waar betrokkenheid terugloopt. Neem beslissingen op basis van data, niet op onderbuikgevoel.",
   },
   {
     id: "anbi",
@@ -40,8 +40,8 @@ const features = [
         <line x1="10" y1="18" x2="15" y2="18" />
       </svg>
     ),
-    title: "Belastingvoordeel dat ú activeert",
-    desc: "Ontdek welke donateurs recht hebben op ANBI-aftrek en help hen overstappen naar periodieke giften — meer geld voor uw moskee, meer voordeel voor uw leden.",
+    title: "ANBI-giftenverklaringen in één klik",
+    desc: "Bunyan herkent welke donateurs recht hebben op belastingaftrek en genereert automatisch ANBI-jaaropgaven. Help uw leden overstappen op periodieke giften — zij besparen belasting, uw moskee ontvangt structureel meer.",
   },
 ]
 
@@ -107,12 +107,10 @@ export function FeatureScroll() {
               className="text-[56px] font-[584] leading-[1.1] tracking-[-1.12px] text-[#261b07] mb-4"
               style={{ fontFamily: "var(--font-display), sans-serif" }}
             >
-              Van onbekend
-              <br />
-              naar onmisbaar
+              Meer dan een<br />donatie-tool
             </h2>
             <p className="text-[16px] leading-[1.5] text-[color:rgba(38,27,7,0.72)] max-w-[420px]">
-              Donaties zijn pas het begin — Bunyan laat zien wie uw gemeenschap is en waar kansen liggen.
+              Donaties ontvangen is stap één. Bunyan geeft u inzicht in wie uw leden zijn, wat hen beweegt en hoe u als moskee écht kunt groeien.
             </p>
           </div>
 
@@ -188,12 +186,10 @@ export function FeatureScroll() {
               className="text-[32px] sm:text-[42px] font-[584] leading-[1.1] tracking-[-0.8px] text-[#261b07] mb-3"
               style={{ fontFamily: "var(--font-display), sans-serif" }}
             >
-              Van onbekend
-              <br />
-              naar onmisbaar
+              Meer dan een<br />donatie-tool
             </h2>
             <p className="text-[14px] leading-[1.5] text-[color:rgba(38,27,7,0.72)] max-w-[420px]">
-              Donaties zijn pas het begin — Bunyan laat zien wie uw gemeenschap is en waar kansen liggen.
+              Donaties ontvangen is stap één. Bunyan geeft u inzicht in wie uw leden zijn, wat hen beweegt en hoe u als moskee écht kunt groeien.
             </p>
           </div>
 
