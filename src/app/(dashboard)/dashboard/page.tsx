@@ -420,10 +420,8 @@ async function DashboardContent() {
             <FundBars data={fundData} />
           </div>
 
-          {/* Mock Data Generator (dev only) */}
-          {process.env.NODE_ENV !== 'production' && (
-            <GenerateMockButton />
-          )}
+          {/* Mock Data Generator */}
+          <GenerateMockButton />
         </div>
       </div>
     </div>
