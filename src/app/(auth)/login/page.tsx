@@ -16,9 +16,10 @@ export default function LoginPage() {
 function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [otp, setOtp] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [magicLinkSent, setMagicLinkSent] = useState(false)
+  const [otpSent, setOtpSent] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirect = searchParams.get('redirect') || '/dashboard'
@@ -46,7 +47,7 @@ function LoginForm() {
     router.refresh()
   }
 
-  async function handleMagicLink() {
+  async function handleOtpRequest() {
     if (!email) {
       setError('Vul een e-mailadres in')
       return
@@ -57,7 +58,7 @@ function LoginForm() {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?redirect=${redirect}`,
+        shouldCreateUser: false,
       },
     })
 
@@ -67,30 +68,83 @@ function LoginForm() {
       return
     }
 
-    setMagicLinkSent(true)
+    setOtpSent(true)
     setLoading(false)
   }
 
-  if (magicLinkSent) {
+  async function handleOtpVerify(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    setLoading(true)
+
+    const { data, error } = await supabase.auth.verifyOtp({
+      email,
+      token: otp,
+      type: 'email',
+    })
+
+    if (error) {
+      setError(error.message)
+      setLoading(false)
+      return
+    }
+
+    const isPlatformAdmin = data.user?.app_metadata?.platform_role === 'platform_admin'
+    router.push(isPlatformAdmin ? '/admin' : redirect)
+    router.refresh()
+  }
+
+  if (otpSent) {
     return (
       <div>
         <h1
           className="text-[28px] font-[584] tracking-[-0.56px] text-[#261b07] mb-2"
           style={{ fontFamily: "var(--font-display), sans-serif" }}
         >
-          Controleer uw e-mail
+          Voer uw code in
         </h1>
         <p className="text-[15px] text-[#a09888] mb-8">
-          We hebben een inloglink gestuurd naar {email}
+          We hebben een 6-cijferige code gestuurd naar {email}
         </p>
-        <p className="text-[14px] text-[#a09888] mb-6">
-          Klik op de link in de e-mail om in te loggen. Controleer ook uw spam folder.
+        <form onSubmit={handleOtpVerify} className="space-y-4">
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={6}
+            placeholder="000000"
+            value={otp}
+            onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+            required
+            autoFocus
+            autoComplete="one-time-code"
+            className="w-full rounded-lg border border-[#e3dfd5] bg-white px-4 py-3 text-center text-[24px] font-semibold tracking-[0.5em] text-[#261b07] placeholder:text-[#b5b0a5] placeholder:tracking-[0.5em] outline-none focus:border-[#261b07]/30 focus:ring-1 focus:ring-[#261b07]/10 transition-colors"
+          />
+          {error && (
+            <p className="text-[13px] text-red-600">{error}</p>
+          )}
+          <button
+            type="submit"
+            disabled={loading || otp.length < 6}
+            className="w-full rounded-lg bg-[#261b07] py-3 text-[14px] font-semibold text-[#f8f7f5] hover:bg-[#3a2c14] disabled:opacity-50 transition-colors"
+          >
+            {loading ? 'Bezig...' : 'Verifiëren'}
+          </button>
+        </form>
+        <p className="mt-4 text-center text-[13px] text-[#a09888]">
+          Geen code ontvangen?{' '}
+          <button
+            onClick={handleOtpRequest}
+            className="text-[#261b07] underline underline-offset-2"
+          >
+            Opnieuw versturen
+          </button>
         </p>
         <button
-          onClick={() => setMagicLinkSent(false)}
-          className="w-full py-3 rounded-lg border border-[#e3dfd5] text-[14px] font-medium text-[#261b07] hover:bg-[#f0ede6] transition-colors"
+          onClick={() => { setOtpSent(false); setOtp(''); setError(null) }}
+          className="mt-2 w-full py-3 rounded-lg border border-[#e3dfd5] text-[14px] font-medium text-[#261b07] hover:bg-[#f0ede6] transition-colors"
         >
-          Opnieuw proberen
+          Ander e-mailadres gebruiken
         </button>
       </div>
     )
@@ -150,16 +204,16 @@ function LoginForm() {
         </div>
       </div>
 
-      {/* Magic link button */}
+      {/* OTP login button */}
       <button
-        onClick={handleMagicLink}
+        onClick={handleOtpRequest}
         disabled={loading}
         className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#e3dfd5] bg-white py-3 text-[14px] font-medium text-[#261b07] hover:bg-[#f8f7f5] disabled:opacity-50 transition-colors"
       >
         <svg className="w-4 h-4 text-[#a09888]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
         </svg>
-        Inloggen met e-mail link
+        Inloggen met e-mail code
       </button>
 
       {/* Help + legal */}

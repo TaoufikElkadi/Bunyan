@@ -13,24 +13,18 @@
           <tr>
             <td style="padding: 36px 32px 24px 32px; text-align: center;">
               <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 600; color: #261b07;">
-                Inloggen bij Bunyan
+                Uw inlogcode
               </h1>
-              <p style="margin: 0 0 28px 0; font-size: 15px; color: #8a8478; line-height: 1.5;">
-                Klik op de knop hieronder om in te loggen.
+              <p style="margin: 0 0 24px 0; font-size: 15px; color: #8a8478; line-height: 1.5;">
+                Gebruik de onderstaande code om in te loggen bij Bunyan.
               </p>
 
-              <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 0 auto 24px auto;">
-                <tr>
-                  <td style="border-radius: 8px; background-color: #261b07;">
-                    <a href="{{ .ConfirmationURL }}" style="display: inline-block; padding: 14px 32px; font-size: 15px; font-weight: 600; color: #f8f7f5; text-decoration: none;">
-                      Inloggen
-                    </a>
-                  </td>
-                </tr>
-              </table>
+              <div style="margin: 0 auto 24px auto; padding: 16px 24px; background-color: #f8f7f5; border-radius: 8px; border: 1px solid #e3dfd5;">
+                <span style="font-size: 32px; font-weight: 700; letter-spacing: 0.3em; color: #261b07; font-family: 'SF Mono', SFMono-Regular, Menlo, Monaco, monospace;">{{ .Token }}</span>
+              </div>
 
               <p style="margin: 0; font-size: 13px; color: #a09888; line-height: 1.5;">
-                Deze link is 1 uur geldig. Als u dit niet heeft aangevraagd, kunt u deze e-mail negeren.
+                Deze code is 10 minuten geldig. Als u dit niet heeft aangevraagd, kunt u deze e-mail negeren.
               </p>
             </td>
           </tr>
