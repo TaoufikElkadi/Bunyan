@@ -30,6 +30,17 @@ export default function RootLayout({
       <head>
         <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_SUPABASE_URL} />
         <link rel="preconnect" href={process.env.NEXT_PUBLIC_SUPABASE_URL} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: "Bunyan",
+              url: "https://bunyan.nl",
+            }),
+          }}
+        />
       </head>
       <body className={`${plusJakarta.variable} ${outfit.variable} ${plusJakarta.className} antialiased`} suppressHydrationWarning>
         {children}
