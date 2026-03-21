@@ -1,12 +1,23 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+import { getPlatformAdmin } from '@/lib/supabase/platform-admin'
 
 /**
  * Toggles the view mode for platform admins between 'admin' and 'mosque'.
  * Sets a cookie and redirects to the appropriate dashboard.
  */
 export async function POST(request: Request) {
+  const admin = await getPlatformAdmin()
+  if (!admin) {
+    return NextResponse.json({ error: 'Geen toestemming' }, { status: 403 })
+  }
+
   const { mode } = await request.json() as { mode: 'admin' | 'mosque' }
+
+  if (mode !== 'admin' && mode !== 'mosque') {
+    return NextResponse.json({ error: 'Ongeldige modus' }, { status: 400 })
+  }
+
   const cookieStore = await cookies()
 
   cookieStore.set('bunyan-view', mode, {

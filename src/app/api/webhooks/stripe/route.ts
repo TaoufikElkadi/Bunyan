@@ -172,7 +172,41 @@ async function handleFirstSubscriptionPayment(
     .single()
 
   if (!recurring) {
-    console.error(`Webhook: subscription ${subscriptionId} not found in recurrings (first payment)`)
+    // Recurring record may not exist yet (race condition between subscribe API and webhook).
+    // Fall back to PI metadata to avoid losing the donation.
+    console.error(`Webhook: subscription ${subscriptionId} not found in recurrings, falling back to PI metadata`)
+
+    if (pi.metadata?.mosque_id && pi.metadata?.fund_id) {
+      const { data: existing } = await admin
+        .from('donations')
+        .select('id')
+        .eq('stripe_payment_intent_id', paymentIntentId)
+        .single()
+
+      if (existing) return
+
+      const { error: fallbackError } = await admin
+        .from('donations')
+        .insert({
+          mosque_id: pi.metadata.mosque_id,
+          donor_id: pi.metadata.donor_id || null,
+          fund_id: pi.metadata.fund_id,
+          amount: pi.amount,
+          campaign_id: pi.metadata.campaign_id || null,
+          method: 'stripe',
+          status: 'completed',
+          is_recurring: true,
+          stripe_payment_intent_id: paymentIntentId,
+        })
+
+      if (fallbackError) {
+        throw new Error(`Failed to insert fallback recurring donation: ${fallbackError.message}`)
+      }
+
+      if (pi.metadata.mosque_id) {
+        await incrementPlanUsage(admin, pi.metadata.mosque_id)
+      }
+    }
     return
   }
 

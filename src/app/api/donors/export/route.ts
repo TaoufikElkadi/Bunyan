@@ -4,10 +4,16 @@ import { getPlanLimits } from '@/lib/plan'
 import { centsToEuros } from '@/lib/money'
 
 function escapeCsvField(value: string): string {
-  if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-    return `"${value.replace(/"/g, '""')}"`
+  // Prevent CSV formula injection: prefix with ' if starts with =, +, -, @, tab, or CR
+  const FORMULA_CHARS = ['=', '+', '-', '@', '\t', '\r']
+  let safe = value
+  if (safe.length > 0 && FORMULA_CHARS.includes(safe[0])) {
+    safe = `'${safe}`
   }
-  return value
+  if (safe.includes(',') || safe.includes('"') || safe.includes('\n')) {
+    return `"${safe.replace(/"/g, '""')}"`
+  }
+  return safe
 }
 
 export async function GET() {

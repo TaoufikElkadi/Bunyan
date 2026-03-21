@@ -4,6 +4,25 @@ import { createClient } from '@/lib/supabase/server'
 const MAX_FILE_SIZE = 2 * 1024 * 1024 // 2MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml']
 
+// Magic byte signatures for allowed image types
+const MAGIC_BYTES: { type: string; bytes: number[] }[] = [
+  { type: 'image/jpeg', bytes: [0xFF, 0xD8, 0xFF] },
+  { type: 'image/png', bytes: [0x89, 0x50, 0x4E, 0x47] },
+  { type: 'image/webp', bytes: [0x52, 0x49, 0x46, 0x46] }, // RIFF
+]
+
+function validateMagicBytes(buffer: ArrayBuffer, claimedType: string): boolean {
+  // SVG is text-based — validate it starts with XML/SVG markup
+  if (claimedType === 'image/svg+xml') {
+    const text = new TextDecoder().decode(buffer.slice(0, 256)).trimStart()
+    return text.startsWith('<svg') || text.startsWith('<?xml')
+  }
+  const header = new Uint8Array(buffer.slice(0, 8))
+  return MAGIC_BYTES.some(
+    (m) => m.type === claimedType && m.bytes.every((b, i) => header[i] === b)
+  )
+}
+
 export async function POST(request: Request) {
   try {
     const supabase = await createClient()
@@ -43,6 +62,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Bestand mag niet groter zijn dan 2MB' }, { status: 400 })
     }
 
+    // Validate actual file content matches claimed MIME type
+    const buffer = await file.arrayBuffer()
+    if (!validateMagicBytes(buffer, file.type)) {
+      return NextResponse.json({ error: 'Bestandsinhoud komt niet overeen met het bestandstype' }, { status: 400 })
+    }
+
     const mosqueId = profile.mosque_id
     const ext = file.name.split('.').pop() || 'png'
     const filePath = `${mosqueId}/${type}.${ext}`
@@ -50,7 +75,7 @@ export async function POST(request: Request) {
     // Upload to Supabase Storage (bucket: branding)
     const { error: uploadError } = await supabase.storage
       .from('branding')
-      .upload(filePath, file, {
+      .upload(filePath, buffer, {
         upsert: true,
         contentType: file.type,
       })

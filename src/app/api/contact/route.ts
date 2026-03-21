@@ -1,13 +1,30 @@
 import { NextResponse } from "next/server"
 import { sendEmail } from "@/lib/email/send"
+import { rateLimit, getClientIp } from "@/lib/rate-limit"
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request)
+    const { success } = rateLimit(`contact:${ip}`, 3, 60_000)
+    if (!success) {
+      return NextResponse.json(
+        { error: "Te veel verzoeken, probeer later opnieuw." },
+        { status: 429 }
+      )
+    }
+
     const { name, email, phone, message } = await request.json()
 
     if (!name || !email || !message) {
       return NextResponse.json(
         { error: "Naam, e-mail en bericht zijn verplicht." },
+        { status: 400 }
+      )
+    }
+
+    if (name.length > 100 || email.length > 200 || message.length > 5000 || (phone && phone.length > 30)) {
+      return NextResponse.json(
+        { error: "Een of meer velden zijn te lang." },
         { status: 400 }
       )
     }

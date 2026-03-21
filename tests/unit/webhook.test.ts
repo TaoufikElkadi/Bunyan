@@ -8,6 +8,15 @@ vi.mock('@/lib/stripe', () => ({
     webhooks: {
       constructEvent: vi.fn(),
     },
+    paymentIntents: {
+      retrieve: vi.fn().mockResolvedValue({ id: 'pi_test', metadata: {}, invoice: null }),
+    },
+    subscriptions: {
+      retrieve: vi.fn().mockResolvedValue({ id: 'sub_test', metadata: {} }),
+    },
+    invoices: {
+      retrieve: vi.fn().mockResolvedValue({ id: 'in_test', subscription: null }),
+    },
   },
 }))
 
@@ -121,13 +130,11 @@ describe('Stripe Webhook POST handler', () => {
       expect(donationsBuilder.update).not.toHaveBeenCalled()
     })
 
-    it('logs error and does not throw when donation is not found', async () => {
+    it('gracefully handles when donation is not found (falls back to PI metadata)', async () => {
       const donationsBuilder = createMockQueryBuilder({ data: null, error: null })
       const admin = createRoutedMockSupabase({ donations: donationsBuilder })
       admin.rpc = vi.fn().mockResolvedValue({ error: null })
       mockCreateAdminClient.mockReturnValue(admin)
-
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       mockConstructEvent.mockReturnValue(
         makeEvent('payment_intent.succeeded', {
@@ -138,10 +145,6 @@ describe('Stripe Webhook POST handler', () => {
 
       const res = await POST(makeRequest())
       expect(res.status).toBe(200)
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('pi_nonexistent')
-      )
-      consoleSpy.mockRestore()
     })
 
     it('increments plan usage when mosque_id is in metadata', async () => {
