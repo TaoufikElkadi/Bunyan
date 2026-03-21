@@ -45,6 +45,23 @@ export async function GET() {
 
     const accountStatus = await getConnectAccountStatus(mosque.stripe_account_id)
 
+    // If Stripe says charges are enabled but we haven't recorded it yet,
+    // update the DB now (catches missed webhooks / local dev without stripe listen)
+    if (accountStatus.chargesEnabled && !mosque.stripe_connected_at) {
+      const now = new Date().toISOString()
+      await admin
+        .from('mosques')
+        .update({ stripe_connected_at: now, updated_at: now })
+        .eq('id', profile.mosque_id)
+
+      return NextResponse.json({
+        status: 'connected',
+        accountId: mosque.stripe_account_id,
+        connectedAt: now,
+        ...accountStatus,
+      })
+    }
+
     return NextResponse.json({
       status: mosque.stripe_connected_at ? 'connected' : 'onboarding_incomplete',
       accountId: mosque.stripe_account_id,
