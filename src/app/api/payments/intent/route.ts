@@ -3,6 +3,7 @@ import { stripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { rateLimit, getClientIp } from '@/lib/rate-limit'
 import { buildTransferParams } from '@/lib/stripe-connect'
+import { calculateCoverFee } from '@/lib/fees'
 
 /**
  * Creates a Stripe PaymentIntent + a pending donation row.
@@ -17,7 +18,10 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { mosque_slug, fund_id, amount, donor_name, donor_email, cover_fee, fee_amount, campaign_id } = body
+    const { mosque_slug, fund_id, amount, donor_name, cover_fee, campaign_id } = body
+    const donor_email = typeof body.donor_email === 'string'
+      ? body.donor_email.trim().toLowerCase()
+      : undefined
 
     // Validate
     if (!mosque_slug || !fund_id || !amount || amount <= 0) {
@@ -30,10 +34,8 @@ export async function POST(request: Request) {
     // Amount comes in as euros (e.g. 25.00), convert to cents
     const amountCents = Math.round(amount * 100)
 
-    // Add fee if donor opted to cover it
-    const feeCents = cover_fee && typeof fee_amount === 'number' && fee_amount > 0
-      ? Math.round(fee_amount)
-      : 0
+    // Recalculate fee server-side — never trust client-provided fee_amount
+    const feeCents = cover_fee ? calculateCoverFee(amountCents, 'stripe') : 0
     const chargeCents = amountCents + feeCents
 
     if (amountCents < 100) {
@@ -74,6 +76,20 @@ export async function POST(request: Request) {
 
     if (!fund) {
       return NextResponse.json({ error: 'Fonds niet gevonden' }, { status: 404 })
+    }
+
+    // Validate campaign belongs to this mosque (if provided)
+    if (campaign_id) {
+      const { data: campaign } = await admin
+        .from('campaigns')
+        .select('id')
+        .eq('id', campaign_id)
+        .eq('mosque_id', mosque.id)
+        .single()
+
+      if (!campaign) {
+        return NextResponse.json({ error: 'Campagne niet gevonden' }, { status: 404 })
+      }
     }
 
     // Find or create donor
@@ -117,6 +133,12 @@ export async function POST(request: Request) {
 
     // Build Connect transfer params (routes funds to mosque's Stripe account)
     const transferParams = await buildTransferParams(mosque.id)
+    if (!transferParams) {
+      return NextResponse.json(
+        { error: 'Deze moskee kan nog geen donaties ontvangen. Neem contact op met de beheerder.' },
+        { status: 422 }
+      )
+    }
 
     // Create Stripe PaymentIntent
     const paymentIntent = await stripe.paymentIntents.create({

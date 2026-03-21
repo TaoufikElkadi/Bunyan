@@ -35,13 +35,15 @@ export async function getConnectAccountStatus(stripeAccountId: string) {
 
 /**
  * Builds the Stripe Connect params for destination charges.
- * Returns empty object if mosque has no connected account (graceful fallback).
+ * Returns null if the mosque has no connected account — callers must
+ * reject payment creation in that case to prevent funds landing on
+ * the platform account.
  */
 export async function buildTransferParams(mosqueId: string): Promise<{
-  transfer_data?: { destination: string }
-}> {
+  transfer_data: { destination: string }
+} | null> {
   const accountId = await getConnectedAccountId(mosqueId)
-  if (!accountId) return {}
+  if (!accountId) return null
 
   return {
     transfer_data: { destination: accountId },

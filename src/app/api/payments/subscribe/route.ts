@@ -19,7 +19,10 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { mosque_slug, fund_id, amount, frequency, donor_name, donor_email, campaign_id } = body
+    const { mosque_slug, fund_id, amount, frequency, donor_name, campaign_id } = body
+    const donor_email = typeof body.donor_email === 'string'
+      ? body.donor_email.trim().toLowerCase()
+      : undefined
 
     // Validate required fields
     if (!mosque_slug || !fund_id || !amount || amount <= 0) {
@@ -83,6 +86,20 @@ export async function POST(request: Request) {
 
     if (!fund) {
       return NextResponse.json({ error: 'Fonds niet gevonden' }, { status: 404 })
+    }
+
+    // Validate campaign belongs to this mosque (if provided)
+    if (campaign_id) {
+      const { data: campaign } = await admin
+        .from('campaigns')
+        .select('id')
+        .eq('id', campaign_id)
+        .eq('mosque_id', mosque.id)
+        .single()
+
+      if (!campaign) {
+        return NextResponse.json({ error: 'Campagne niet gevonden' }, { status: 404 })
+      }
     }
 
     // Find or create donor (email is required for recurring)
@@ -179,6 +196,12 @@ export async function POST(request: Request) {
 
     // Build Connect transfer params (routes funds to mosque's Stripe account)
     const transferParams = await buildTransferParams(mosque.id)
+    if (!transferParams) {
+      return NextResponse.json(
+        { error: 'Deze moskee kan nog geen donaties ontvangen. Neem contact op met de beheerder.' },
+        { status: 422 }
+      )
+    }
 
     // Create Stripe Subscription
     const subscription = await stripe.subscriptions.create({
@@ -305,6 +328,7 @@ export async function POST(request: Request) {
           donor_id: donorId,
           campaign_id: campaign_id || '',
         },
+        ...transferParams,
       })
       clientSecret = pi.client_secret
     }

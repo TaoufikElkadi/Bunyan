@@ -15,6 +15,15 @@ vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: vi.fn(),
 }))
 
+vi.mock('@/lib/stripe-connect', () => ({
+  buildTransferParams: vi.fn().mockResolvedValue({}),
+}))
+
+vi.mock('@/lib/rate-limit', () => ({
+  rateLimit: vi.fn().mockReturnValue({ success: true }),
+  getClientIp: vi.fn().mockReturnValue('127.0.0.1'),
+}))
+
 import { POST } from '@/app/api/payments/intent/route'
 import { stripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -47,7 +56,7 @@ function validBody(overrides: any = {}) {
 
 function setupAdminWithMosqueAndFund() {
   const mosquesBuilder = createMockQueryBuilder({
-    data: { id: 'mosque-1', name: 'Al-Fatiha Moskee' },
+    data: { id: 'mosque-1', name: 'Al-Fatiha Moskee', status: 'active' },
     error: null,
   })
 
@@ -137,7 +146,7 @@ describe('POST /api/payments/intent', () => {
 
   it('returns 404 when fund is not found for this mosque', async () => {
     const mosquesBuilder = createMockQueryBuilder({
-      data: { id: 'mosque-1', name: 'Test' },
+      data: { id: 'mosque-1', name: 'Test', status: 'active' },
       error: null,
     })
     const fundsBuilder = createMockQueryBuilder({ data: null, error: null })
@@ -155,7 +164,7 @@ describe('POST /api/payments/intent', () => {
 
   it('finds existing donor by email', async () => {
     const mosquesBuilder = createMockQueryBuilder({
-      data: { id: 'mosque-1', name: 'Test' },
+      data: { id: 'mosque-1', name: 'Test', status: 'active' },
       error: null,
     })
     const fundsBuilder = createMockQueryBuilder({
@@ -226,32 +235,33 @@ describe('POST /api/payments/intent', () => {
     )
   })
 
-  it('includes fee coverage in PaymentIntent amount', async () => {
+  it('includes server-calculated fee coverage in PaymentIntent amount', async () => {
     setupAdminWithMosqueAndFund()
 
     const res = await POST(
-      makeRequest(validBody({ amount: 25, cover_fee: true, fee_amount: 29 }))
+      makeRequest(validBody({ amount: 25, cover_fee: true }))
     )
     expect(res.status).toBe(200)
 
+    // Fee is recalculated server-side: stripe method = 30 cents fixed
     expect(mockPaymentIntentsCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        amount: 2529, // 2500 + 29 cents
+        amount: 2530, // 2500 + 30 cents (server-calculated)
       })
     )
   })
 
-  it('ignores fee_amount when cover_fee is false', async () => {
+  it('ignores client fee_amount — server recalculates', async () => {
     setupAdminWithMosqueAndFund()
 
     const res = await POST(
-      makeRequest(validBody({ amount: 25, cover_fee: false, fee_amount: 29 }))
+      makeRequest(validBody({ amount: 25, cover_fee: false, fee_amount: 9999 }))
     )
     expect(res.status).toBe(200)
 
     expect(mockPaymentIntentsCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        amount: 2500, // no fee added
+        amount: 2500, // no fee added even though client sent fee_amount
       })
     )
   })
@@ -260,7 +270,7 @@ describe('POST /api/payments/intent', () => {
 
   it('creates a pending donation row in the database', async () => {
     const mosquesBuilder = createMockQueryBuilder({
-      data: { id: 'mosque-1', name: 'Test' },
+      data: { id: 'mosque-1', name: 'Test', status: 'active' },
       error: null,
     })
     const fundsBuilder = createMockQueryBuilder({

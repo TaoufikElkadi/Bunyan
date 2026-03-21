@@ -1,9 +1,10 @@
+// Stripe pricing for the Netherlands (as of 2025)
 const FEES = {
-  ideal: { fixed: 29, percentage: 0 },
-  card: { fixed: 25, percentage: 1.8 },
-  sepa: { fixed: 25, percentage: 0 },
+  ideal: { fixed: 30, percentage: 0 },
+  card: { fixed: 25, percentage: 1.5 },
+  sepa: { fixed: 35, percentage: 0 },
   bancontact: { fixed: 39, percentage: 0 },
-  stripe: { fixed: 29, percentage: 0 }, // simplified — most NL donations are iDEAL
+  stripe: { fixed: 30, percentage: 0 }, // simplified — most NL donations are iDEAL
 } as const
 
 type PaymentMethod = keyof typeof FEES
