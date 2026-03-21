@@ -125,7 +125,7 @@ export default function HomePage() {
                 className="text-[42px] sm:text-[56px] md:text-[64.8px] lg:text-[72px] font-[584] leading-[1.125] tracking-[-1.44px] text-[#261b07] mb-6"
                 style={{ fontFamily: "var(--font-display), sans-serif" }}
               >
-                Donaties ontvangen is makkelijk. Uw gemeenschap kennen is Bunyan.
+                Ontvang donaties. Begrijp uw gemeenschap. Groei als moskee.
               </h1>
 
               {/* Subtitle */}
