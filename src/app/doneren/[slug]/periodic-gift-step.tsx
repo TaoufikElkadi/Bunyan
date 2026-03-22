@@ -329,6 +329,7 @@ export function PeriodicGiftStep({
           {/* Consent checkbox */}
           <label className="flex items-start gap-3 cursor-pointer">
             <Checkbox
+              id="periodic-consent"
               checked={consentChecked}
               onCheckedChange={(v) => setConsentChecked(v === true)}
               className="mt-0.5"

@@ -425,6 +425,7 @@ export function DonationForm({
             }}
           >
             <Checkbox
+              id="cover-fee"
               checked={coverFee}
               onCheckedChange={(checked) => setCoverFee(checked === true)}
             />

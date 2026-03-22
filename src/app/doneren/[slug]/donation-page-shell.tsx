@@ -36,9 +36,18 @@ export function DonationPageShell({
         {children}
         <div className="mx-auto max-w-lg w-full px-5 pb-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] mt-auto pt-8">
           <LanguageSwitcher />
-          <p className="mt-3 text-center text-[11px] font-medium" style={{ color: '#C4B99A' }}>
-            Powered by Bunyan
-          </p>
+          <a
+            href="https://bunyan.nl"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 flex items-center justify-center gap-1.5 text-[11px] font-medium transition-colors hover:opacity-80"
+            style={{ color: '#C4B99A' }}
+          >
+            Powered by
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logos/logo_transparent.svg" alt="Bunyan" className="inline-block h-3 w-3" />
+            <span className="font-semibold">Bunyan</span>
+          </a>
         </div>
         </div>
       </div>
