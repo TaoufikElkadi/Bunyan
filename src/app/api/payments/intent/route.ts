@@ -146,12 +146,8 @@ export async function POST(request: Request) {
       currency: 'eur',
       metadata: {
         mosque_id: mosque.id,
-        mosque_slug,
         fund_id,
-        fund_name: fund.name,
         donor_id: donorId || '',
-        donor_name: donor_name || '',
-        donor_email: donor_email || '',
         campaign_id: campaign_id || '',
       },
       // Enable common Dutch payment methods

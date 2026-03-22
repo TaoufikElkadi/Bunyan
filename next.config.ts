@@ -1,5 +1,49 @@
 import type { NextConfig } from "next";
 
+// ---------------------------------------------------------------------------
+// Content-Security-Policy
+// ---------------------------------------------------------------------------
+// TODO: Replace 'unsafe-inline' with nonce-based CSP once Next.js supports
+// per-request nonces in the App Router (see next.js#48448). For now
+// 'unsafe-inline' is required because Next.js injects inline <script> tags.
+// ---------------------------------------------------------------------------
+const ContentSecurityPolicy = `
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://m.stripe.network;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  img-src 'self' data: blob: https://*.supabase.co;
+  font-src 'self' https://fonts.gstatic.com;
+  connect-src 'self' https://*.supabase.co https://api.stripe.com https://m.stripe.network https://vitals.vercel-insights.com;
+  frame-src https://js.stripe.com https://hooks.stripe.com;
+  frame-ancestors 'none';
+  object-src 'none';
+  base-uri 'self';
+  form-action 'self';
+  upgrade-insecure-requests;
+`
+  .replace(/\n/g, " ")
+  .trim();
+
+// ---------------------------------------------------------------------------
+// Security headers applied to every route
+// ---------------------------------------------------------------------------
+const securityHeaders = [
+  // Force HTTPS for 2 years, including subdomains; eligible for preload list
+  { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+  // Prevent the page from being embedded in frames (clickjacking defence)
+  { key: "X-Frame-Options", value: "DENY" },
+  // Stop browsers from MIME-sniffing the content-type
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  // Send full URL as referrer only to same origin; origin-only cross-origin
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  // Disable browser APIs the app does not use
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  // Allow DNS prefetching for linked resources (perf benefit)
+  { key: "X-DNS-Prefetch-Control", value: "on" },
+  // Content Security Policy — see directive comments above
+  { key: "Content-Security-Policy", value: ContentSecurityPolicy },
+];
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
 
@@ -14,6 +58,16 @@ const nextConfig: NextConfig = {
     staleTimes: {
       dynamic: 300, // seconds
     },
+  },
+
+  async headers() {
+    return [
+      {
+        // Apply security headers to every route
+        source: "/:path*",
+        headers: securityHeaders,
+      },
+    ];
   },
 };
 

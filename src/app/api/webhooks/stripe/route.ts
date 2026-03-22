@@ -489,8 +489,24 @@ async function sendDonationConfirmation(
   paymentIntentId: string,
   metadata: Record<string, string>
 ) {
-  const { mosque_id, fund_name, donor_email, donor_name } = metadata
-  if (!donor_email || !mosque_id) return
+  const { mosque_id, donor_id, fund_id } = metadata
+  if (!mosque_id) return
+
+  // Look up donor from database instead of metadata (GDPR: no PII in Stripe metadata)
+  let donorName: string | undefined
+  let donorEmail: string | undefined
+  if (donor_id) {
+    const { data: donor } = await admin
+      .from('donors')
+      .select('name, email')
+      .eq('id', donor_id)
+      .single()
+
+    donorName = donor?.name || undefined
+    donorEmail = donor?.email || undefined
+  }
+
+  if (!donorEmail) return
 
   const { data: mosque } = await admin
     .from('mosques')
@@ -499,6 +515,18 @@ async function sendDonationConfirmation(
     .single()
 
   if (!mosque) return
+
+  // Look up fund name from database instead of metadata
+  let fundName = 'Algemeen'
+  if (fund_id) {
+    const { data: fund } = await admin
+      .from('funds')
+      .select('name')
+      .eq('id', fund_id)
+      .single()
+
+    if (fund?.name) fundName = fund.name
+  }
 
   // Fetch the donation record for accurate amount + recurring info
   const { data: donation } = await admin
@@ -526,9 +554,9 @@ async function sendDonationConfirmation(
 
   const html = donationConfirmationEmail({
     mosqueName: mosque.name,
-    donorName: donor_name || undefined,
+    donorName: donorName,
     amount: donation?.amount ?? 0,
-    fundName: fund_name || 'Algemeen',
+    fundName,
     method: 'Online',
     date: new Date().toLocaleDateString('nl-NL'),
     isRecurring: !!donation?.is_recurring,
@@ -537,7 +565,7 @@ async function sendDonationConfirmation(
   })
 
   await sendMosqueEmail({
-    to: donor_email,
+    to: donorEmail,
     subject: `Donatiebevestiging — ${mosque.name}`,
     html,
     mosqueName: mosque.name,

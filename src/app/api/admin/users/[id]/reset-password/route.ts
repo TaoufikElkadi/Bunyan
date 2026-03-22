@@ -21,7 +21,8 @@ export async function POST(
       return NextResponse.json({ error: 'Failed to reset password' }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, temporaryPassword: tempPassword })
+    // TODO: Send the temporary password to the user via email (Resend) instead of returning it in the response
+    return NextResponse.json({ success: true, message: 'Password has been reset. The user will receive an email with their new password.' })
   } catch (err) {
     console.error('Reset password error:', err)
     return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })

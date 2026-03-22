@@ -1,5 +1,24 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
+import { isOriginAllowed } from '@/lib/csrf'
+
+// --- CSRF Protection ---
+// Methods that change state and need origin validation.
+const STATE_CHANGING_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE']
+
+// Public paths exempt from CSRF checks. These are either:
+// - Called by external services (Stripe webhooks, cron)
+// - Public-facing payment endpoints used from donor pages on other domains
+// - Short-link redirects
+const CSRF_EXEMPT_PATHS = [
+  '/api/payments/intent',
+  '/api/payments/subscribe',
+  '/api/webhooks/stripe',
+  '/api/recurring/cancel',
+  '/api/public/',
+  '/api/cron/',
+  '/go/',
+]
 
 const DASHBOARD_ROUTES = [
   '/dashboard',
@@ -20,8 +39,17 @@ const AUTH_ROUTES = ['/login', '/signup']
 const SETUP_ROUTES = ['/set-password'] // Authenticated-only, no redirect
 
 export async function proxy(request: NextRequest) {
-  const { supabaseResponse, user } = await updateSession(request)
   const { pathname } = request.nextUrl
+
+  // --- CSRF validation for state-changing requests ---
+  if (STATE_CHANGING_METHODS.includes(request.method)) {
+    const isExempt = CSRF_EXEMPT_PATHS.some((path) => pathname.startsWith(path))
+    if (!isExempt && !isOriginAllowed(request)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+  }
+
+  const { supabaseResponse, user } = await updateSession(request)
 
   const isDashboardRoute = DASHBOARD_ROUTES.some((route) => pathname.startsWith(route))
   const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route))
