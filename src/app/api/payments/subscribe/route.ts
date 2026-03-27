@@ -281,9 +281,10 @@ export async function POST(request: Request) {
       ],
       payment_behavior: 'default_incomplete',
       payment_settings: {
+        payment_method_types: ['card', 'ideal', 'sepa_debit', 'link'],
         save_default_payment_method: 'on_subscription',
       },
-      expand: ['latest_invoice', 'latest_invoice.payment_intent'],
+      expand: ['latest_invoice', 'latest_invoice.payment_intent', 'latest_invoice.confirmation_secret'],
       metadata: {
         mosque_id: mosque.id,
         fund_id,
