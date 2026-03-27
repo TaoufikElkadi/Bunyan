@@ -48,6 +48,7 @@ interface ReceiptRecord {
   year: number
   total_amount: number
   receipt_number: string | null
+  pdf_path: string | null
   emailed_at: string | null
   created_at: string
 }
@@ -63,6 +64,34 @@ export function AnbiOverview() {
   const [generating, setGenerating] = useState(false)
   const [downloadingAll, setDownloadingAll] = useState(false)
   const [downloadingId, setDownloadingId] = useState<string | null>(null)
+  const [downloadingReceiptId, setDownloadingReceiptId] = useState<string | null>(null)
+
+  /** Download a stored receipt PDF from Supabase Storage */
+  async function handleDownloadStored(receipt: ReceiptRecord) {
+    setDownloadingReceiptId(receipt.id)
+    try {
+      const res = await fetch(`/api/anbi/download?receipt_id=${receipt.id}`)
+      if (!res.ok) {
+        const data = await res.json()
+        toast.error(data.error || 'Fout bij downloaden PDF')
+        return
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${receipt.receipt_number ?? 'ANBI'}_${receipt.donor_name.replace(/\s+/g, '_')}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      toast.success('PDF gedownload')
+    } catch {
+      toast.error('Er is iets misgegaan')
+    } finally {
+      setDownloadingReceiptId(null)
+    }
+  }
 
   async function handlePreview() {
     setLoading(true)
@@ -428,23 +457,38 @@ export function AnbiOverview() {
                         )}
                       </td>
                       <td className="py-3 text-right">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() =>
-                            handleDownloadSingle(
-                              receipt.donor_id,
-                              receipt.donor_name
-                            )
-                          }
-                          disabled={downloadingId === receipt.donor_id}
-                        >
-                          {downloadingId === receipt.donor_id ? (
-                            <Loader2Icon className="size-4 animate-spin" />
-                          ) : (
-                            <DownloadIcon className="size-4" />
-                          )}
-                        </Button>
+                        {receipt.pdf_path ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDownloadStored(receipt)}
+                            disabled={downloadingReceiptId === receipt.id}
+                          >
+                            {downloadingReceiptId === receipt.id ? (
+                              <Loader2Icon className="size-4 animate-spin" />
+                            ) : (
+                              <DownloadIcon className="size-4" />
+                            )}
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              handleDownloadSingle(
+                                receipt.donor_id,
+                                receipt.donor_name
+                              )
+                            }
+                            disabled={downloadingId === receipt.donor_id}
+                          >
+                            {downloadingId === receipt.donor_id ? (
+                              <Loader2Icon className="size-4 animate-spin" />
+                            ) : (
+                              <DownloadIcon className="size-4" />
+                            )}
+                          </Button>
+                        )}
                       </td>
                     </tr>
                   ))}

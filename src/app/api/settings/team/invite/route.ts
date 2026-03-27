@@ -162,8 +162,8 @@ export async function POST(request: Request) {
       inviteUrl = `${appUrl}/set-password?token=${linkData.properties.hashed_token}`
     }
 
-    // Log the invite URL for development (when Resend isn't configured)
-    if (inviteUrl) {
+    // Log the invite URL in development only (contains auth token)
+    if (inviteUrl && process.env.NODE_ENV === 'development') {
       console.log(`[Team Invite] Invite URL for ${normalizedEmail}: ${inviteUrl}`)
     }
 

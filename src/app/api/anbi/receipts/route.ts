@@ -34,7 +34,7 @@ export async function GET(request: Request) {
 
     const { data: receipts, error } = await supabase
       .from('anbi_receipts')
-      .select('id, donor_id, year, total_amount, fund_breakdown, receipt_number, emailed_at, created_at, donors(name, email)')
+      .select('id, donor_id, year, total_amount, fund_breakdown, receipt_number, pdf_path, emailed_at, created_at, donors(name, email)')
       .eq('mosque_id', profile.mosque_id)
       .eq('year', year)
       .order('created_at', { ascending: false })
@@ -55,6 +55,7 @@ export async function GET(request: Request) {
         total_amount: r.total_amount,
         fund_breakdown: r.fund_breakdown,
         receipt_number: r.receipt_number,
+        pdf_path: r.pdf_path ?? null,
         emailed_at: r.emailed_at,
         created_at: r.created_at,
       }

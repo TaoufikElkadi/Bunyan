@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/reconcile",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/member-stats",
+      "schedule": "15 2 * * *"
     }
   ]
 }
