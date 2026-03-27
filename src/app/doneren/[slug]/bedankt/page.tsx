@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
+import { redirectIfOldSlug } from '@/lib/slug-redirect'
 import { BedanktContent } from './bedankt-content'
 import type { Locale } from '@/types'
 
@@ -17,7 +18,10 @@ export default async function BedanktPage({ params }: Props) {
     .eq('slug', slug)
     .single()
 
-  if (!mosque || mosque.status !== 'active') notFound()
+  if (!mosque || mosque.status !== 'active') {
+    await redirectIfOldSlug(slug, (s) => `/doneren/${s}/bedankt`)
+    notFound()
+  }
 
   const defaultLocale = (mosque.language as Locale) || 'nl'
 

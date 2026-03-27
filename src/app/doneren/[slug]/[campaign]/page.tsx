@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
+import { redirectIfOldSlug } from '@/lib/slug-redirect'
 import { DonationForm } from '../donation-form'
 import { DonationPageShell } from '../donation-page-shell'
 import { CampaignProgress } from '@/components/campaign/campaign-progress'
@@ -49,7 +50,10 @@ export default async function CampaignDonationPage({ params }: Props) {
     .eq('slug', slug)
     .single()
 
-  if (!mosque || mosque.status !== 'active') notFound()
+  if (!mosque || mosque.status !== 'active') {
+    await redirectIfOldSlug(slug, (s) => `/doneren/${s}/${campaignSlug}`)
+    notFound()
+  }
 
   const { data: campaign } = await admin
     .from('campaigns')

@@ -1,6 +1,7 @@
 import type { Viewport } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
+import { redirectIfOldSlug } from '@/lib/slug-redirect'
 import { DonationPageShell } from '../donation-page-shell'
 import { SnelDonationForm } from './snel-donation-form'
 import type { Locale } from '@/types'
@@ -44,7 +45,10 @@ export default async function SnelDonerenPage({ params }: Props) {
     .eq('slug', slug)
     .single()
 
-  if (!mosque || mosque.status !== 'active') notFound()
+  if (!mosque || mosque.status !== 'active') {
+    await redirectIfOldSlug(slug, (s) => `/doneren/${s}/snel`)
+    notFound()
+  }
 
   const { data: funds } = await admin
     .from('funds')
