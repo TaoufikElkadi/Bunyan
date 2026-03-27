@@ -31,6 +31,8 @@ type Props = {
   preselectedFundId?: string
   campaignId?: string
   anbiEnabled?: boolean
+  mosqueIban?: string | null
+  mosqueRsin?: string | null
 }
 
 type Frequency = 'one-time' | 'weekly' | 'monthly' | 'yearly'
@@ -54,6 +56,8 @@ export function DonationForm({
   preselectedFundId,
   campaignId,
   anbiEnabled,
+  mosqueIban,
+  mosqueRsin,
 }: Props) {
   const { t, dir } = useTranslation()
   const [mode, setMode] = useState<'donate' | 'periodic'>('donate')
@@ -127,6 +131,8 @@ export function DonationForm({
         accent={accent}
         funds={funds}
         anbiEnabled={anbiEnabled}
+        mosqueIban={mosqueIban}
+        mosqueRsin={mosqueRsin}
         onSwitchMode={() => setMode('donate')}
       />
     )

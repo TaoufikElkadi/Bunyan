@@ -10,19 +10,29 @@ export async function POST(
     if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
 
     const { id } = await params
-    const tempPassword = crypto.randomUUID().slice(0, 12)
 
-    const { error } = await admin.adminClient.auth.admin.updateUserById(id, {
-      password: tempPassword,
+    // Look up the user's email
+    const { data: userData, error: userError } = await admin.adminClient.auth.admin.getUserById(id)
+    if (userError || !userData?.user?.email) {
+      console.error('Get user error:', userError)
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    // Send a password reset email via Supabase Auth
+    const { error } = await admin.adminClient.auth.admin.generateLink({
+      type: 'recovery',
+      email: userData.user.email,
+      options: {
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://bunyan.nl'}/set-password`,
+      },
     })
 
     if (error) {
       console.error('Reset password error:', error)
-      return NextResponse.json({ error: 'Failed to reset password' }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to send reset email' }, { status: 500 })
     }
 
-    // TODO: Send the temporary password to the user via email (Resend) instead of returning it in the response
-    return NextResponse.json({ success: true, message: 'Password has been reset. The user will receive an email with their new password.' })
+    return NextResponse.json({ success: true, message: 'A password reset email has been sent to the user.' })
   } catch (err) {
     console.error('Reset password error:', err)
     return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })

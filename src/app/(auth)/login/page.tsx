@@ -219,8 +219,8 @@ function LoginForm() {
       {/* Help + legal */}
       <p className="mt-6 text-center text-[13px] text-[#a09888]">
         Hulp nodig?{' '}
-        <Link href="/set-password" className="text-[#261b07] underline underline-offset-2">
-          Wachtwoord resetten
+        <Link href="/forgot-password" className="text-[#261b07] underline underline-offset-2">
+          Wachtwoord vergeten?
         </Link>
       </p>
       <p className="mt-4 text-center text-[12px] text-[#b5b0a5]">

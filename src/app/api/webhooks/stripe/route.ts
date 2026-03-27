@@ -671,10 +671,7 @@ async function handleAccountUpdated(
   const mosqueId = account.metadata?.mosque_id
   if (!mosqueId) return
 
-  // Only mark as connected when charges are enabled (onboarding complete)
-  if (!account.charges_enabled) return
-
-  // Find the mosque and check if already marked as connected
+  // Find the mosque to check current state
   const { data: mosque } = await admin
     .from('mosques')
     .select('id, stripe_connected_at')
@@ -684,18 +681,59 @@ async function handleAccountUpdated(
 
   if (!mosque) return
 
-  // Idempotency: skip if already connected
-  if (mosque.stripe_connected_at) return
+  const isConnected = !!mosque.stripe_connected_at
+  const chargesEnabled = !!account.charges_enabled
 
-  const { error: updateError } = await admin
-    .from('mosques')
-    .update({
-      stripe_connected_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', mosque.id)
+  // Log pending requirements for visibility (common with Dutch non-profits)
+  if (account.requirements?.currently_due?.length) {
+    console.warn(
+      `[Stripe Connect] Mosque ${mosque.id} has pending requirements:`,
+      account.requirements.currently_due
+    )
+  }
+  if (account.requirements?.past_due?.length) {
+    console.warn(
+      `[Stripe Connect] Mosque ${mosque.id} has PAST DUE requirements:`,
+      account.requirements.past_due
+    )
+  }
 
-  if (updateError) {
-    throw new Error(`Failed to mark mosque ${mosque.id} as Stripe connected: ${updateError.message}`)
+  // Idempotency: only write if state actually changed
+  if (chargesEnabled && isConnected) return
+  if (!chargesEnabled && !isConnected) return
+
+  if (chargesEnabled) {
+    // charges_enabled became true → mark as connected
+    const { error: updateError } = await admin
+      .from('mosques')
+      .update({
+        stripe_connected_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', mosque.id)
+
+    if (updateError) {
+      throw new Error(`Failed to mark mosque ${mosque.id} as Stripe connected: ${updateError.message}`)
+    }
+    console.log(`[Stripe Connect] Mosque ${mosque.id} is now connected (charges enabled)`)
+  } else {
+    // charges_enabled became false → clear connected status so
+    // buildTransferParams stops routing payments and dashboard reflects reality
+    const { error: updateError } = await admin
+      .from('mosques')
+      .update({
+        stripe_connected_at: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', mosque.id)
+
+    if (updateError) {
+      throw new Error(`Failed to clear Stripe connected status for mosque ${mosque.id}: ${updateError.message}`)
+    }
+    console.warn(
+      `[Stripe Connect] Mosque ${mosque.id} charges DISABLED — stripe_connected_at cleared. ` +
+      `Payouts enabled: ${account.payouts_enabled}, ` +
+      `Disabled reason: ${account.requirements?.disabled_reason || 'none'}`
+    )
   }
 }

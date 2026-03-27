@@ -30,6 +30,7 @@ export function MosqueDetailsCard({ mosque, isAdmin }: Props) {
   const [name, setName] = useState(mosque.name)
   const [city, setCity] = useState(mosque.city ?? '')
   const [address, setAddress] = useState(mosque.address ?? '')
+  const [iban, setIban] = useState(mosque.iban ?? '')
   const [welcomeMsg, setWelcomeMsg] = useState(mosque.welcome_msg ?? '')
   const [language, setLanguage] = useState<Locale>(mosque.language)
 
@@ -37,6 +38,7 @@ export function MosqueDetailsCard({ mosque, isAdmin }: Props) {
     name !== mosque.name ||
     city !== (mosque.city ?? '') ||
     address !== (mosque.address ?? '') ||
+    iban !== (mosque.iban ?? '') ||
     welcomeMsg !== (mosque.welcome_msg ?? '') ||
     language !== mosque.language
 
@@ -54,6 +56,7 @@ export function MosqueDetailsCard({ mosque, isAdmin }: Props) {
           city: city.trim() || null,
           address: address.trim() || null,
           welcome_msg: welcomeMsg.trim() || null,
+          iban: iban.trim() || null,
           language,
           // Preserve existing values for fields managed by other cards
           primary_color: mosque.primary_color,
@@ -117,6 +120,20 @@ export function MosqueDetailsCard({ mosque, isAdmin }: Props) {
               onChange={(e) => setAddress(e.target.value)}
               disabled={!isAdmin}
             />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="mosque-iban">IBAN (bankrekening)</Label>
+            <Input
+              id="mosque-iban"
+              value={iban}
+              onChange={(e) => setIban(e.target.value.toUpperCase())}
+              placeholder="NL00 BANK 0000 0000 00"
+              disabled={!isAdmin}
+            />
+            <p className="text-xs text-muted-foreground">
+              Wordt getoond aan donateurs bij periodieke gift overeenkomsten
+            </p>
           </div>
 
           <div className="grid gap-2">

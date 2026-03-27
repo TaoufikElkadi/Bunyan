@@ -141,6 +141,21 @@ export async function GET(request: Request) {
         AnbiReceipt({ data: receiptData })
       )
 
+      // Upload PDF to Supabase Storage
+      const sanitizedReceiptNumber = receiptNumber.replace(/[^a-zA-Z0-9_-]/g, '_')
+      const pdfPath = `${profile.mosque_id}/${year}/${sanitizedReceiptNumber}.pdf`
+
+      const { error: uploadError } = await admin.storage
+        .from('anbi-receipts')
+        .upload(pdfPath, pdfBuffer, {
+          upsert: true,
+          contentType: 'application/pdf',
+        })
+
+      if (uploadError) {
+        console.error('ANBI zip storage upload error:', uploadError)
+      }
+
       const fileName = `ANBI_${year}_${donorData.name.replace(/\s+/g, '_')}.pdf`
       zip.file(fileName, pdfBuffer)
     }

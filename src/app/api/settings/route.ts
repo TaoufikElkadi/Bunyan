@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/
 const RSIN_RE = /^\d{9}$/
 const KVK_RE = /^\d{8}$/
+const IBAN_RE = /^[A-Z]{2}\d{2}[A-Z0-9]{4,30}$/
 
 export async function PUT(request: Request) {
   try {
@@ -25,7 +26,7 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json()
-    const { name, city, address, primary_color, welcome_msg, anbi_status, rsin, kvk, language } = body
+    const { name, city, address, primary_color, welcome_msg, anbi_status, rsin, kvk, language, iban } = body
 
     if (!name?.trim()) {
       return NextResponse.json({ error: 'Naam is verplicht' }, { status: 400 })
@@ -48,6 +49,12 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'KVK moet exact 8 cijfers zijn' }, { status: 400 })
     }
 
+    // Validate IBAN: strip spaces, uppercase, then check format
+    const cleanIban = iban?.replace(/\s/g, '').toUpperCase() || null
+    if (cleanIban && !IBAN_RE.test(cleanIban)) {
+      return NextResponse.json({ error: 'Ongeldig IBAN-formaat' }, { status: 400 })
+    }
+
     const { data: mosque, error } = await supabase
       .from('mosques')
       .update({
@@ -59,6 +66,7 @@ export async function PUT(request: Request) {
         anbi_status: anbi_status ?? false,
         rsin: rsin?.trim() || null,
         kvk: kvk?.trim() || null,
+        iban: cleanIban,
         language: language || 'nl',
         updated_at: new Date().toISOString(),
       })

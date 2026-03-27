@@ -35,6 +35,8 @@ type Props = {
   accent: string
   funds: Fund[]
   anbiEnabled?: boolean
+  mosqueIban?: string | null
+  mosqueRsin?: string | null
   onSwitchMode: () => void
 }
 
@@ -175,6 +177,8 @@ export function PeriodicGiftStep({
   accent,
   funds,
   anbiEnabled,
+  mosqueIban,
+  mosqueRsin,
   onSwitchMode,
 }: Props) {
   const { t, dir } = useTranslation()
@@ -265,8 +269,15 @@ export function PeriodicGiftStep({
 
   const handleFocus = focusHandler(accent)
 
-  // ─── Confirmation ─────────────────────────────────
+  // ─── Confirmation with payment next steps ────────
   if (subStep === 'confirmation') {
+    const formattedIban = mosqueIban
+      ? mosqueIban.replace(/(.{4})/g, '$1 ').trim()
+      : null
+
+    // Build the link to the regular donation page with recurring pre-selected
+    const donateUrl = `/doneren/${mosqueSlug}`
+
     return (
       <div dir={dir} className="mx-auto max-w-lg w-full px-4 pt-6 md:pt-10">
         {anbiEnabled && <ModeTabs onSwitchMode={onSwitchMode} t={t} />}
@@ -284,15 +295,90 @@ export function PeriodicGiftStep({
             <p className="text-sm" style={{ color: '#9B8E7B' }}>
               {t('donate.periodic_confirmation_desc')}
             </p>
-            <button
-              type="button"
-              onClick={onSwitchMode}
-              className="w-full h-[52px] rounded-2xl text-sm font-semibold transition-all duration-200"
-              style={{ background: '#F7F3EC', color: '#1B2541' }}
-            >
-              {t('donate.back')}
-            </button>
           </div>
+
+          {/* Payment next steps */}
+          <div
+            className="rounded-2xl p-4 space-y-3"
+            style={{ background: `${accent}08`, border: `1px solid ${accent}20` }}
+          >
+            <p className="text-[13px] font-semibold" style={{ color: '#1B2541' }}>
+              Hoe betaalt u?
+            </p>
+            <p className="text-[12px] leading-relaxed" style={{ color: '#6B5E4C' }}>
+              Uw overeenkomst is ondertekend. Om de periodieke gift te activeren, kunt u op twee manieren betalen:
+            </p>
+
+            {/* Option 1: Bank transfer */}
+            {formattedIban && (
+              <div
+                className="rounded-xl p-3 space-y-2"
+                style={{ background: 'white', border: '1px solid #EDE8DF' }}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="flex size-6 items-center justify-center rounded-full text-[11px] font-bold" style={{ background: `${accent}15`, color: accent }}>1</span>
+                  <span className="text-[13px] font-semibold" style={{ color: '#1B2541' }}>Periodieke overschrijving</span>
+                </div>
+                <p className="text-[12px] leading-relaxed" style={{ color: '#6B5E4C' }}>
+                  Stel een automatische overschrijving in bij uw bank naar:
+                </p>
+                <div
+                  className="rounded-lg p-3 font-mono text-sm select-all"
+                  style={{ background: '#FAFAF7', border: '1px solid #EDE8DF', color: '#1B2541' }}
+                >
+                  <div className="flex justify-between">
+                    <span className="text-[11px] font-sans" style={{ color: '#9B8E7B' }}>IBAN</span>
+                    <span className="font-semibold tracking-wide">{formattedIban}</span>
+                  </div>
+                  <div className="flex justify-between mt-1">
+                    <span className="text-[11px] font-sans" style={{ color: '#9B8E7B' }}>t.n.v.</span>
+                    <span className="font-sans text-[13px]">{mosqueName}</span>
+                  </div>
+                  <div className="flex justify-between mt-1">
+                    <span className="text-[11px] font-sans" style={{ color: '#9B8E7B' }}>Bedrag</span>
+                    <span className="font-sans text-[13px]">{formatMoney(amountCents)} / jaar</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Option 2: Online via Bunyan */}
+            <div
+              className="rounded-xl p-3 space-y-2"
+              style={{ background: 'white', border: '1px solid #EDE8DF' }}
+            >
+              <div className="flex items-center gap-2">
+                <span className="flex size-6 items-center justify-center rounded-full text-[11px] font-bold" style={{ background: `${accent}15`, color: accent }}>{formattedIban ? '2' : '1'}</span>
+                <span className="text-[13px] font-semibold" style={{ color: '#1B2541' }}>Online betalen via iDEAL</span>
+              </div>
+              <p className="text-[12px] leading-relaxed" style={{ color: '#6B5E4C' }}>
+                U kunt ook een terugkerende betaling instellen via onze donatiepagina.
+              </p>
+              <a
+                href={donateUrl}
+                className="inline-flex h-10 w-full items-center justify-center rounded-xl text-[13px] font-semibold transition-all duration-200"
+                style={{ background: accent, color: '#1B2541' }}
+              >
+                Doneer via iDEAL
+              </a>
+            </div>
+          </div>
+
+          <div
+            className="rounded-2xl p-3 text-center text-[11px] leading-relaxed"
+            style={{ background: '#FAFAF7', border: '1px solid #EDE8DF', color: '#9B8E7B' }}
+          >
+            Contante giften zijn sinds 2025 niet meer fiscaal aftrekbaar. Alleen digitale betalingen komen in aanmerking voor de ANBI-aftrek.
+          </div>
+
+          <button
+            type="button"
+            onClick={onSwitchMode}
+            className="w-full h-[52px] rounded-2xl text-sm font-semibold transition-all duration-200"
+            style={{ background: '#F7F3EC', color: '#1B2541' }}
+          >
+            {t('donate.back')}
+          </button>
         </Card>
       </div>
     )
@@ -412,7 +498,7 @@ export function PeriodicGiftStep({
             fundName={selectedFundName}
             startDate={formatDate(startDate)}
             endDate={formatDate(endDate)}
-            rsin="RSIN"
+            rsin={mosqueRsin ?? ''}
             label={t('donate.periodic_review_legal')}
           />
 

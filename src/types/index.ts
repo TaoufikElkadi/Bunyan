@@ -20,6 +20,7 @@ export interface Mosque {
   rsin: string | null
   kvk: string | null
   contact_email: string | null
+  iban: string | null
   language: Locale
   stripe_account_id: string | null
   stripe_connected_at: string | null

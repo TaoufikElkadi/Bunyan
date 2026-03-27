@@ -6,6 +6,67 @@ import { rateLimit, getClientIp } from '@/lib/rate-limit'
 import { buildTransferParams } from '@/lib/stripe-connect'
 import crypto from 'crypto'
 
+type ExpandedInvoice = Stripe.Invoice & {
+  payment_intent?: Stripe.PaymentIntent | string | null
+  confirmation_secret?: { client_secret: string } | null
+}
+
+/**
+ * Extracts the client_secret from an expanded invoice.
+ *
+ * Priority:
+ * 1. confirmation_secret (newer Stripe API versions)
+ * 2. Expanded payment_intent object
+ * 3. Finalize draft invoice, then read PaymentIntent
+ * 4. Retrieve PaymentIntent by ID (if only a string was returned)
+ */
+async function extractClientSecret(
+  invoice: ExpandedInvoice,
+): Promise<string | null> {
+  // 1. Newer API: confirmation_secret on the invoice
+  if (invoice.confirmation_secret?.client_secret) {
+    return invoice.confirmation_secret.client_secret
+  }
+
+  // 2. PaymentIntent already expanded as an object
+  if (
+    invoice.payment_intent &&
+    typeof invoice.payment_intent === 'object' &&
+    invoice.payment_intent.client_secret
+  ) {
+    return invoice.payment_intent.client_secret
+  }
+
+  // 3. Invoice is draft — finalize it so Stripe creates the PaymentIntent
+  if (invoice.status === 'draft') {
+    const finalized = await stripe.invoices.finalizeInvoice(invoice.id, {
+      expand: ['payment_intent'],
+    }) as ExpandedInvoice
+
+    if (
+      finalized.payment_intent &&
+      typeof finalized.payment_intent === 'object' &&
+      finalized.payment_intent.client_secret
+    ) {
+      return finalized.payment_intent.client_secret
+    }
+
+    // After finalizing, payment_intent might be a string ID
+    if (typeof finalized.payment_intent === 'string') {
+      const pi = await stripe.paymentIntents.retrieve(finalized.payment_intent)
+      return pi.client_secret ?? null
+    }
+  }
+
+  // 4. PaymentIntent is a string ID — retrieve it
+  if (typeof invoice.payment_intent === 'string') {
+    const pi = await stripe.paymentIntents.retrieve(invoice.payment_intent)
+    return pi.client_secret ?? null
+  }
+
+  return null
+}
+
 /**
  * Creates a Stripe Subscription for recurring donations.
  * Public endpoint — donors are not logged in.
@@ -231,10 +292,7 @@ export async function POST(request: Request) {
       },
       ...transferParams,
     }) as Stripe.Subscription & {
-      latest_invoice: Stripe.Invoice & {
-        payment_intent?: Stripe.PaymentIntent | string | null
-        confirmation_secret?: { client_secret: string } | null
-      }
+      latest_invoice: ExpandedInvoice
     }
 
     // Generate cancel token
@@ -260,77 +318,20 @@ export async function POST(request: Request) {
       // Don't fail — subscription is created, webhook will handle payments
     }
 
-    // Extract client_secret from the subscription's latest invoice.
-    // In newer Stripe API versions, the invoice may be draft or may not
-    // have a PaymentIntent until finalized.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let invoice = subscription.latest_invoice as any
-    let clientSecret: string | null | undefined
+    // Extract client_secret from the expanded invoice's PaymentIntent.
+    const clientSecret = await extractClientSecret(subscription.latest_invoice)
 
-    // Method 1: confirmation_secret (newer API versions)
-    if (invoice.confirmation_secret?.client_secret) {
-      clientSecret = invoice.confirmation_secret.client_secret
-    }
-
-    // Method 2: payment_intent already expanded on invoice
-    if (!clientSecret && invoice.payment_intent) {
-      if (typeof invoice.payment_intent === 'object') {
-        clientSecret = invoice.payment_intent.client_secret
-      } else if (typeof invoice.payment_intent === 'string') {
-        const pi = await stripe.paymentIntents.retrieve(invoice.payment_intent)
-        clientSecret = pi.client_secret
-      }
-    }
-
-    // Method 3: invoice is draft — finalize it to create the PaymentIntent
-    if (!clientSecret && invoice.status === 'draft') {
-      const finalized = await stripe.invoices.finalizeInvoice(invoice.id, {
-        expand: ['payment_intent'],
-      }) as any
-      invoice = finalized
-      if (finalized.payment_intent) {
-        if (typeof finalized.payment_intent === 'object') {
-          clientSecret = finalized.payment_intent.client_secret
-        } else if (typeof finalized.payment_intent === 'string') {
-          const pi = await stripe.paymentIntents.retrieve(finalized.payment_intent)
-          clientSecret = pi.client_secret
-        }
-      }
-    }
-
-    // Method 4: invoice is open but no PI — retrieve it with expansion
-    if (!clientSecret && invoice.status === 'open') {
-      const retrieved = await stripe.invoices.retrieve(invoice.id, {
-        expand: ['payment_intent'],
-      }) as any
-      if (retrieved.payment_intent) {
-        if (typeof retrieved.payment_intent === 'object') {
-          clientSecret = retrieved.payment_intent.client_secret
-        } else if (typeof retrieved.payment_intent === 'string') {
-          const pi = await stripe.paymentIntents.retrieve(retrieved.payment_intent)
-          clientSecret = pi.client_secret
-        }
-      }
-    }
-
-    // Method 5: last resort — create a standalone PaymentIntent linked to the sub
     if (!clientSecret) {
-      const pi = await stripe.paymentIntents.create({
-        amount: invoice.amount_due,
-        currency: invoice.currency,
-        customer: customerId,
-        setup_future_usage: 'off_session',
-        metadata: {
-          invoice_id: invoice.id,
-          subscription_id: subscription.id,
-          mosque_id: mosque.id,
-          fund_id,
-          donor_id: donorId,
-          campaign_id: campaign_id || '',
-        },
-        ...transferParams,
-      })
-      clientSecret = pi.client_secret
+      console.error(
+        'Failed to extract client_secret from subscription',
+        subscription.id,
+        'invoice status:',
+        subscription.latest_invoice.status,
+      )
+      return NextResponse.json(
+        { error: 'Betalingsgegevens konden niet worden opgehaald. Probeer het opnieuw.' },
+        { status: 500 }
+      )
     }
 
     return NextResponse.json({

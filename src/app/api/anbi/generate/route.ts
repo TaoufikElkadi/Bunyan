@@ -147,6 +147,21 @@ export async function POST(request: Request) {
         AnbiReceipt({ data: receiptData })
       )
 
+      // Upload PDF to Supabase Storage
+      const sanitizedReceiptNumber = receiptNumber.replace(/[^a-zA-Z0-9_-]/g, '_')
+      const pdfPath = `${profile.mosque_id}/${year}/${sanitizedReceiptNumber}.pdf`
+
+      const { error: uploadError } = await admin.storage
+        .from('anbi-receipts')
+        .upload(pdfPath, pdfBuffer, {
+          upsert: true,
+          contentType: 'application/pdf',
+        })
+
+      if (uploadError) {
+        console.error('ANBI storage upload error:', uploadError)
+      }
+
       // Upsert the receipt record
       const fundBreakdown: Record<string, number> = {}
       for (const [, fund] of donorData.funds) {
@@ -163,6 +178,7 @@ export async function POST(request: Request) {
             total_amount: donorData.totalAmount,
             fund_breakdown: fundBreakdown,
             receipt_number: receiptNumber,
+            pdf_path: uploadError ? null : pdfPath,
           },
           { onConflict: 'mosque_id,donor_id,year' }
         )
@@ -208,8 +224,22 @@ export async function POST(request: Request) {
         issueDate,
       }
 
-      // Generate PDF (we don't store the file for MVP, just record the receipt)
-      await renderToBuffer(AnbiReceipt({ data: receiptData }))
+      // Generate PDF and store in Supabase Storage
+      const pdfBuffer = await renderToBuffer(AnbiReceipt({ data: receiptData }))
+
+      const sanitizedReceiptNumber = receiptNumber.replace(/[^a-zA-Z0-9_-]/g, '_')
+      const pdfPath = `${profile.mosque_id}/${year}/${sanitizedReceiptNumber}.pdf`
+
+      const { error: uploadError } = await admin.storage
+        .from('anbi-receipts')
+        .upload(pdfPath, pdfBuffer, {
+          upsert: true,
+          contentType: 'application/pdf',
+        })
+
+      if (uploadError) {
+        console.error('ANBI bulk storage upload error:', uploadError)
+      }
 
       const fundBreakdown: Record<string, number> = {}
       for (const [, fund] of donorData.funds) {
@@ -226,6 +256,7 @@ export async function POST(request: Request) {
             total_amount: donorData.totalAmount,
             fund_breakdown: fundBreakdown,
             receipt_number: receiptNumber,
+            pdf_path: uploadError ? null : pdfPath,
           },
           { onConflict: 'mosque_id,donor_id,year' }
         )

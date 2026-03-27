@@ -33,7 +33,7 @@ export async function sendEmail(params: SendEmailParams) {
 
   if (error) {
     console.error('Email send error:', error)
-    return { success: false, error }
+    throw new Error(`Email send failed: ${error.message}`)
   }
 
   return { success: true, data }

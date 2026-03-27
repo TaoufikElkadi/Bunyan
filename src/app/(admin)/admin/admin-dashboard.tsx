@@ -104,7 +104,6 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
   const [addMosqueOpen, setAddMosqueOpen] = useState(false)
   const [addUserMosqueId, setAddUserMosqueId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [tempPassword, setTempPassword] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [actionMenuId, setActionMenuId] = useState<string | null>(null)
 
@@ -283,19 +282,18 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
   }
 
   async function handleResetPassword(userId: string) {
-    if (!window.confirm('Generate a temporary password for this user?')) return
+    if (!window.confirm('Send a password reset email to this user?')) return
     setLoading(true)
     try {
       const res = await fetch(`/api/admin/users/${userId}/reset-password`, {
         method: 'POST',
       })
+      const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        alert(data.error || 'Failed to reset password')
+        alert(data.error || 'Failed to send reset email')
         return
       }
-      const data = await res.json()
-      setTempPassword(data.temporaryPassword)
+      alert(data.message || 'Password reset email sent.')
     } finally {
       setLoading(false)
     }
@@ -902,39 +900,6 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
         )}
       </div>
 
-      {/* Temp password modal */}
-      <Dialog open={!!tempPassword} onOpenChange={(open) => { if (!open) setTempPassword(null) }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Tijdelijk wachtwoord</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 mt-2">
-            <p className="text-[13px] text-[#8a8478]">
-              Deel dit tijdelijke wachtwoord met de gebruiker. Ze dienen het na inloggen te wijzigen.
-            </p>
-            <div className="flex items-center gap-2">
-              <code className="flex-1 rounded-lg bg-[#f3f1ec] border border-[#e3dfd5] px-4 py-3 text-[14px] font-mono text-[#261b07] select-all">
-                {tempPassword}
-              </code>
-              <button
-                onClick={() => navigator.clipboard.writeText(tempPassword ?? '')}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#e3dfd5] bg-white text-[#8a8478] hover:bg-[#f3f1ec] hover:text-[#261b07] transition-colors"
-                title="Kopiëren"
-              >
-                <Copy className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-          <div className="flex justify-end pt-2">
-            <button
-              onClick={() => { navigator.clipboard.writeText(tempPassword ?? ''); setTempPassword(null) }}
-              className="h-9 px-4 rounded-lg bg-[#261b07] text-[13px] font-medium text-[#f8f7f5] hover:bg-[#3a2c14] transition-colors"
-            >
-              Kopiëren en sluiten
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

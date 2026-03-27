@@ -40,7 +40,7 @@ export default async function DonerenPage({ params }: Props) {
 
   const { data: mosque } = await admin
     .from('mosques')
-    .select('id, name, slug, primary_color, welcome_msg, logo_url, language, anbi_status, rsin, status')
+    .select('id, name, slug, primary_color, welcome_msg, logo_url, language, anbi_status, rsin, iban, status')
     .eq('slug', slug)
     .single()
 
@@ -88,6 +88,8 @@ export default async function DonerenPage({ params }: Props) {
         logoUrl={mosque.logo_url}
         funds={fundsWithProgress}
         anbiEnabled={!!mosque.anbi_status && !!mosque.rsin}
+        mosqueIban={mosque.iban}
+        mosqueRsin={mosque.rsin}
       />
     </DonationPageShell>
   )
