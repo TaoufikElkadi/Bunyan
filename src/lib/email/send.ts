@@ -9,12 +9,19 @@ function getResend(): Resend {
 const DEFAULT_FROM = 'Bunyan <noreply@bunyan.nl>'
 const PLATFORM_REPLY_TO = 'info@bunyan.nl'
 
+interface Attachment {
+  filename: string
+  content: Buffer | Uint8Array
+  contentType?: string
+}
+
 interface SendEmailParams {
   to: string
   subject: string
   html: string
   from?: string
   replyTo?: string
+  attachments?: Attachment[]
 }
 
 export async function sendEmail(params: SendEmailParams) {
@@ -29,6 +36,13 @@ export async function sendEmail(params: SendEmailParams) {
     subject: params.subject,
     html: params.html,
     replyTo: params.replyTo,
+    ...(params.attachments && {
+      attachments: params.attachments.map((a) => ({
+        filename: a.filename,
+        content: Buffer.from(a.content),
+        contentType: a.contentType,
+      })),
+    }),
   })
 
   if (error) {
@@ -50,6 +64,7 @@ export async function sendMosqueEmail(params: {
   html: string
   mosqueName: string
   mosqueContactEmail?: string | null
+  attachments?: Attachment[]
 }) {
   return sendEmail({
     to: params.to,
@@ -57,5 +72,6 @@ export async function sendMosqueEmail(params: {
     html: params.html,
     from: `${params.mosqueName} via Bunyan <noreply@bunyan.nl>`,
     replyTo: params.mosqueContactEmail || PLATFORM_REPLY_TO,
+    attachments: params.attachments,
   })
 }

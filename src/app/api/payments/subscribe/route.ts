@@ -125,107 +125,6 @@ export async function POST(request: Request) {
 
     const admin = createAdminClient()
 
-    // Look up mosque by slug (must be approved)
-    const { data: mosque } = await admin
-      .from('mosques')
-      .select('id, name, status')
-      .eq('slug', mosque_slug)
-      .single()
-
-    if (!mosque || mosque.status !== 'active') {
-      return NextResponse.json({ error: 'Moskee niet gevonden' }, { status: 404 })
-    }
-
-    // Verify fund belongs to this mosque and is active
-    const { data: fund } = await admin
-      .from('funds')
-      .select('id, name')
-      .eq('id', fund_id)
-      .eq('mosque_id', mosque.id)
-      .eq('is_active', true)
-      .single()
-
-    if (!fund) {
-      return NextResponse.json({ error: 'Fonds niet gevonden' }, { status: 404 })
-    }
-
-    // Validate campaign belongs to this mosque (if provided)
-    if (campaign_id) {
-      const { data: campaign } = await admin
-        .from('campaigns')
-        .select('id')
-        .eq('id', campaign_id)
-        .eq('mosque_id', mosque.id)
-        .single()
-
-      if (!campaign) {
-        return NextResponse.json({ error: 'Campagne niet gevonden' }, { status: 404 })
-      }
-    }
-
-    // Find or create donor (email is required for recurring)
-    let donorId: string
-
-    const { data: existingDonor } = await admin
-      .from('donors')
-      .select('id')
-      .eq('mosque_id', mosque.id)
-      .eq('email', donor_email)
-      .single()
-
-    if (existingDonor) {
-      donorId = existingDonor.id
-      // Update name if provided and donor has no name yet
-      if (donor_name) {
-        await admin
-          .from('donors')
-          .update({ name: donor_name, updated_at: new Date().toISOString() })
-          .eq('id', donorId)
-          .is('name', null)
-      }
-    } else {
-      const { data: newDonor, error: donorError } = await admin
-        .from('donors')
-        .insert({
-          mosque_id: mosque.id,
-          name: donor_name || null,
-          email: donor_email,
-        })
-        .select('id')
-        .single()
-
-      if (donorError || !newDonor) {
-        console.error('Failed to create donor:', donorError)
-        return NextResponse.json(
-          { error: 'Donor aanmaken mislukt' },
-          { status: 500 }
-        )
-      }
-      donorId = newDonor.id
-    }
-
-    // Find or create Stripe Customer
-    const existingCustomers = await stripe.customers.list({
-      email: donor_email,
-      limit: 1,
-    })
-
-    let customerId: string
-
-    if (existingCustomers.data.length > 0) {
-      customerId = existingCustomers.data[0].id
-    } else {
-      const customer = await stripe.customers.create({
-        email: donor_email,
-        name: donor_name || undefined,
-        metadata: {
-          mosque_id: mosque.id,
-          donor_id: donorId,
-        },
-      })
-      customerId = customer.id
-    }
-
     // Map frequency to Stripe interval
     const intervalMap: Record<string, 'week' | 'month' | 'year'> = {
       weekly: 'week',
@@ -233,36 +132,104 @@ export async function POST(request: Request) {
       yearly: 'year',
     }
 
-    // Find or create a Stripe Product for this mosque+fund combo
-    const productName = `Donatie aan ${mosque.name} — ${fund.name}`
-    // Search for matching product by metadata
-    const matchingProducts = await stripe.products.search({
-      query: `metadata["mosque_id"]:"${mosque.id}" AND metadata["fund_id"]:"${fund.id}"`,
-      limit: 1,
-    })
+    // --- Batch 1: DB lookups + Stripe customer search in parallel ---
+    const [mosqueResult, customerResult] = await Promise.all([
+      (async () => {
+        const { data: mosque } = await admin
+          .from('mosques')
+          .select('id, name, status')
+          .eq('slug', mosque_slug)
+          .single()
 
-    let productId: string
-    if (matchingProducts.data.length > 0) {
-      productId = matchingProducts.data[0].id
-    } else {
-      const product = await stripe.products.create({
-        name: productName,
-        metadata: {
-          mosque_id: mosque.id,
-          fund_id: fund.id,
-        },
-      })
-      productId = product.id
+        if (!mosque || mosque.status !== 'active') return { error: 'Moskee niet gevonden' as const }
+
+        const [fundResult, campaignResult, transferParams] = await Promise.all([
+          admin.from('funds').select('id, name').eq('id', fund_id).eq('mosque_id', mosque.id).eq('is_active', true).single(),
+          campaign_id
+            ? admin.from('campaigns').select('id').eq('id', campaign_id).eq('mosque_id', mosque.id).single()
+            : Promise.resolve({ data: true }),
+          buildTransferParams(mosque.id),
+        ])
+
+        if (!fundResult.data) return { error: 'Fonds niet gevonden' as const }
+        if (!campaignResult.data) return { error: 'Campagne niet gevonden' as const }
+        if (!transferParams) return { error: 'Deze moskee kan nog geen donaties ontvangen. Neem contact op met de beheerder.' as const }
+
+        return { mosque, fund: fundResult.data, transferParams }
+      })(),
+      stripe.customers.list({ email: donor_email, limit: 1 }),
+    ])
+
+    if ('error' in mosqueResult && mosqueResult.error) {
+      const status = mosqueResult.error.includes('niet gevonden') ? 404 : 422
+      return NextResponse.json({ error: mosqueResult.error }, { status })
     }
 
-    // Build Connect transfer params (routes funds to mosque's Stripe account)
-    const transferParams = await buildTransferParams(mosque.id)
-    if (!transferParams) {
-      return NextResponse.json(
-        { error: 'Deze moskee kan nog geen donaties ontvangen. Neem contact op met de beheerder.' },
-        { status: 422 }
-      )
-    }
+    const { mosque, fund, transferParams } = mosqueResult
+
+    // --- Batch 2: Donor + Customer + Product (need mosque.id) ---
+    const [donorId, customerId, productId] = await Promise.all([
+      // Find or create donor
+      (async () => {
+        const { data: existingDonor } = await admin
+          .from('donors')
+          .select('id')
+          .eq('mosque_id', mosque.id)
+          .eq('email', donor_email)
+          .single()
+
+        if (existingDonor) {
+          if (donor_name) {
+            // Fire-and-forget name update
+            admin
+              .from('donors')
+              .update({ name: donor_name, updated_at: new Date().toISOString() })
+              .eq('id', existingDonor.id)
+              .is('name', null)
+              .then(() => {})
+          }
+          return existingDonor.id
+        }
+
+        const { data: newDonor, error: donorError } = await admin
+          .from('donors')
+          .insert({ mosque_id: mosque.id, name: donor_name || null, email: donor_email })
+          .select('id')
+          .single()
+
+        if (donorError || !newDonor) throw new Error('Donor aanmaken mislukt')
+        return newDonor.id
+      })(),
+
+      // Find or create Stripe customer
+      (async () => {
+        if (customerResult.data.length > 0) return customerResult.data[0].id
+
+        const customer = await stripe.customers.create({
+          email: donor_email,
+          name: donor_name || undefined,
+          metadata: { mosque_id: mosque.id },
+        })
+        return customer.id
+      })(),
+
+      // Find or create Stripe product (use deterministic ID to avoid slow search)
+      (async () => {
+        const deterministicId = `donation_${mosque.id}_${fund.id}`
+        try {
+          const existing = await stripe.products.retrieve(deterministicId)
+          return existing.id
+        } catch {
+          // Product doesn't exist — create it with deterministic ID
+          const product = await stripe.products.create({
+            id: deterministicId,
+            name: `Donatie aan ${mosque.name} — ${fund.name}`,
+            metadata: { mosque_id: mosque.id, fund_id: fund.id },
+          })
+          return product.id
+        }
+      })(),
+    ])
 
     // Create Stripe Subscription
     // Uses automatic_payment_methods so Stripe handles:
