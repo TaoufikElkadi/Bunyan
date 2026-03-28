@@ -265,6 +265,10 @@ export async function POST(request: Request) {
     }
 
     // Create Stripe Subscription
+    // Uses automatic_payment_methods so Stripe handles:
+    // - iDEAL -> SEPA Direct Debit mandate conversion for recurring
+    // - Apple Pay / Google Pay via card wallets
+    // - Link, Bancontact, etc. based on customer location
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
       items: [
@@ -281,7 +285,6 @@ export async function POST(request: Request) {
       ],
       payment_behavior: 'default_incomplete',
       payment_settings: {
-        payment_method_types: ['card', 'sepa_debit', 'link'],
         save_default_payment_method: 'on_subscription',
       },
       expand: ['latest_invoice', 'latest_invoice.payment_intent', 'latest_invoice.confirmation_secret'],
