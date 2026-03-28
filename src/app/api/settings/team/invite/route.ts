@@ -154,12 +154,15 @@ export async function POST(request: Request) {
       )
     }
 
-    // Build the invite URL from the magic link
+    // Build invite URL using our own domain (not Supabase's action_link)
     let inviteUrl: string | null = null
-    if (linkData?.properties?.action_link) {
-      inviteUrl = linkData.properties.action_link
-    } else if (linkData?.properties?.hashed_token) {
-      inviteUrl = `${appUrl}/set-password?token=${linkData.properties.hashed_token}`
+    if (linkData?.properties?.hashed_token) {
+      const params = new URLSearchParams({
+        token_hash: linkData.properties.hashed_token,
+        type: 'magiclink',
+        redirect: '/set-password',
+      })
+      inviteUrl = `${appUrl}/auth/callback?${params.toString()}`
     }
 
     if (!inviteUrl) {

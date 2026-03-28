@@ -85,23 +85,32 @@ export function TeamManagement({ currentUserId, isAdmin }: Props) {
         }),
       })
 
-      const result = await res.json()
-
-      if (!res.ok) {
-        toast.error(result.error || 'Uitnodiging mislukt')
-        setInviteLoading(false)
+      let result
+      try {
+        result = await res.json()
+      } catch {
+        toast.error('Onverwacht antwoord van server')
         return
       }
 
-      toast.success(`${inviteName} is uitgenodigd`)
+      if (!res.ok) {
+        toast.error(result.error || 'Uitnodiging mislukt')
+        return
+      }
+
+      if (result.email_sent === false) {
+        toast.warning(`${inviteName} is toegevoegd maar de uitnodigings-e-mail kon niet worden verstuurd`)
+      } else {
+        toast.success(`${inviteName} is uitgenodigd`)
+      }
       setInviteEmail('')
       setInviteName('')
       setInviteRole('viewer')
-      setInviteLoading(false)
       setInviteOpen(false)
       mutate()
     } catch {
       toast.error('Er is iets misgegaan')
+    } finally {
       setInviteLoading(false)
     }
   }
