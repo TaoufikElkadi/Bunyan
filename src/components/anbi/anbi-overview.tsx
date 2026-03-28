@@ -443,7 +443,7 @@ export function AnbiOverview() {
                   placeholder="Zoek op naam of e-mail..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
+                  className="!pl-9"
                 />
               </div>
             )}
@@ -566,8 +566,8 @@ export function AnbiOverview() {
                   <tr className="border-b text-left">
                     <th className="pb-3 font-medium">Referentie</th>
                     <th className="pb-3 font-medium">Donateur</th>
-                    <th className="pb-3 font-medium text-right">Bedrag</th>
-                    <th className="pb-3 font-medium">Aangemaakt</th>
+                    <th className="pb-3 font-medium text-right pr-6">Bedrag</th>
+                    <th className="pb-3 font-medium pl-6">Aangemaakt</th>
                     <th className="pb-3 font-medium text-center">Status</th>
                     <th className="pb-3 font-medium text-right">Actie</th>
                   </tr>
@@ -582,10 +582,10 @@ export function AnbiOverview() {
                         {receipt.receipt_number ?? '—'}
                       </td>
                       <td className="py-3 font-medium">{receipt.donor_name}</td>
-                      <td className="py-3 text-right font-medium">
+                      <td className="py-3 text-right font-medium pr-6">
                         {formatMoney(receipt.total_amount)}
                       </td>
-                      <td className="py-3 text-muted-foreground">
+                      <td className="py-3 text-muted-foreground pl-6">
                         {new Date(receipt.created_at).toLocaleDateString('nl-NL')}
                       </td>
                       <td className="py-3 text-center">
