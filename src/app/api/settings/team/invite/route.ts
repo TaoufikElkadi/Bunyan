@@ -162,30 +162,34 @@ export async function POST(request: Request) {
       inviteUrl = `${appUrl}/set-password?token=${linkData.properties.hashed_token}`
     }
 
-    // Log the invite URL in development only (contains auth token)
-    if (inviteUrl && process.env.NODE_ENV === 'development') {
-      console.log(`[Team Invite] Invite URL for ${normalizedEmail}: ${inviteUrl}`)
+    if (!inviteUrl) {
+      console.error('[Team Invite] No invite URL generated. linkData:', JSON.stringify(linkData))
     }
 
     // Send invite email
     const mosqueName = (caller.mosques as any)?.name || 'Uw moskee'
     const inviterName = caller.name || 'Een beheerder'
+    let emailSent = false
     if (inviteUrl) {
-      await sendTeamInviteEmail({
-        to: normalizedEmail,
-        name: name.trim(),
-        mosqueName,
-        inviterName,
-        role,
-        inviteUrl,
-      })
+      try {
+        await sendTeamInviteEmail({
+          to: normalizedEmail,
+          name: name.trim(),
+          mosqueName,
+          inviterName,
+          role,
+          inviteUrl,
+        })
+        emailSent = true
+      } catch (emailErr) {
+        console.error('[Team Invite] Email send failed:', emailErr)
+      }
     }
 
     return NextResponse.json({
       success: true,
       member_id: authUserId,
-      // Return invite URL in dev for testing (remove in production)
-      invite_url: process.env.NODE_ENV === 'development' ? inviteUrl : undefined,
+      email_sent: emailSent,
     })
   } catch (err) {
     console.error('Team invite error:', err)
