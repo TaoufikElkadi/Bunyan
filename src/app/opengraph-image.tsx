@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og'
 
 export const runtime = 'edge'
-export const alt = 'Bunyan — Donatiebeheer voor moskeeën'
+export const alt = 'Bunyan — Moskee software voor donaties, ANBI & ledenbeheer'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -15,16 +15,16 @@ export default function OGImage() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#345e7d',
+          backgroundColor: '#261b07',
           position: 'relative',
         }}
       >
-        {/* Geometric pattern (simplified from the logo SVG) */}
+        {/* Geometric pattern (logo) */}
         <svg
-          width="280"
-          height="280"
+          width="260"
+          height="260"
           viewBox="0 0 512 512"
-          style={{ position: 'absolute', left: 80, top: '50%', transform: 'translateY(-50%)', opacity: 0.95 }}
+          style={{ position: 'absolute', left: 80, top: '50%', transform: 'translateY(-50%)', opacity: 0.9 }}
         >
           <g transform="translate(256 256) scale(0.335) translate(-750 -750)">
             <path
@@ -40,14 +40,14 @@ export default function OGImage() {
           style={{
             display: 'flex',
             flexDirection: 'column',
-            marginLeft: 420,
+            marginLeft: 400,
           }}
         >
           <div
             style={{
               fontSize: 64,
               fontWeight: 700,
-              color: '#ffffff',
+              color: '#f8f7f5',
               letterSpacing: '-1px',
               textTransform: 'uppercase',
             }}
@@ -56,26 +56,38 @@ export default function OGImage() {
           </div>
           <div
             style={{
-              fontSize: 26,
-              color: '#b5934b',
+              fontSize: 24,
+              color: '#c6e535',
               marginTop: 8,
-              fontWeight: 500,
+              fontWeight: 600,
             }}
           >
-            Donatiebeheer voor moskeeën
+            Moskee Software
           </div>
           <div
             style={{
               fontSize: 18,
-              color: 'rgba(255,255,255,0.55)',
+              color: 'rgba(248,247,245,0.55)',
               marginTop: 20,
               maxWidth: 520,
               lineHeight: 1.5,
             }}
           >
-            Alles-in-één platform voor donaties, ANBI-giftenverklaringen en donateursbeheer.
+            Donatiebeheer, ANBI-giftenverklaringen en ledenbeheer voor moskeeën in Nederland.
           </div>
         </div>
+
+        {/* Accent bar */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 6,
+            backgroundColor: '#c6e535',
+          }}
+        />
       </div>
     ),
     { ...size }

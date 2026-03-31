@@ -16,8 +16,52 @@ const outfit = Outfit({
 })
 
 export const metadata: Metadata = {
-  title: "Bunyan — Moskee software voor donaties, ANBI & ledenbeheer",
-  description: "Bunyan is hét platform waarmee moskeeën in Nederland donaties beheren, ANBI-giftenverklaringen genereren en hun gemeenschap in kaart brengen. Start gratis met iDEAL, periodieke giften en donorprofielen.",
+  metadataBase: new URL("https://bunyan.nl"),
+  title: {
+    default: "Bunyan — Moskee software voor donaties, ANBI & ledenbeheer",
+    template: "%s | Bunyan — Moskee Software",
+  },
+  description:
+    "Bunyan is hét platform waarmee moskeeën in Nederland donaties beheren, ANBI-giftenverklaringen genereren en hun gemeenschap in kaart brengen. Moskee software voor donatiebeheer, ledenbeheer en belastingaftrek.",
+  keywords: [
+    "moskee software",
+    "donatie beheer moskee",
+    "ANBI giftenverklaring moskee",
+    "ledenbeheer moskee",
+    "iDEAL donaties moskee",
+    "online doneren moskee",
+    "ANBI status moskee",
+    "belastingaftrek donatie moskee",
+    "donorbeheer moskee",
+    "CRM moskee",
+  ],
+  openGraph: {
+    type: "website",
+    locale: "nl_NL",
+    url: "https://bunyan.nl",
+    siteName: "Bunyan",
+    title: "Bunyan — Moskee software voor donaties, ANBI & ledenbeheer",
+    description:
+      "Hét platform waarmee moskeeën in Nederland donaties beheren, ANBI-giftenverklaringen genereren en hun gemeenschap in kaart brengen.",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Bunyan — Moskee software",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Bunyan — Moskee software voor donaties, ANBI & ledenbeheer",
+    description:
+      "Hét platform waarmee moskeeën in Nederland donaties beheren, ANBI-giftenverklaringen genereren en hun gemeenschap in kaart brengen.",
+    images: ["/opengraph-image"],
+  },
+  alternates: {
+    canonical: "https://bunyan.nl",
+  },
 }
 
 export default function RootLayout({
@@ -33,12 +77,52 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "WebSite",
-              name: "Bunyan",
-              url: "https://bunyan.nl",
-            }),
+            __html: JSON.stringify([
+              {
+                "@context": "https://schema.org",
+                "@type": "WebSite",
+                name: "Bunyan",
+                url: "https://bunyan.nl",
+              },
+              {
+                "@context": "https://schema.org",
+                "@type": "Organization",
+                name: "Bunyan",
+                url: "https://bunyan.nl",
+                logo: "https://bunyan.nl/logos/logo_transparent.svg",
+              },
+              {
+                "@context": "https://schema.org",
+                "@type": "SoftwareApplication",
+                name: "Bunyan",
+                applicationCategory: "BusinessApplication",
+                operatingSystem: "Web",
+                description:
+                  "Moskee software voor donatiebeheer, ANBI-giftenverklaringen en ledenbeheer in Nederland.",
+                offers: [
+                  {
+                    "@type": "Offer",
+                    name: "Gratis",
+                    price: "0",
+                    priceCurrency: "EUR",
+                    description: "Gratis plan voor kleine moskeeën",
+                  },
+                  {
+                    "@type": "Offer",
+                    name: "Pro",
+                    price: "49",
+                    priceCurrency: "EUR",
+                    description: "Professioneel plan met alle functies",
+                    priceSpecification: {
+                      "@type": "UnitPriceSpecification",
+                      price: "49",
+                      priceCurrency: "EUR",
+                      billingDuration: "P1M",
+                    },
+                  },
+                ],
+              },
+            ]),
           }}
         />
       </head>

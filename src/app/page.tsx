@@ -478,16 +478,16 @@ export default function HomePage() {
               </span>
               <ul className="space-y-3">
                 {[
-                  { label: "Donatiebeheer voor moskeeën", href: "#product" },
-                  { label: "ANBI-giftenverklaringen", href: "#product" },
-                  { label: "Leden- & donorprofielen", href: "#product" },
-                  { label: "Periodieke giften & iDEAL", href: "#product" },
-                  { label: "QR-code donatiepagina", href: "#product" },
+                  { label: "Donatiebeheer voor moskeeën", href: "/donatiebeheer-moskee" },
+                  { label: "ANBI-giftenverklaringen", href: "/anbi-giftenverklaring-moskee" },
+                  { label: "Leden- & donorprofielen", href: "/ledenbeheer-moskee" },
+                  { label: "Periodieke giften & iDEAL", href: "/donatiebeheer-moskee" },
+                  { label: "QR-code donatiepagina", href: "/donatiebeheer-moskee" },
                 ].map(({ label, href }) => (
                   <li key={label}>
-                    <a href={href} className="text-[15px] text-[#1a1510] hover:opacity-50 transition-opacity">
+                    <Link href={href} className="text-[15px] text-[#1a1510] hover:opacity-50 transition-opacity">
                       {label}
-                    </a>
+                    </Link>
                   </li>
                 ))}
               </ul>

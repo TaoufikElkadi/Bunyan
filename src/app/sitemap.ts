@@ -19,13 +19,33 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .eq('status', 'active')
     .eq('mosques.status', 'active')
 
+  const now = new Date()
+
   // Static pages
   const staticPages: MetadataRoute.Sitemap = [
     {
       url: BASE_URL,
-      lastModified: new Date(),
+      lastModified: now,
       changeFrequency: 'weekly',
       priority: 1,
+    },
+    {
+      url: `${BASE_URL}/donatiebeheer-moskee`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${BASE_URL}/anbi-giftenverklaring-moskee`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${BASE_URL}/ledenbeheer-moskee`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.8,
     },
   ]
 
