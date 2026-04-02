@@ -3,7 +3,12 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import { useTranslation } from '@/lib/i18n/context'
-import { SignaturePad } from '@/components/ui/signature-pad'
+import dynamic from 'next/dynamic'
+import { Skeleton } from '@/components/ui/skeleton'
+const SignaturePad = dynamic(
+  () => import('@/components/ui/signature-pad').then(m => ({ default: m.SignaturePad })),
+  { ssr: false, loading: () => <Skeleton className="h-[160px] w-full rounded-2xl" /> }
+)
 import { PERIODIC_GIFT_ARTICLES } from '@/lib/anbi'
 import { formatMoney } from '@/lib/money'
 import {

@@ -8,13 +8,10 @@
  * Strategy: Origin header validation (recommended by OWASP for modern apps).
  * - Check the Origin header (set by browsers on all cross-origin requests)
  * - Fall back to the Referer header if Origin is absent
- * - If neither header is present, ALLOW the request — this covers:
- *   - Same-origin form submissions (some browsers omit Origin)
- *   - Server-to-server calls (e.g., Stripe webhooks, cron jobs)
- *   - Non-browser clients (curl, Postman, mobile apps)
- *
- * This is safe because browsers ALWAYS send Origin on cross-origin requests.
- * A malicious site cannot suppress the Origin header via fetch/XHR/form.
+ * - If neither header is present, REJECT the request. All modern browsers
+ *   send Origin on state-changing requests. Server-to-server calls (e.g.,
+ *   Stripe webhooks, cron jobs) should bypass CSRF checks at the route
+ *   level, not rely on missing headers being allowed.
  */
 
 const PRODUCTION_ORIGINS = [
@@ -39,11 +36,12 @@ export function isOriginAllowed(request: Request): boolean {
   // Extract the origin to validate. Prefer Origin; fall back to Referer.
   const sourceOrigin = origin ?? extractOriginFromReferer(referer)
 
-  // No Origin or Referer: allow the request.
-  // Same-origin navigations, server-to-server calls (webhooks, cron),
-  // and non-browser clients often send neither header.
+  // No Origin or Referer: reject the request.
+  // All modern browsers send the Origin header on state-changing requests.
+  // Server-to-server calls (Stripe webhooks, cron) should bypass CSRF
+  // checks at the route level, not here.
   if (!sourceOrigin) {
-    return true
+    return false
   }
 
   const allowed = getAllowedOrigins()

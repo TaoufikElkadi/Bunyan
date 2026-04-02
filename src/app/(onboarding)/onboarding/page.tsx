@@ -639,7 +639,7 @@ export default function OnboardingPage() {
               {mosqueName} is aangemeld!
             </h1>
             <p className="text-[14px] text-[#a09888] mb-8">
-              Wij beoordelen uw aanvraag zo snel mogelijk. U ontvangt bericht zodra uw donatiepagina live gaat.
+              Wij beoordelen uw aanvraag — meestal binnen 24 uur. U ontvangt bericht zodra uw donatiepagina live gaat.
             </p>
 
             {/* What happens next */}
@@ -648,7 +648,7 @@ export default function OnboardingPage() {
                 <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#f9a600]/15 text-[12px] font-bold text-[#f9a600]">1</div>
                 <div>
                   <p className="text-[13px] font-medium text-[#261b07]">Beoordeling</p>
-                  <p className="text-[12px] text-[#a09888] mt-0.5">Wij controleren uw gegevens — dit duurt meestal minder dan 24 uur.</p>
+                  <p className="text-[12px] text-[#a09888] mt-0.5">Wij controleren uw gegevens — meestal binnen 24 uur.</p>
                 </div>
               </div>
               <div className="flex gap-3 items-start rounded-lg border border-[#e3dfd5] bg-[#fafaf8] p-4">
@@ -661,8 +661,8 @@ export default function OnboardingPage() {
               <div className="flex gap-3 items-start rounded-lg border border-[#e3dfd5] bg-[#fafaf8] p-4">
                 <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#f9a600]/15 text-[12px] font-bold text-[#f9a600]">3</div>
                 <div>
-                  <p className="text-[13px] font-medium text-[#261b07]">Delen</p>
-                  <p className="text-[12px] text-[#a09888] mt-0.5">Deel uw donatiepagina met uw gemeenschap en begin met ontvangen.</p>
+                  <p className="text-[13px] font-medium text-[#261b07]">In de tussentijd</p>
+                  <p className="text-[12px] text-[#a09888] mt-0.5">Verken het dashboard, stel fondsen in en bereid alles voor.</p>
                 </div>
               </div>
             </div>

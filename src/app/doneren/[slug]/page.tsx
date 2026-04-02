@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { redirectIfOldSlug } from '@/lib/slug-redirect'
 import { DonationForm } from './donation-form'
 import { DonationPageShell } from './donation-page-shell'
+import { StripeNotConnected } from './stripe-not-connected'
 import type { Locale } from '@/types'
 
 export const revalidate = 300 // ISR: revalidate every 5 minutes
@@ -41,7 +42,7 @@ export default async function DonerenPage({ params }: Props) {
 
   const { data: mosque } = await admin
     .from('mosques')
-    .select('id, name, slug, primary_color, welcome_msg, logo_url, language, anbi_status, rsin, iban, status')
+    .select('id, name, slug, primary_color, welcome_msg, logo_url, language, anbi_status, rsin, iban, status, stripe_account_id')
     .eq('slug', slug)
     .single()
 
@@ -75,6 +76,24 @@ export default async function DonerenPage({ params }: Props) {
   }))
 
   const defaultLocale = (mosque.language as Locale) || 'nl'
+
+  if (!mosque.stripe_account_id) {
+    return (
+      <DonationPageShell
+        defaultLocale={defaultLocale}
+        mosqueName={mosque.name}
+        welcomeMsg={mosque.welcome_msg}
+        primaryColor={mosque.primary_color || undefined}
+        logoUrl={mosque.logo_url}
+      >
+        <StripeNotConnected
+          mosqueName={mosque.name}
+          logoUrl={mosque.logo_url}
+          primaryColor={mosque.primary_color || '#6B5E4C'}
+        />
+      </DonationPageShell>
+    )
+  }
 
   return (
     <DonationPageShell

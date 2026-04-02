@@ -459,7 +459,13 @@ const TARGET_DONORS = 160
 const BATCH_SIZE = 50 // Supabase insert batch size
 
 export async function POST() {
-  const { mosqueId, supabase, profile } = await getCachedProfile()
+  const { mosqueId, supabase, profile, isPlatformAdmin } = await getCachedProfile()
+
+  // In production, only platform admins may generate mock data.
+  // Locally, any mosque admin can use it for development.
+  if (process.env.NODE_ENV === 'production' && !isPlatformAdmin) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
 
   if (!mosqueId || !profile || profile.role !== 'admin') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })

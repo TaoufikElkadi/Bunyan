@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024 // 2MB
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml']
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp']
 
 // Magic byte signatures for allowed image types
 const MAGIC_BYTES: { type: string; bytes: number[] }[] = [
@@ -12,11 +13,6 @@ const MAGIC_BYTES: { type: string; bytes: number[] }[] = [
 ]
 
 function validateMagicBytes(buffer: ArrayBuffer, claimedType: string): boolean {
-  // SVG is text-based — validate it starts with XML/SVG markup
-  if (claimedType === 'image/svg+xml') {
-    const text = new TextDecoder().decode(buffer.slice(0, 256)).trimStart()
-    return text.startsWith('<svg') || text.startsWith('<?xml')
-  }
   const header = new Uint8Array(buffer.slice(0, 8))
   return MAGIC_BYTES.some(
     (m) => m.type === claimedType && m.bytes.every((b, i) => header[i] === b)
@@ -55,7 +51,16 @@ export async function POST(request: Request) {
     }
 
     if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json({ error: 'Alleen JPG, PNG, WebP en SVG zijn toegestaan' }, { status: 400 })
+      return NextResponse.json({ error: 'Alleen JPG, PNG en WebP zijn toegestaan' }, { status: 400 })
+    }
+
+    // Validate file extension against allowlist
+    const ext = (file.name.split('.').pop() || '').toLowerCase()
+    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+      return NextResponse.json(
+        { error: 'Ongeldig bestandstype. Alleen JPG, PNG en WebP zijn toegestaan.' },
+        { status: 400 }
+      )
     }
 
     if (file.size > MAX_FILE_SIZE) {
@@ -69,7 +74,6 @@ export async function POST(request: Request) {
     }
 
     const mosqueId = profile.mosque_id
-    const ext = file.name.split('.').pop() || 'png'
     const filePath = `${mosqueId}/${type}.${ext}`
 
     // Upload to Supabase Storage (bucket: branding)

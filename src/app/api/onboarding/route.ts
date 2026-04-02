@@ -1,9 +1,16 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { rateLimit, getClientIp } from '@/lib/rate-limit'
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request)
+    const { success } = rateLimit(`onboarding:${ip}`, 3, 60_000)
+    if (!success) {
+      return NextResponse.json({ error: 'Te veel verzoeken. Probeer het later opnieuw.' }, { status: 429 })
+    }
+
     // Verify the user is authenticated
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()

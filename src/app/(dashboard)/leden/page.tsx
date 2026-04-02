@@ -95,7 +95,7 @@ export default async function LedenPage({
     query = query.or('email.not.is.null,name.not.is.null')
   }
 
-  query = query.order('total_donated', { ascending: false })
+  query = query.order('total_donated', { ascending: false }).limit(2000)
 
   const { data: donors } = await query
 

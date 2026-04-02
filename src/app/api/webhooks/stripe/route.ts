@@ -9,6 +9,21 @@ import { recurringCancelledEmail } from '@/lib/email/templates/recurring-cancell
 type AdminClient = ReturnType<typeof createAdminClient>
 
 /**
+ * Verify that a mosque_id from Stripe metadata refers to a real, active mosque.
+ * Returns true if the mosque exists and is active; false otherwise.
+ */
+async function verifyActiveMosque(admin: AdminClient, mosqueId: string): Promise<boolean> {
+  const { data } = await admin
+    .from('mosques')
+    .select('id')
+    .eq('id', mosqueId)
+    .eq('status', 'active')
+    .single()
+
+  return !!data
+}
+
+/**
  * Stripe webhook handler.
  * Verifies signature, then updates donation/recurring status.
  */
@@ -177,6 +192,15 @@ async function handleFirstSubscriptionPayment(
     console.error(`Webhook: subscription ${subscriptionId} not found in recurrings, falling back to PI metadata`)
 
     if (pi.metadata?.mosque_id && pi.metadata?.fund_id) {
+      // Verify mosque exists and is active before inserting from metadata
+      const mosqueValid = await verifyActiveMosque(admin, pi.metadata.mosque_id)
+      if (!mosqueValid) {
+        console.warn(
+          `Webhook: skipping fallback donation insert — mosque ${pi.metadata.mosque_id} not found or not active (PI ${paymentIntentId})`
+        )
+        return
+      }
+
       const { data: existing } = await admin
         .from('donations')
         .select('id')
@@ -456,6 +480,15 @@ async function handleCheckoutSessionCompleted(
 
   if (!mosqueId || !plan) {
     console.error('Webhook: checkout.session.completed missing mosque_id or plan metadata')
+    return
+  }
+
+  // Verify mosque exists and is active before updating plan from metadata
+  const mosqueValid = await verifyActiveMosque(admin, mosqueId)
+  if (!mosqueValid) {
+    console.warn(
+      `Webhook: skipping checkout plan update — mosque ${mosqueId} not found or not active (session ${session.id})`
+    )
     return
   }
 

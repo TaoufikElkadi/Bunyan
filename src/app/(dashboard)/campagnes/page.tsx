@@ -42,7 +42,8 @@ export default async function CampagnesPage() {
       .from('campaigns')
       .select('*, funds(name)')
       .eq('mosque_id', mosqueId)
-      .order('created_at', { ascending: false }),
+      .order('created_at', { ascending: false })
+      .limit(200),
     supabase
       .from('funds')
       .select('*')

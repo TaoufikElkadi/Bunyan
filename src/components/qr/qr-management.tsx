@@ -21,7 +21,6 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { PlusIcon, DownloadIcon } from 'lucide-react'
-import QRCode from 'qrcode'
 
 type Fund = { id: string; name: string }
 type Campaign = { id: string; title: string }
@@ -85,6 +84,7 @@ export function QRManagement({ funds, campaigns }: Props) {
 
   async function handleDownloadQR(code: string) {
     const url = `${window.location.origin}/go/${code}`
+    const QRCode = (await import('qrcode')).default
     const dataUrl = await QRCode.toDataURL(url, { width: 400, margin: 2 })
     downloadDataUrl(dataUrl, `qr-${code}.png`)
   }

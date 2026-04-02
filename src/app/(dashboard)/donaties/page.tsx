@@ -91,9 +91,12 @@ export default async function DonatiesPage({
   const from = (page - 1) * PAGE_SIZE
   const to = from + PAGE_SIZE - 1
 
+  // Use !inner join on donors when searching, so we can filter on donor fields
+  const donorJoin = searchQuery ? 'donors!inner(name, email)' : 'donors(name, email)'
+
   let donationQuery = supabase
     .from('donations')
-    .select('*, funds(name), donors(name, email)', { count: 'exact' })
+    .select(`*, funds(name), ${donorJoin}`, { count: 'exact' })
     .eq('mosque_id', mosqueId)
     .order('created_at', { ascending: false })
 
@@ -118,7 +121,7 @@ export default async function DonatiesPage({
   }
 
   if (searchQuery) {
-    donationQuery = donationQuery.not('donor_id', 'is', null)
+    donationQuery = donationQuery.or(`name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`, { referencedTable: 'donors' })
   }
 
   donationQuery = donationQuery.range(from, to)
@@ -127,25 +130,14 @@ export default async function DonatiesPage({
     donationQuery,
     supabase
       .from('funds')
-      .select('*')
+      .select('id, name, icon')
       .eq('mosque_id', mosqueId)
       .eq('is_active', true)
       .order('sort_order', { ascending: true }),
   ])
 
-  let filteredDonations = donations ?? []
-  let filteredCount = count ?? 0
-
-  if (searchQuery) {
-    const q = searchQuery.toLowerCase()
-    filteredDonations = filteredDonations.filter((d: Record<string, unknown>) => {
-      const donors = d.donors as { name?: string; email?: string } | null
-      const name = donors?.name?.toLowerCase() ?? ''
-      const email = donors?.email?.toLowerCase() ?? ''
-      return name.includes(q) || email.includes(q)
-    })
-    filteredCount = filteredDonations.length
-  }
+  const filteredDonations = donations ?? []
+  const filteredCount = count ?? 0
 
   const totalPages = Math.ceil(filteredCount / PAGE_SIZE)
 

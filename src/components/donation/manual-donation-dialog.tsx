@@ -19,10 +19,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { toast } from 'sonner'
 import { eurosToCents } from '@/lib/money'
 import { PlusIcon } from 'lucide-react'
-import type { Fund } from '@/types'
-
 interface ManualDonationDialogProps {
-  funds: Fund[]
+  funds: { id: string; name: string; icon?: string | null }[]
 }
 
 export function ManualDonationDialog({ funds }: ManualDonationDialogProps) {

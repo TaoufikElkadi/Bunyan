@@ -112,20 +112,7 @@ export function DonationTrendChart({ data }: { data: MonthlyData[] }) {
             axisLine={false}
             tickLine={false}
           />
-          <Tooltip
-            formatter={(value) => [formatEuros(Number(value)), 'Totaal']}
-            labelFormatter={(label) => String(label)}
-            contentStyle={{
-              backgroundColor: '#261b07',
-              border: 'none',
-              borderRadius: '10px',
-              boxShadow: '0 8px 32px rgba(38, 27, 7, 0.2)',
-              fontSize: '12px',
-              color: '#f8f7f5',
-              padding: '8px 14px',
-            }}
-            itemStyle={{ color: '#f8f7f5' }}
-            labelStyle={{ color: '#a09888', fontSize: '11px', marginBottom: '2px' }}
+          <Tooltip content={() => null}
             cursor={{ stroke: '#C87D3A', strokeWidth: 1, strokeDasharray: '4 4' }}
           />
           <Area

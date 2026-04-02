@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendTeamInviteEmail } from '@/lib/email/team-invite'
+import { rateLimit, getClientIp } from '@/lib/rate-limit'
 import type { UserRole } from '@/types'
 
 const VALID_ROLES: UserRole[] = ['admin', 'treasurer', 'viewer']
@@ -26,6 +27,12 @@ interface InviteBody {
  */
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request)
+    const { success } = rateLimit(`team-invite:${ip}`, 10, 60_000)
+    if (!success) {
+      return NextResponse.json({ error: 'Te veel verzoeken. Probeer het later opnieuw.' }, { status: 429 })
+    }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -147,9 +154,9 @@ export async function POST(request: Request) {
       })
 
     if (insertError) {
-      console.error('Team member insert error:', insertError)
+      console.error('Team member insert error:', insertError.message, insertError)
       return NextResponse.json(
-        { error: 'Teamlid toevoegen mislukt: ' + insertError.message },
+        { error: 'Teamlid toevoegen mislukt. Probeer het opnieuw.' },
         { status: 500 }
       )
     }

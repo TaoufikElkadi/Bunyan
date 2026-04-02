@@ -13,7 +13,12 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { SignaturePad } from '@/components/ui/signature-pad'
+import dynamic from 'next/dynamic'
+import { Skeleton } from '@/components/ui/skeleton'
+const SignaturePad = dynamic(
+  () => import('@/components/ui/signature-pad').then(m => ({ default: m.SignaturePad })),
+  { ssr: false, loading: () => <Skeleton className="h-[160px] w-full rounded-2xl" /> }
+)
 import { formatMoney } from '@/lib/money'
 import { eurosToCents } from '@/lib/money'
 import { toast } from 'sonner'

@@ -52,7 +52,8 @@ export default async function FondsenPage() {
       .select('amount, fund_id, created_at')
       .eq('mosque_id', mosqueId)
       .eq('status', 'completed')
-      .gte('created_at', new Date(now.getFullYear(), now.getMonth() - 11, 1).toISOString()),
+      .gte('created_at', new Date(now.getFullYear(), now.getMonth() - 11, 1).toISOString())
+      .limit(10000),
   ])
 
   // Compute totals
