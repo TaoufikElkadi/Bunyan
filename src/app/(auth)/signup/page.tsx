@@ -36,6 +36,13 @@ export default function SignupPage() {
       return
     }
 
+    // Supabase returns a user with empty identities when the email already exists
+    if (data.user && data.user.identities?.length === 0) {
+      setError('Er bestaat al een account met dit e-mailadres. Probeer in te loggen.')
+      setLoading(false)
+      return
+    }
+
     // If email confirmation is required, session will be null
     if (!data.session) {
       setStep('verify')
@@ -149,9 +156,9 @@ export default function SignupPage() {
 
       <p className="mt-4 text-center text-[12px] text-[#b5b0a5]">
         Door Bunyan te gebruiken gaat u akkoord met onze{' '}
-        <a href="#" className="underline underline-offset-2">Voorwaarden</a>
+        <a href="/voorwaarden" className="underline underline-offset-2">Voorwaarden</a>
         {' '}en{' '}
-        <a href="#" className="underline underline-offset-2">Privacybeleid</a>.
+        <a href="/privacy" className="underline underline-offset-2">Privacybeleid</a>.
       </p>
     </div>
   )
