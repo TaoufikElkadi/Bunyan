@@ -29,7 +29,10 @@ export async function GET() {
       return NextResponse.json({ error: 'Fout bij ophalen statistieken' }, { status: 500 })
     }
 
-    return NextResponse.json({ stats: data as MemberStats })
+    return NextResponse.json(
+      { stats: data as MemberStats },
+      { headers: { 'Cache-Control': 'private, max-age=60, stale-while-revalidate=120' } },
+    )
   } catch (err) {
     console.error('Member stats error:', err)
     return NextResponse.json({ error: 'Er is iets misgegaan' }, { status: 500 })

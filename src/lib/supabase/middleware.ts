@@ -30,7 +30,10 @@ export async function updateSession(request: NextRequest) {
 
   // Pass authenticated user ID and platform role to server components via
   // request headers so they can skip redundant auth calls.
+  // Always strip these headers first to prevent spoofing by external requests.
   const requestHeaders = new Headers(request.headers)
+  requestHeaders.delete('x-user-id')
+  requestHeaders.delete('x-platform-admin')
   if (user) {
     requestHeaders.set('x-user-id', user.id)
     if (user.app_metadata?.platform_role === 'platform_admin') {

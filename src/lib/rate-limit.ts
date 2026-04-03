@@ -1,12 +1,43 @@
 /**
- * Simple in-memory sliding-window rate limiter.
- * Suitable for single-instance Vercel deployments.
- * For multi-instance, swap to @upstash/ratelimit.
+ * Rate limiter with Upstash Redis for production (Vercel serverless)
+ * and in-memory fallback for local development.
+ *
+ * Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN env vars to enable
+ * distributed rate limiting. Without them, falls back to in-memory (single-instance only).
  */
 
-const store = new Map<string, number[]>()
+import { Ratelimit } from '@upstash/ratelimit'
+import { Redis } from '@upstash/redis'
 
-// Prevent memory leak: purge stale entries every 5 minutes
+// ---------------------------------------------------------------------------
+// Upstash-backed rate limiter (production)
+// ---------------------------------------------------------------------------
+
+const hasUpstash = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
+
+const upstashLimiters = new Map<string, Ratelimit>()
+
+function getUpstashLimiter(limit: number, windowMs: number): Ratelimit {
+  const key = `${limit}:${windowMs}`
+  let limiter = upstashLimiters.get(key)
+  if (!limiter) {
+    limiter = new Ratelimit({
+      redis: Redis.fromEnv(),
+      limiter: Ratelimit.slidingWindow(limit, `${windowMs} ms`),
+      analytics: false,
+      prefix: 'bunyan:rl',
+    })
+    upstashLimiters.set(key, limiter)
+  }
+  return limiter
+}
+
+// ---------------------------------------------------------------------------
+// In-memory fallback (local dev only)
+// ---------------------------------------------------------------------------
+
+const memoryStore = new Map<string, number[]>()
+
 const CLEANUP_INTERVAL = 5 * 60 * 1000
 let lastCleanup = Date.now()
 
@@ -15,15 +46,40 @@ function cleanup(windowMs: number) {
   if (now - lastCleanup < CLEANUP_INTERVAL) return
   lastCleanup = now
   const cutoff = now - windowMs
-  for (const [key, timestamps] of store) {
+  for (const [key, timestamps] of memoryStore) {
     const filtered = timestamps.filter((t) => t > cutoff)
     if (filtered.length === 0) {
-      store.delete(key)
+      memoryStore.delete(key)
     } else {
-      store.set(key, filtered)
+      memoryStore.set(key, filtered)
     }
   }
 }
+
+function memoryRateLimit(
+  key: string,
+  limit: number,
+  windowMs: number,
+): RateLimitResult {
+  cleanup(windowMs)
+  const now = Date.now()
+  const cutoff = now - windowMs
+  const timestamps = memoryStore.get(key) ?? []
+  const recent = timestamps.filter((t) => t > cutoff)
+
+  if (recent.length >= limit) {
+    memoryStore.set(key, recent)
+    return { success: false, remaining: 0 }
+  }
+
+  recent.push(now)
+  memoryStore.set(key, recent)
+  return { success: true, remaining: limit - recent.length }
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
 
 interface RateLimitResult {
   success: boolean
@@ -32,30 +88,20 @@ interface RateLimitResult {
 
 /**
  * Check rate limit for a given key.
- * @param key   Unique identifier (e.g., IP address or IP + route)
- * @param limit Max requests allowed in the window
- * @param windowMs Time window in milliseconds (default: 60s)
+ * Uses Upstash Redis in production, in-memory fallback for local dev.
  */
-export function rateLimit(
+export async function rateLimit(
   key: string,
   limit: number,
   windowMs = 60_000,
-): RateLimitResult {
-  cleanup(windowMs)
-
-  const now = Date.now()
-  const cutoff = now - windowMs
-  const timestamps = store.get(key) ?? []
-  const recent = timestamps.filter((t) => t > cutoff)
-
-  if (recent.length >= limit) {
-    store.set(key, recent)
-    return { success: false, remaining: 0 }
+): Promise<RateLimitResult> {
+  if (hasUpstash) {
+    const limiter = getUpstashLimiter(limit, windowMs)
+    const { success, remaining } = await limiter.limit(key)
+    return { success, remaining }
   }
 
-  recent.push(now)
-  store.set(key, recent)
-  return { success: true, remaining: limit - recent.length }
+  return memoryRateLimit(key, limit, windowMs)
 }
 
 /**

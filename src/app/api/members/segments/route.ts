@@ -73,14 +73,17 @@ export async function GET() {
       readyForPeriodic = activeIds.filter((d) => !periodicDonorIds.has(d.id)).length
     }
 
-    return NextResponse.json({
-      segments: [
-        { key: 'new_donors', label: 'Nieuwe donateurs (30d)', count: newDonors ?? 0 },
-        { key: 'loyal', label: 'Trouwe donateurs (6+)', count: loyalDonors ?? 0 },
-        { key: 'ready_for_periodic', label: 'Klaar voor periodieke gift', count: readyForPeriodic },
-        { key: 'active', label: 'Actieve leden', count: activeDonors ?? 0 },
-      ],
-    })
+    return NextResponse.json(
+      {
+        segments: [
+          { key: 'new_donors', label: 'Nieuwe donateurs (30d)', count: newDonors ?? 0 },
+          { key: 'loyal', label: 'Trouwe donateurs (6+)', count: loyalDonors ?? 0 },
+          { key: 'ready_for_periodic', label: 'Klaar voor periodieke gift', count: readyForPeriodic },
+          { key: 'active', label: 'Actieve leden', count: activeDonors ?? 0 },
+        ],
+      },
+      { headers: { 'Cache-Control': 'private, max-age=60, stale-while-revalidate=120' } },
+    )
   } catch (err) {
     console.error('Segments error:', err)
     return NextResponse.json({ error: 'Er is iets misgegaan' }, { status: 500 })

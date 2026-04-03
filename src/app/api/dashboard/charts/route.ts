@@ -31,10 +31,10 @@ export async function GET() {
       }),
     ])
 
-    return NextResponse.json({
-      monthly: monthly ?? [],
-      byFund: byFund ?? [],
-    })
+    return NextResponse.json(
+      { monthly: monthly ?? [], byFund: byFund ?? [] },
+      { headers: { 'Cache-Control': 'private, max-age=60, stale-while-revalidate=120' } },
+    )
   } catch (err) {
     console.error('Chart data error:', err)
     return NextResponse.json({ error: 'Er is iets misgegaan' }, { status: 500 })

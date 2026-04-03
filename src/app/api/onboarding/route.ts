@@ -7,7 +7,7 @@ import { sendWelcomeEmail } from '@/lib/email/templates/welcome'
 export async function POST(request: Request) {
   try {
     const ip = getClientIp(request)
-    const { success } = rateLimit(`onboarding:${ip}`, 3, 60_000)
+    const { success } = await rateLimit(`onboarding:${ip}`, 3, 60_000)
     if (!success) {
       return NextResponse.json({ error: 'Te veel verzoeken. Probeer het later opnieuw.' }, { status: 429 })
     }

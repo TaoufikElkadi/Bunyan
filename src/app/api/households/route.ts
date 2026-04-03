@@ -30,7 +30,10 @@ export async function GET() {
       return NextResponse.json({ error: 'Fout bij ophalen huishoudens' }, { status: 500 })
     }
 
-    return NextResponse.json({ households: households ?? [] })
+    return NextResponse.json(
+      { households: households ?? [] },
+      { headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' } },
+    )
   } catch (err) {
     console.error('Households error:', err)
     return NextResponse.json({ error: 'Er is iets misgegaan' }, { status: 500 })

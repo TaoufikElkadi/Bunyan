@@ -12,7 +12,7 @@ import { calculateCoverFee } from '@/lib/fees'
 export async function POST(request: Request) {
   try {
     const ip = getClientIp(request)
-    const { success } = rateLimit(`payment-intent:${ip}`, 10, 60_000)
+    const { success } = await rateLimit(`payment-intent:${ip}`, 10, 60_000)
     if (!success) {
       return NextResponse.json({ error: 'Te veel verzoeken, probeer later opnieuw' }, { status: 429 })
     }
@@ -65,79 +65,75 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Moskee niet gevonden' }, { status: 404 })
     }
 
-    // Verify fund belongs to this mosque and is active
-    const { data: fund } = await admin
-      .from('funds')
-      .select('id, name')
-      .eq('id', fund_id)
-      .eq('mosque_id', mosque.id)
-      .eq('is_active', true)
-      .single()
+    // Parallelize: fund + campaign + donor lookup + transfer params
+    // All depend on mosque.id but are independent of each other
+    const [fundResult, campaignResult, transferParams, donorResult] = await Promise.all([
+      admin
+        .from('funds')
+        .select('id, name')
+        .eq('id', fund_id)
+        .eq('mosque_id', mosque.id)
+        .eq('is_active', true)
+        .single(),
+      campaign_id
+        ? admin
+            .from('campaigns')
+            .select('id')
+            .eq('id', campaign_id)
+            .eq('mosque_id', mosque.id)
+            .single()
+        : Promise.resolve({ data: { id: null } }),
+      buildTransferParams(mosque.id),
+      donor_email
+        ? admin
+            .from('donors')
+            .select('id')
+            .eq('mosque_id', mosque.id)
+            .eq('email', donor_email)
+            .single()
+        : Promise.resolve({ data: null }),
+    ])
 
+    const fund = fundResult.data
     if (!fund) {
       return NextResponse.json({ error: 'Fonds niet gevonden' }, { status: 404 })
     }
 
-    // Validate campaign belongs to this mosque (if provided)
-    if (campaign_id) {
-      const { data: campaign } = await admin
-        .from('campaigns')
-        .select('id')
-        .eq('id', campaign_id)
-        .eq('mosque_id', mosque.id)
-        .single()
-
-      if (!campaign) {
-        return NextResponse.json({ error: 'Campagne niet gevonden' }, { status: 404 })
-      }
+    if (campaign_id && !campaignResult.data) {
+      return NextResponse.json({ error: 'Campagne niet gevonden' }, { status: 404 })
     }
 
-    // Find or create donor
-    let donorId: string | null = null
-
-    if (donor_email || donor_name) {
-      if (donor_email) {
-        const { data: existing } = await admin
-          .from('donors')
-          .select('id')
-          .eq('mosque_id', mosque.id)
-          .eq('email', donor_email)
-          .single()
-
-        if (existing) {
-          donorId = existing.id
-          if (donor_name) {
-            await admin
-              .from('donors')
-              .update({ name: donor_name, updated_at: new Date().toISOString() })
-              .eq('id', donorId)
-              .is('name', null)
-          }
-        }
-      }
-
-      if (!donorId) {
-        const { data: newDonor } = await admin
-          .from('donors')
-          .insert({
-            mosque_id: mosque.id,
-            name: donor_name || null,
-            email: donor_email || null,
-          })
-          .select('id')
-          .single()
-
-        if (newDonor) donorId = newDonor.id
-      }
-    }
-
-    // Build Connect transfer params (routes funds to mosque's Stripe account)
-    const transferParams = await buildTransferParams(mosque.id)
     if (!transferParams) {
       return NextResponse.json(
         { error: 'Deze moskee kan nog geen donaties ontvangen. Neem contact op met de beheerder.' },
         { status: 422 }
       )
+    }
+
+    // Resolve donor: use existing or create new
+    let donorId: string | null = null
+
+    if (donorResult.data) {
+      donorId = donorResult.data.id
+      if (donor_name) {
+        await admin
+          .from('donors')
+          .update({ name: donor_name, updated_at: new Date().toISOString() })
+          .eq('id', donorId)
+          .is('name', null)
+      }
+    } else if (donor_email || donor_name) {
+      const { data: newDonor } = await admin
+        .from('donors')
+        .insert({
+          mosque_id: mosque.id,
+          name: donor_name || null,
+          email: donor_email || null,
+        })
+        .select('id')
+        .single()
+
+      if (newDonor) donorId = newDonor.id
     }
 
     // Create Stripe PaymentIntent

@@ -28,7 +28,7 @@ interface InviteBody {
 export async function POST(request: Request) {
   try {
     const ip = getClientIp(request)
-    const { success } = rateLimit(`team-invite:${ip}`, 10, 60_000)
+    const { success } = await rateLimit(`team-invite:${ip}`, 10, 60_000)
     if (!success) {
       return NextResponse.json({ error: 'Te veel verzoeken. Probeer het later opnieuw.' }, { status: 429 })
     }

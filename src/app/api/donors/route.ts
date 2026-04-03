@@ -43,7 +43,10 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Fout bij ophalen donateurs' }, { status: 500 })
     }
 
-    return NextResponse.json({ donors: donors ?? [] })
+    return NextResponse.json(
+      { donors: donors ?? [] },
+      { headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' } },
+    )
   } catch (err) {
     console.error('Donors error:', err)
     return NextResponse.json({ error: 'Er is iets misgegaan' }, { status: 500 })

@@ -10,9 +10,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
  * Protected by CRON_SECRET header. Scheduled via Vercel Cron at 02:00 UTC.
  */
 export async function GET(request: Request) {
-  // Auth: verify cron secret
+  // Auth: verify cron secret (guard against undefined CRON_SECRET)
   const authHeader = request.headers.get('authorization')
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

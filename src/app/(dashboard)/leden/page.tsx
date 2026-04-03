@@ -19,6 +19,29 @@ import Link from 'next/link'
 import { ChevronLeft, ChevronRight, Users, Lock, Download } from 'lucide-react'
 import type { MemberStatus, ChurnRisk } from '@/types'
 
+interface EnrichedDonor {
+  id: string
+  mosque_id: string
+  name: string | null
+  email: string | null
+  phone: string | null
+  address: string | null
+  tags: string[] | null
+  total_donated: number
+  donation_count: number
+  first_donated_at: string | null
+  last_donated_at: string | null
+  created_at: string
+  updated_at: string
+  avg_donation_amount: number | null
+  donation_frequency: string | null
+  estimated_annual: number | null
+  iban_hint: string | null
+  has_active_recurring: boolean
+  has_active_periodic: boolean
+  total_count: number
+}
+
 export const revalidate = 60
 
 const PAGE_SIZE = 50
@@ -88,68 +111,40 @@ export default async function LedenPage({
   const page = Math.max(1, parseInt(params.page ?? '1', 10) || 1)
   const hasComputedFilters = !!statusFilter || !!riskFilter || params.periodic === 'no'
 
-  // When computed filters are active we need all rows to filter in JS.
-  // Otherwise, paginate at the DB level for performance.
-  let query = supabase
-    .from('donors')
-    .select('*', { count: 'exact' })
-    .eq('mosque_id', mosqueId)
+  // Single RPC call replaces 3 separate queries (donors + recurrings + periodics).
+  // When computed filters are active we fetch up to 2000 rows to filter in JS.
+  const dbOffset = hasComputedFilters ? 0 : (page - 1) * PAGE_SIZE
+  const dbLimit = hasComputedFilters ? 2000 : PAGE_SIZE
 
-  if (!showAnonymous) {
-    query = query.or('email.not.is.null,name.not.is.null')
-  }
+  const { data: donors } = await supabase.rpc('get_enriched_donors', {
+    p_mosque_id: mosqueId,
+    p_include_anonymous: showAnonymous,
+    p_limit: dbLimit,
+    p_offset: dbOffset,
+  })
 
-  query = query.order('total_donated', { ascending: false })
-
-  if (hasComputedFilters) {
-    // Status/risk are computed in JS, so fetch up to 2000 and filter post-query
-    query = query.limit(2000)
-  } else {
-    const from = (page - 1) * PAGE_SIZE
-    const to = from + PAGE_SIZE - 1
-    query = query.range(from, to)
-  }
-
-  const { data: donors, count: dbCount } = await query
-
-  // Batch fetch recurring & periodic status for all donors
-  const donorIds = (donors ?? []).map((d) => d.id)
-
-  const [{ data: activeRecurrings }, { data: activePeriodics }] = donorIds.length > 0
-    ? await Promise.all([
-        supabase
-          .from('recurrings')
-          .select('donor_id')
-          .eq('mosque_id', mosqueId)
-          .eq('status', 'active'),
-        supabase
-          .from('periodic_gift_agreements')
-          .select('donor_id')
-          .eq('mosque_id', mosqueId)
-          .eq('status', 'active'),
-      ])
-    : [{ data: [] }, { data: [] }]
-
-  const recurringSet = new Set((activeRecurrings ?? []).map((r) => r.donor_id))
-  const periodicSet = new Set((activePeriodics ?? []).map((p) => p.donor_id))
+  const rows = (donors ?? []) as unknown as EnrichedDonor[]
+  const dbCount = rows[0]?.total_count ?? 0
 
   // Enrich donors with computed status
-  let members = (donors ?? []).map((donor) => {
-    const input = {
+  let members = rows.map((donor) => ({
+    ...donor,
+    member_status: computeMemberStatus({
       email: donor.email,
       name: donor.name,
       last_donated_at: donor.last_donated_at,
-      has_active_recurring: recurringSet.has(donor.id),
-      has_active_periodic: periodicSet.has(donor.id),
-    }
-    return {
-      ...donor,
-      member_status: computeMemberStatus(input),
-      churn_risk: computeChurnRisk(input),
-      days_since_last: daysSince(donor.last_donated_at),
-      has_active_periodic: periodicSet.has(donor.id),
-    }
-  })
+      has_active_recurring: donor.has_active_recurring,
+      has_active_periodic: donor.has_active_periodic,
+    }),
+    churn_risk: computeChurnRisk({
+      email: donor.email,
+      name: donor.name,
+      last_donated_at: donor.last_donated_at,
+      has_active_recurring: donor.has_active_recurring,
+      has_active_periodic: donor.has_active_periodic,
+    }),
+    days_since_last: daysSince(donor.last_donated_at),
+  }))
 
   // Apply computed filters BEFORE pagination
   if (statusFilter) {
@@ -171,8 +166,8 @@ export default async function LedenPage({
     const from = (safePage - 1) * PAGE_SIZE
     members = members.slice(from, from + PAGE_SIZE)
   } else {
-    // DB already paginated — use the exact count from the query
-    filteredCount = dbCount ?? members.length
+    // DB already paginated — use the total_count from the window function
+    filteredCount = Number(dbCount) || members.length
   }
   const totalPages = Math.ceil(filteredCount / PAGE_SIZE)
 

@@ -55,13 +55,16 @@ export async function GET() {
           .limit(25),
       ])
 
-    return NextResponse.json({
-      alerts: {
-        lapsed_donors: lapsed ?? [],
-        expiring_periodic: expiringPeriodic ?? [],
-        recently_cancelled: recentlyCancelled ?? [],
+    return NextResponse.json(
+      {
+        alerts: {
+          lapsed_donors: lapsed ?? [],
+          expiring_periodic: expiringPeriodic ?? [],
+          recently_cancelled: recentlyCancelled ?? [],
+        },
       },
-    })
+      { headers: { 'Cache-Control': 'private, max-age=60, stale-while-revalidate=120' } },
+    )
   } catch (err) {
     console.error('Member alerts error:', err)
     return NextResponse.json({ error: 'Er is iets misgegaan' }, { status: 500 })

@@ -10,6 +10,7 @@ export async function GET() {
       .from('mosques')
       .select('id, name, slug, city, plan, created_at')
       .order('created_at', { ascending: false })
+      .limit(200)
 
     if (error) {
       console.error('Fetch mosques error:', error)
