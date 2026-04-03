@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
+import useSWR from 'swr'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import {
   CheckCircle2,
@@ -34,36 +35,20 @@ interface Props {
   isAdmin?: boolean
 }
 
+const fetcher = (url: string) => fetch(url).then((r) => r.ok ? r.json() : null)
+
 export function StripeCard({ mosque, hasStripeKey, isAdmin = true }: Props) {
   const searchParams = useSearchParams()
-  const [connectStatus, setConnectStatus] = useState<ConnectStatus | null>(null)
-  const [loading, setLoading] = useState(true)
+  const stripeReturn = searchParams.get('stripe') === 'complete'
+  const { data: connectStatus, isLoading: loading, mutate } = useSWR<ConnectStatus>(
+    '/api/settings/stripe/connect',
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateOnMount: stripeReturn ? true : undefined,
+    },
+  )
   const [connecting, setConnecting] = useState(false)
-
-  const fetchStatus = useCallback(async () => {
-    try {
-      const res = await fetch('/api/settings/stripe/connect')
-      if (res.ok) {
-        setConnectStatus(await res.json())
-      }
-    } catch {
-      // Silently fail — UI shows fallback
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchStatus()
-  }, [fetchStatus])
-
-  // Re-fetch when returning from Stripe onboarding
-  useEffect(() => {
-    if (searchParams.get('stripe') === 'complete') {
-      setLoading(true)
-      fetchStatus()
-    }
-  }, [searchParams, fetchStatus])
 
   async function handleConnect() {
     setConnecting(true)
@@ -74,7 +59,7 @@ export function StripeCard({ mosque, hasStripeKey, isAdmin = true }: Props) {
       if (data.url) {
         window.location.href = data.url
       } else if (data.status === 'already_connected') {
-        fetchStatus()
+        mutate()
       } else {
         alert(data.error || 'Verbinding mislukt')
       }
