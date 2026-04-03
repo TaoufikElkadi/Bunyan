@@ -86,7 +86,92 @@ export async function GET(request: Request) {
     )
   }
 
-  const summary = { checked, updated, missing }
+  // ── Plan Usage Reconciliation ─────────────────────────────
+  // Count actual completed online donations per mosque this month
+  // and fix any drift in plan_usage caused by webhook failures/retries.
+  let usageChecked = 0
+  let usageCorrected = 0
+
+  try {
+    const now = new Date()
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+    const monthStr = monthStart.toISOString().slice(0, 10) // e.g. "2026-04-01"
+
+    // Get all active mosques
+    const { data: mosques, error: mosqueErr } = await admin
+      .from('mosques')
+      .select('id')
+      .eq('status', 'active')
+
+    if (mosqueErr) {
+      console.error('Reconcile: Failed to fetch mosques for plan_usage:', mosqueErr)
+    } else if (mosques) {
+      for (const mosque of mosques) {
+        usageChecked++
+
+        try {
+          // Count actual completed online donations this month
+          // Online = NOT cash and NOT bank_transfer
+          const { count: actualCount, error: countErr } = await admin
+            .from('donations')
+            .select('id', { count: 'exact', head: true })
+            .eq('mosque_id', mosque.id)
+            .eq('status', 'completed')
+            .not('method', 'in', '("cash","bank_transfer")')
+            .gte('created_at', monthStart.toISOString())
+
+          if (countErr) {
+            console.error(`Reconcile: Failed to count donations for mosque ${mosque.id}:`, countErr)
+            continue
+          }
+
+          const actual = actualCount ?? 0
+
+          // Get current plan_usage value
+          const { data: usage } = await admin
+            .from('plan_usage')
+            .select('online_donations')
+            .eq('mosque_id', mosque.id)
+            .eq('month', monthStr)
+            .single()
+
+          const recorded = usage?.online_donations ?? 0
+
+          if (actual !== recorded) {
+            // Upsert the corrected value
+            const { error: upsertErr } = await admin
+              .from('plan_usage')
+              .upsert(
+                { mosque_id: mosque.id, month: monthStr, online_donations: actual },
+                { onConflict: 'mosque_id,month' }
+              )
+
+            if (upsertErr) {
+              console.error(`Reconcile: Failed to correct plan_usage for mosque ${mosque.id}:`, upsertErr)
+              continue
+            }
+
+            console.log(
+              `Reconcile: Corrected plan_usage for mosque ${mosque.id} — ` +
+              `was ${recorded}, actual ${actual} (month ${monthStr})`
+            )
+            usageCorrected++
+          }
+        } catch (err) {
+          console.error(`Reconcile: Error reconciling plan_usage for mosque ${mosque.id}:`, err)
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Reconcile: Fatal error in plan_usage reconciliation:', err)
+  }
+
+  const summary = {
+    checked,
+    updated,
+    missing,
+    planUsage: { checked: usageChecked, corrected: usageCorrected },
+  }
   console.log('Reconcile: Complete', summary)
 
   return NextResponse.json(summary)

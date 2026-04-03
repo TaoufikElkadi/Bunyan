@@ -39,6 +39,8 @@ export function DangerZoneCard({ mosque }: Props) {
     try {
       const res = await fetch('/api/settings/delete-mosque', {
         method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirmName: confirmation }),
       })
 
       const data = await res.json()

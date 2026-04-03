@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-export async function DELETE() {
+export async function DELETE(request: Request) {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -21,8 +21,36 @@ export async function DELETE() {
       return NextResponse.json({ error: 'Geen toestemming' }, { status: 403 })
     }
 
-    // Use admin client to bypass RLS for cascade delete
+    // Parse and validate confirmation name
+    let body: { confirmName?: string } = {}
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: 'Moskeenaam komt niet overeen' }, { status: 400 })
+    }
+
+    const { confirmName } = body
+
+    if (!confirmName) {
+      return NextResponse.json({ error: 'Moskeenaam komt niet overeen' }, { status: 400 })
+    }
+
+    // Fetch the actual mosque name to verify confirmation
     const adminSupabase = createAdminClient()
+
+    const { data: mosque } = await adminSupabase
+      .from('mosques')
+      .select('name')
+      .eq('id', profile.mosque_id)
+      .single()
+
+    if (!mosque || confirmName.trim().toLowerCase() !== mosque.name.trim().toLowerCase()) {
+      return NextResponse.json({ error: 'Moskeenaam komt niet overeen' }, { status: 400 })
+    }
+
+    console.warn(
+      `[DELETE MOSQUE] mosque_id=${profile.mosque_id} user_id=${user.id} mosque_name="${mosque.name}" timestamp=${new Date().toISOString()}`
+    )
 
     // Delete the mosque — cascade will remove users, funds, donations, etc.
     const { error } = await adminSupabase

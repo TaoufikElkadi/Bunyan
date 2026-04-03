@@ -1,12 +1,50 @@
 import { NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import Stripe from 'stripe'
 import { stripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sendMosqueEmail } from '@/lib/email/send'
+import { sendEmail, sendMosqueEmail } from '@/lib/email/send'
 import { donationConfirmationEmail } from '@/lib/email/templates/donation-confirmation'
 import { recurringCancelledEmail } from '@/lib/email/templates/recurring-cancelled'
+import { webhookAlertEmail } from '@/lib/email/templates/webhook-alert'
 
 type AdminClient = ReturnType<typeof createAdminClient>
+
+// ---------------------------------------------------------------------------
+// In-memory cooldown: max 1 alert per event type per 5 minutes
+// ---------------------------------------------------------------------------
+const alertCooldowns = new Map<string, number>()
+const ALERT_COOLDOWN_MS = 5 * 60 * 1000
+
+function shouldSendAlert(eventType: string): boolean {
+  const now = Date.now()
+  const lastSent = alertCooldowns.get(eventType)
+  if (lastSent && now - lastSent < ALERT_COOLDOWN_MS) return false
+  alertCooldowns.set(eventType, now)
+  return true
+}
+
+function sendWebhookAlert(eventType: string, errorMessage: string, eventId?: string) {
+  const alertEmail = process.env.ALERT_EMAIL
+  if (!alertEmail) return
+  if (!shouldSendAlert(eventType)) return
+
+  const html = webhookAlertEmail({ eventType, errorMessage, eventId })
+  // Fire-and-forget — don't block the webhook response
+  void sendEmail({
+    to: alertEmail,
+    subject: `⚠️ Webhook fout — Bunyan [${eventType}]`,
+    html,
+  }).catch((emailErr) => {
+    console.error('Failed to send webhook alert email:', emailErr)
+  })
+}
+
+/** Bust ISR cache for donation-related dashboard pages. */
+function revalidateDonationPages() {
+  revalidatePath('/dashboard')
+  revalidatePath('/donaties')
+}
 
 /**
  * Verify that a mosque_id from Stripe metadata refers to a real, active mosque.
@@ -92,7 +130,9 @@ export async function POST(request: Request) {
         break
     }
   } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : String(err)
     console.error(`Webhook handler error for ${event.type}:`, err)
+    sendWebhookAlert(event.type, errorMessage, event.id)
     return NextResponse.json({ error: 'Handler failed' }, { status: 500 })
   }
 
@@ -131,6 +171,8 @@ async function handlePaymentSuccess(
   if (updateError) {
     throw new Error(`Failed to update donation ${donation.id}: ${updateError.message}`)
   }
+
+  revalidateDonationPages()
 
   // Increment plan usage counter for online donations
   if (pi.metadata.mosque_id) {
@@ -227,6 +269,8 @@ async function handleFirstSubscriptionPayment(
         throw new Error(`Failed to insert fallback recurring donation: ${fallbackError.message}`)
       }
 
+      revalidateDonationPages()
+
       if (pi.metadata.mosque_id) {
         await incrementPlanUsage(admin, pi.metadata.mosque_id)
       }
@@ -265,6 +309,8 @@ async function handleFirstSubscriptionPayment(
   if (insertError) {
     throw new Error(`Failed to insert first recurring donation: ${insertError.message}`)
   }
+
+  revalidateDonationPages()
 
   await incrementPlanUsage(admin, recurring.mosque_id)
 
@@ -316,6 +362,8 @@ async function handlePaymentFailed(
   if (updateError) {
     throw new Error(`Failed to update donation ${donation.id}: ${updateError.message}`)
   }
+
+  revalidateDonationPages()
 }
 
 async function handleInvoicePaymentSucceeded(
@@ -395,6 +443,8 @@ async function handleInvoicePaymentSucceeded(
     throw new Error(`Failed to insert recurring donation: ${insertError.message}`)
   }
 
+  revalidateDonationPages()
+
   await incrementPlanUsage(admin, recurring.mosque_id)
 
   // Calculate next_charge_at based on frequency
@@ -462,6 +512,8 @@ async function handleSubscriptionDeleted(
   if (updateError) {
     throw new Error(`Failed to cancel recurring ${recurring.id}: ${updateError.message}`)
   }
+
+  revalidateDonationPages()
 
   // Send cancellation confirmation email (non-blocking)
   try {

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
@@ -142,6 +143,9 @@ export async function POST(request: Request) {
       console.error('Donation creation error:', donationError)
       return NextResponse.json({ error: 'Donatie aanmaken mislukt' }, { status: 500 })
     }
+
+    revalidatePath('/dashboard')
+    revalidatePath('/donaties')
 
     // Create audit log entry
     await admin.from('audit_log').insert({
