@@ -603,12 +603,15 @@ export function PeriodicGiftStep({
           >
             <span className="text-lg font-bold select-none" style={{ color: '#9B8E7B' }}>€</span>
             <input
-              type="number"
+              type="text"
               inputMode="decimal"
-              min="1"
-              step="any"
               value={annualAmount}
-              onChange={(e) => setAnnualAmount(e.target.value)}
+              onChange={(e) => {
+                const v = e.target.value
+                if (v === '' || /^\d*[.,]?\d{0,2}$/.test(v)) {
+                  setAnnualAmount(v.replace(',', '.'))
+                }
+              }}
               placeholder="0"
               className="flex-1 bg-transparent text-2xl font-bold outline-none ml-2 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               style={{ color: '#1B2541' }}

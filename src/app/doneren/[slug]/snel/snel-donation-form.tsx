@@ -189,15 +189,15 @@ export function SnelDonationForm({ mosqueSlug, mosqueName, primaryColor, funds }
           >
             <span className="text-xl font-bold select-none" style={{ color: '#9B8E7B' }}>{'\u20AC'}</span>
             <input
-              type="number"
+              type="text"
               inputMode="decimal"
-              min={MIN_AMOUNT}
-              max={MAX_AMOUNT}
-              step="any"
               value={customAmount}
               onChange={(e) => {
-                setCustomAmount(e.target.value)
-                setError(null)
+                const v = e.target.value
+                if (v === '' || /^\d*[.,]?\d{0,2}$/.test(v)) {
+                  setCustomAmount(v.replace(',', '.'))
+                  setError(null)
+                }
               }}
               placeholder="0"
               autoFocus
