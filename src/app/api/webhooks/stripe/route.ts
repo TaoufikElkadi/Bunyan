@@ -200,14 +200,14 @@ async function handleFirstSubscriptionPayment(
   paymentIntentId: string
 ) {
   // Retrieve the PI from Stripe to find the subscription
-  const pi = await stripe.paymentIntents.retrieve(paymentIntentId) as any
+  const pi = await stripe.paymentIntents.retrieve(paymentIntentId) as Stripe.PaymentIntent & { invoice?: string | { id: string } }
 
   let subscriptionId: string | null = null
 
   // Path 1: PI is linked to an invoice (standard subscription flow)
   const invoiceId = typeof pi.invoice === 'string' ? pi.invoice : pi.invoice?.id
   if (invoiceId) {
-    const invoice = await stripe.invoices.retrieve(invoiceId) as any
+    const invoice = await stripe.invoices.retrieve(invoiceId) as Stripe.Invoice & { subscription?: string; parent?: { subscription_details?: { subscription?: string } } }
     subscriptionId =
       invoice.subscription
       ?? invoice.parent?.subscription_details?.subscription
@@ -381,7 +381,7 @@ async function handleInvoicePaymentSucceeded(
     console.log('Webhook invoice.payment_succeeded: no subscriptionId found', {
       invoiceId: invoice.id,
       parent: JSON.stringify(invoice.parent),
-      subscription: (invoice as any).subscription,
+      subscription: (invoice as Stripe.Invoice & { subscription?: string }).subscription,
     })
     return
   }
@@ -417,7 +417,7 @@ async function handleInvoicePaymentSucceeded(
   // Get campaign_id from the subscription metadata
   let campaignId: string | null = null
   try {
-    const sub = await stripe.subscriptions.retrieve(subscriptionId) as any
+    const sub = await stripe.subscriptions.retrieve(subscriptionId) as Stripe.Subscription & { metadata?: Record<string, string> }
     campaignId = sub.metadata?.campaign_id || null
   } catch {
     // Non-critical — proceed without campaign tracking
@@ -726,8 +726,11 @@ async function sendRecurringCancelEmail(
 
   if (!recurring) return
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const donor = recurring.donors as any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mosque = recurring.mosques as any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fund = recurring.funds as any
 
   if (!donor?.email) return

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import QRCode from 'qrcode'
@@ -682,6 +682,7 @@ export default function OnboardingPage() {
             {qrDataUrl && (
               <div className="mx-auto mb-5 flex flex-col items-center">
                 <div className="rounded-xl border border-[#e3dfd5] bg-white p-3 sm:p-4">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={qrDataUrl}
                     alt="QR code voor donatiepagina"

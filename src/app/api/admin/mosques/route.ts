@@ -17,24 +17,26 @@ export async function GET() {
     }
 
     // Fetch admin users for each mosque
-    const mosqueIds = mosques.map((m: any) => m.id)
-    let users: any[] = []
+    type MosqueRow = { id: string; [key: string]: unknown }
+    type UserRow = { id: string; name: string; email: string; role: string; mosque_id: string }
+    const mosqueIds = mosques.map((m: MosqueRow) => m.id)
+    let users: UserRow[] = []
     if (mosqueIds.length > 0) {
       const { data } = await admin.adminClient
         .from('users')
         .select('id, name, email, role, mosque_id')
         .in('mosque_id', mosqueIds)
-      users = data ?? []
+      users = (data ?? []) as UserRow[]
     }
 
     // Group users by mosque_id
-    const usersByMosque = users.reduce((acc: Record<string, any[]>, u: any) => {
+    const usersByMosque = users.reduce((acc: Record<string, UserRow[]>, u: UserRow) => {
       if (!acc[u.mosque_id]) acc[u.mosque_id] = []
       acc[u.mosque_id].push(u)
       return acc
     }, {})
 
-    const result = mosques.map((m: any) => ({
+    const result = mosques.map((m: MosqueRow) => ({
       ...m,
       users: usersByMosque[m.id] ?? [],
     }))

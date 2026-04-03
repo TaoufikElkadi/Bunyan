@@ -116,6 +116,7 @@ export function QRManagement({ funds, campaigns }: Props) {
 
             {createdQR ? (
               <div className="space-y-4 text-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={createdQR.qr_data_url}
                   alt={`QR code voor ${createdQR.code}`}

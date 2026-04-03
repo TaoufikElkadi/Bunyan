@@ -168,7 +168,6 @@ export function DashboardHeader({ user, mosque }: DashboardHeaderProps) {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trimmed])
 
   function openSearch() {
@@ -226,7 +225,6 @@ export function DashboardHeader({ user, mosque }: DashboardHeaderProps) {
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchOpen])
 
   // Close dropdown on outside click
@@ -253,7 +251,6 @@ export function DashboardHeader({ user, mosque }: DashboardHeaderProps) {
       document.addEventListener('mousedown', handleClickOutside)
     }
     return () => document.removeEventListener('mousedown', handleClickOutside)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchOpen])
 
   // Track the flat index so we can render group headers properly

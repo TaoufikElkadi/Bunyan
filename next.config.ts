@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 // ---------------------------------------------------------------------------
 // Content-Security-Policy
@@ -13,7 +14,7 @@ const ContentSecurityPolicy = `
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   img-src 'self' data: blob: https://*.supabase.co;
   font-src 'self' https://fonts.gstatic.com;
-  connect-src 'self' https://*.supabase.co https://api.stripe.com https://m.stripe.network https://vitals.vercel-insights.com;
+  connect-src 'self' https://*.supabase.co https://api.stripe.com https://m.stripe.network https://vitals.vercel-insights.com https://*.ingest.sentry.io;
   frame-src https://js.stripe.com https://hooks.stripe.com;
   frame-ancestors 'none';
   object-src 'none';
@@ -71,4 +72,18 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  // Upload source maps for better error stack traces
+  sourcemaps: {
+    deleteSourcemapsAfterUpload: true,
+  },
+
+  // Disable Sentry telemetry
+  telemetry: false,
+
+  // Suppress noisy build logs
+  silent: !process.env.CI,
+
+  // Tunnel events through the app to avoid ad blockers (optional)
+  // tunnelRoute: "/api/monitoring",
+});

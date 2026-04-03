@@ -498,7 +498,6 @@ export function PeriodicGiftStep({
 
           {/* Expandable legal text */}
           <LegalTextAccordion
-            accent={accent}
             amount={formatMoney(amountCents)}
             fundName={selectedFundName}
             startDate={formatDate(startDate)}
@@ -730,7 +729,6 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 }
 
 function LegalTextAccordion({
-  accent,
   amount,
   fundName,
   startDate,
@@ -738,7 +736,6 @@ function LegalTextAccordion({
   rsin,
   label,
 }: {
-  accent: string
   amount: string
   fundName: string | null
   startDate: string

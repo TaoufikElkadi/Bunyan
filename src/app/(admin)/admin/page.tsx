@@ -17,7 +17,7 @@ export default async function AdminPage() {
     console.error('[Admin] Failed to fetch mosques:', mosquesError)
   }
 
-  const mosqueIds = (mosques ?? []).map((m: any) => m.id)
+  const mosqueIds = (mosques ?? []).map((m: { id: string }) => m.id)
 
   const { data: users } = mosqueIds.length > 0
     ? await admin.adminClient
@@ -30,8 +30,8 @@ export default async function AdminPage() {
   const { data: { users: authUsers } } = await admin.adminClient.auth.admin.listUsers()
   const bannedUserIds = new Set(
     (authUsers ?? [])
-      .filter((u: any) => u.banned_until && new Date(u.banned_until) > new Date())
-      .map((u: any) => u.id)
+      .filter((u) => u.banned_until && new Date(u.banned_until) > new Date())
+      .map((u) => u.id)
   )
 
   // Fetch donation metrics
@@ -42,14 +42,14 @@ export default async function AdminPage() {
 
   const completedDonations = allDonations ?? []
   const totalDonations = completedDonations.length
-  const totalRevenue = completedDonations.reduce((sum: number, d: any) => sum + (d.amount_cents ?? 0), 0)
+  const totalRevenue = completedDonations.reduce((sum: number, d: { amount_cents: number | null; created_at: string }) => sum + (d.amount_cents ?? 0), 0)
 
   // Monthly revenue: donations created in the current month
   const now = new Date()
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
   const monthlyRevenue = completedDonations
-    .filter((d: any) => d.created_at >= monthStart)
-    .reduce((sum: number, d: any) => sum + (d.amount_cents ?? 0), 0)
+    .filter((d) => d.created_at >= monthStart)
+    .reduce((sum, d) => sum + (d.amount_cents ?? 0), 0)
 
   const metrics = {
     totalMosques: (mosques ?? []).length,
@@ -60,15 +60,16 @@ export default async function AdminPage() {
   }
 
   // Group users by mosque
-  const usersByMosque = (users ?? []).reduce((acc: Record<string, any[]>, u: any) => {
+  type UserRow = { id: string; name: string; email: string; role: string; mosque_id: string; created_at: string }
+  const usersByMosque = (users ?? []).reduce((acc: Record<string, UserRow[]>, u: UserRow) => {
     if (!acc[u.mosque_id]) acc[u.mosque_id] = []
     acc[u.mosque_id].push(u)
     return acc
-  }, {} as Record<string, any[]>)
+  }, {} as Record<string, UserRow[]>)
 
-  const mosquesWithUsers = (mosques ?? []).map((m: any) => ({
+  const mosquesWithUsers = (mosques ?? []).map((m) => ({
     ...m,
-    users: (usersByMosque[m.id] ?? []).map((u: any) => ({
+    users: (usersByMosque[m.id] ?? []).map((u) => ({
       ...u,
       banned: bannedUserIds.has(u.id),
     })),

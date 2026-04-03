@@ -35,6 +35,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Gebruiker niet gevonden' }, { status: 404 })
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const plan = (profile.mosques as any)?.plan ?? 'free'
     const limits = getPlanLimits(plan)
 
@@ -54,6 +55,7 @@ export async function GET() {
     }
 
     const header = 'Naam,E-mail,Telefoon,Totaal gedoneerd (€),Aantal donaties,Eerste donatie,Laatste donatie'
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rows = (donors ?? []).map((d: any) => {
       const naam = escapeCsvField(d.name ?? 'Anoniem')
       const email = escapeCsvField(d.email ?? '')

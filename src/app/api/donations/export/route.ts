@@ -50,6 +50,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Gebruiker niet gevonden' }, { status: 404 })
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const plan = (profile.mosques as any)?.plan ?? 'free'
     const limits = getPlanLimits(plan)
 
@@ -90,6 +91,7 @@ export async function GET(request: NextRequest) {
     }
 
     const header = 'Datum,Donateur,E-mail,Fonds,Methode,Bedrag (€),Status'
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rows = (donations ?? []).map((d: any) => {
       const datum = new Date(d.created_at).toLocaleDateString('nl-NL')
       const donateur = escapeCsvField(d.donors?.name ?? 'Anoniem')

@@ -3,6 +3,11 @@ import { createMockQueryBuilder, createRoutedMockSupabase } from '../helpers/moc
 
 // ---------- Mocks ----------
 
+vi.mock('next/cache', () => ({
+  revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
+}))
+
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
 }))
@@ -20,7 +25,7 @@ const mockCreateAdminClient = createAdminClient as ReturnType<typeof vi.fn>
 
 // ---------- Helpers ----------
 
-function makeRequest(body: any) {
+function makeRequest(body: Record<string, unknown>) {
   return new Request('http://localhost/api/donations', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -28,7 +33,7 @@ function makeRequest(body: any) {
   })
 }
 
-function validBody(overrides: any = {}) {
+function validBody(overrides: Record<string, unknown> = {}) {
   return {
     donor_name: 'Ahmad',
     donor_email: 'ahmad@example.com',
@@ -43,13 +48,13 @@ function validBody(overrides: any = {}) {
 /**
  * Sets up the auth mock (supabase server client) to return a user + profile.
  */
-function setupAuth(user: any, profile: any) {
+function setupAuth(user: Record<string, unknown> | null, profile: Record<string, unknown> | null) {
   const usersBuilder = createMockQueryBuilder({
     data: profile,
     error: null,
   })
 
-  const authClient: any = {
+  const authClient = {
     auth: {
       getUser: vi.fn().mockResolvedValue({ data: { user } }),
     },
@@ -69,7 +74,7 @@ describe('POST /api/donations (manual donation)', () => {
   })
 
   it('returns 401 when user is not authenticated', async () => {
-    const authClient: any = {
+    const authClient = {
       auth: {
         getUser: vi.fn().mockResolvedValue({ data: { user: null } }),
       },

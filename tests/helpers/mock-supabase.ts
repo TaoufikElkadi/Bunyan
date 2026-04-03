@@ -9,9 +9,9 @@ import { vi } from 'vitest'
  * For tests that need different responses per `.from()` table, use `createRoutedMockSupabase`.
  */
 export function createMockQueryBuilder(
-  resolveWith: { data?: any; error?: any; count?: number } = { data: null, error: null }
+  resolveWith: { data?: unknown; error?: unknown; count?: number } = { data: null, error: null }
 ) {
-  const builder: any = {
+  const builder: Record<string, ReturnType<typeof vi.fn>> = {
     from: vi.fn(() => builder),
     select: vi.fn(() => builder),
     insert: vi.fn(() => builder),
@@ -46,11 +46,11 @@ export function createRoutedMockSupabase(
 ) {
   const fallback = createMockQueryBuilder()
 
-  const client: any = {
+  const client: Record<string, ReturnType<typeof vi.fn>> = {
     from: vi.fn((table: string) => {
       return routes[table] || fallback
     }),
-    rpc: vi.fn((...args: any[]) => {
+    rpc: vi.fn(() => {
       return Promise.resolve({ data: null, error: null })
     }),
   }

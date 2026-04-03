@@ -185,6 +185,7 @@ export function BrandingCard({ mosque, isAdmin }: Props) {
           <div className="flex items-center gap-4">
             <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-muted">
               {logoUrl ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
                 <img
                   src={logoUrl}
                   alt="Moskee logo"
@@ -230,6 +231,7 @@ export function BrandingCard({ mosque, isAdmin }: Props) {
           <div className="space-y-2">
             <div className="flex h-24 w-full items-center justify-center overflow-hidden rounded-lg border bg-muted">
               {bannerUrl ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
                 <img
                   src={bannerUrl}
                   alt="Moskee banner"

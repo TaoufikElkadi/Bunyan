@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     // Generate random 8-char code
     const code = crypto.randomBytes(6).toString('base64url').slice(0, 8)
 
-    const { data: qrLink, error } = await supabase
+    const { error } = await supabase
       .from('qr_links')
       .insert({
         mosque_id: profile.mosque_id,

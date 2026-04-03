@@ -70,7 +70,7 @@ export async function POST(
       return NextResponse.json({ error: 'Failed to look up user' }, { status: 500 })
     }
 
-    let authUser = authUsers.find((u: any) => u.email === normalizedEmail)
+    let authUser = authUsers.find((u) => u.email === normalizedEmail)
 
     // If no auth account exists, create one directly.
     // We skip inviteUserByEmail because it requires SMTP/email to be fully

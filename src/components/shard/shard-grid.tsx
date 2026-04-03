@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react'
 import useSWR from 'swr'
 import { formatMoney } from '@/lib/money'
-import { Check, X, Minus, Search, Plus, Users } from 'lucide-react'
+import { Check, X, Minus, Search, Users } from 'lucide-react'
 import { AddCommitmentDialog } from './add-commitment-dialog'
 import { toast } from 'sonner'
 

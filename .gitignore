@@ -49,3 +49,6 @@ supabase/.temp/
 *.tsbuildinfo
 next-env.d.ts
 .claude/worktrees/
+
+# Sentry Config File
+.env.sentry-build-plugin

@@ -1,5 +1,4 @@
 import { getCachedProfile } from '@/lib/supabase/cached'
-import { Badge } from '@/components/ui/badge'
 import { formatMoney } from '@/lib/money'
 import {
   Table,

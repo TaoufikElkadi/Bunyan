@@ -33,7 +33,7 @@ const mockCreateAdminClient = createAdminClient as ReturnType<typeof vi.fn>
 
 // ---------- Helpers ----------
 
-function makeRequest(body: any) {
+function makeRequest(body: Record<string, unknown>) {
   return new Request('http://localhost/api/payments/intent', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -41,7 +41,7 @@ function makeRequest(body: any) {
   })
 }
 
-function validBody(overrides: any = {}) {
+function validBody(overrides: Record<string, unknown> = {}) {
   return {
     mosque_slug: 'al-fatiha',
     fund_id: 'fund-1',

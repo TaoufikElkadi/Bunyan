@@ -528,7 +528,7 @@ export async function POST() {
       if (name) {
         email = nameToEmail(name)
         // Handle email collisions
-        let emailBase = email
+        const emailBase = email
         let suffix = 2
         while (usedEmails.has(email)) {
           email = emailBase.replace('@', `${suffix}@`)

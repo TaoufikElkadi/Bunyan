@@ -21,6 +21,8 @@ export function InviteHandler() {
 
     if (!accessToken || !refreshToken) return
 
+    // Status update is intentional here — shows loading state during async auth
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStatus('Even geduld...')
 
     const supabase = createClient()

@@ -177,6 +177,7 @@ export async function POST(request: Request) {
     }
 
     // Send invite email
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const mosqueName = (caller.mosques as any)?.name || 'Uw moskee'
     const inviterName = caller.name || 'Een beheerder'
     let emailSent = false

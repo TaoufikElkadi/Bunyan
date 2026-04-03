@@ -274,6 +274,7 @@ export function PeriodicGiftAgreement({ data }: { data: PeriodicGiftData }) {
             <Text style={styles.signatureLabel}>De schenker</Text>
             {data.donorSignatureDataUrl ? (
               <>
+                {/* eslint-disable-next-line jsx-a11y/alt-text */}
                 <Image src={data.donorSignatureDataUrl} style={styles.signatureImage} />
                 <Text style={styles.signatureHint}>{data.donorName}</Text>
                 {data.donorSignedAt && (
@@ -295,6 +296,7 @@ export function PeriodicGiftAgreement({ data }: { data: PeriodicGiftData }) {
             <Text style={styles.signatureLabel}>De instelling</Text>
             {data.boardSignatureDataUrl ? (
               <>
+                {/* eslint-disable-next-line jsx-a11y/alt-text */}
                 <Image src={data.boardSignatureDataUrl} style={styles.signatureImage} />
                 <Text style={styles.signatureHint}>
                   {data.boardSignerName ?? data.mosqueName}

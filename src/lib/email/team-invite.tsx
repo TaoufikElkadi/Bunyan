@@ -16,7 +16,7 @@ interface TeamInviteEmailProps {
  * so we use the default Bunyan sender.
  */
 export async function sendTeamInviteEmail(props: TeamInviteEmailProps) {
-  const { to, name, mosqueName, inviterName, role, inviteUrl } = props
+  const { to, mosqueName, inviterName, role, inviteUrl } = props
 
   return sendEmail({
     to,

@@ -15,6 +15,7 @@ export default async function InstellingenPage() {
 
   if (!profile) return null
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mosque = profile.mosques as any
   const hasStripeKey = !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 

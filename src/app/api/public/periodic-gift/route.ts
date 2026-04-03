@@ -170,6 +170,7 @@ export async function POST(request: Request) {
         .eq('role', 'admin')
 
       const amountCentsForEmail = amountCents
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const adminEmails = (admins ?? []).map((a: any) => a.email).filter(Boolean)
 
       if (adminEmails.length > 0) {

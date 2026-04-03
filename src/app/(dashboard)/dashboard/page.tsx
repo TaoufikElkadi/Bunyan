@@ -168,7 +168,7 @@ async function DashboardContent() {
     { data: byFund },
     { data: usageRows },
     { data: activeCampaigns },
-    { data: recurringThisMonth },
+    {},  // recurringThisMonth — query kept for future use
     { count: activeRecurrings },
     { count: totalDonors },
   ] = await Promise.all([
@@ -213,8 +213,6 @@ async function DashboardContent() {
   ])
 
   const m = (metrics ?? {}) as DashboardMetrics
-  const avgGift = m.monthly_count > 0 ? Math.round(m.total_this_month / m.monthly_count) : 0
-
   const recentDonations = m.recent_donations ?? []
   const monthlyData = (monthly ?? []) as MonthlyTotal[]
   const fundData = (byFund ?? []) as FundBreakdown[]
@@ -261,9 +259,6 @@ async function DashboardContent() {
     (m.monthly_count ?? 0) === 0 &&
     recentDonations.length === 0 &&
     monthlyData.every((d) => d.total === 0)
-
-  const recurringTotal = (recurringThisMonth ?? []).reduce((sum, d) => sum + d.amount, 0)
-  const totalOneTime = (m.total_this_month ?? 0) - recurringTotal
 
   // All-time stats from monthly totals (for summary row)
   const allTimeDonationTotal = monthlyData.reduce((sum, d) => sum + d.total, 0)
@@ -444,7 +439,7 @@ async function DashboardContent() {
                 </Link>
               </div>
               <div className="space-y-2.5">
-                {activeCampaigns.map((campaign: any) => {
+                {activeCampaigns.map((campaign) => {
                   const campaignUrl = `${donationPageUrl.replace(/\/doneren\/.*/, '')}/doneren/${mosque.slug}/${campaign.slug}`
                   return (
                     <div key={campaign.id} className="rounded-xl border border-[#e3dfd5] p-3">
@@ -457,6 +452,7 @@ async function DashboardContent() {
                         )}
                       </div>
                       <p className="text-[11px] text-[#b5b0a5] mb-2">
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         {(campaign.funds as any)?.name ?? 'Algemeen'}
                       </p>
                       <div className="flex items-center gap-1.5">

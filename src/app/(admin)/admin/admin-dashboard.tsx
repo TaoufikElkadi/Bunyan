@@ -9,17 +9,14 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog'
 import {
   Ban,
   Building2,
-  ChevronDown,
   ChevronRight,
   Copy,
   ExternalLink,
-  Globe,
   Heart,
   KeyRound,
   MapPin,

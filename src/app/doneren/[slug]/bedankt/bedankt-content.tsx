@@ -9,14 +9,12 @@ import { CheckCircle2Icon } from 'lucide-react'
 
 type BedanktContentProps = {
   defaultLocale: Locale
-  primaryColor?: string
   mosqueName: string
   mosqueSlug: string
 }
 
 export function BedanktContent({
   defaultLocale,
-  primaryColor,
   mosqueName,
   mosqueSlug,
 }: BedanktContentProps) {

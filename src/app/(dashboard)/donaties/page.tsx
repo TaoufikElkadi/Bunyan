@@ -1,6 +1,5 @@
 import { getCachedProfile } from '@/lib/supabase/cached'
 import { getPlanLimits } from '@/lib/plan'
-import { buttonVariants } from '@/components/ui/button'
 import { formatMoney } from '@/lib/money'
 import { ManualDonationDialog } from '@/components/donation/manual-donation-dialog'
 import {

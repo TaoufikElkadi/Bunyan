@@ -4,13 +4,11 @@ import { useRouter, usePathname } from 'next/navigation'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import {
-  Building2,
   ChevronDown,
   Landmark,
   LayoutDashboard,
   LogOut,
   Shield,
-  Users,
 } from 'lucide-react'
 import { useState } from 'react'
 

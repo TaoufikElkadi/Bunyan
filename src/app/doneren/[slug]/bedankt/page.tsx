@@ -28,7 +28,6 @@ export default async function BedanktPage({ params }: Props) {
   return (
     <BedanktContent
       defaultLocale={defaultLocale}
-      primaryColor={mosque.primary_color || undefined}
       mosqueName={mosque.name}
       mosqueSlug={slug}
     />

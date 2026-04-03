@@ -25,7 +25,7 @@ export default async function AdminLayout({
 
   const sidebarProps = {
     userEmail: admin.user.email ?? '',
-    mosqueName: (mosqueProfile?.mosques as any)?.name,
+    mosqueName: (mosqueProfile?.mosques as unknown as { name: string } | null)?.name,
     hasMosqueProfile: !!mosqueProfile,
   }
 

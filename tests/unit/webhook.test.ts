@@ -3,6 +3,11 @@ import { createMockQueryBuilder, createRoutedMockSupabase } from '../helpers/moc
 
 // ---------- Mocks ----------
 
+vi.mock('next/cache', () => ({
+  revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
+}))
+
 vi.mock('@/lib/stripe', () => ({
   stripe: {
     webhooks: {
@@ -24,6 +29,23 @@ vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: vi.fn(),
 }))
 
+vi.mock('@/lib/email/send', () => ({
+  sendEmail: vi.fn().mockResolvedValue(undefined),
+  sendMosqueEmail: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('@/lib/email/templates/donation-confirmation', () => ({
+  donationConfirmationEmail: vi.fn().mockReturnValue('<html></html>'),
+}))
+
+vi.mock('@/lib/email/templates/recurring-cancelled', () => ({
+  recurringCancelledEmail: vi.fn().mockReturnValue('<html></html>'),
+}))
+
+vi.mock('@/lib/email/templates/webhook-alert', () => ({
+  webhookAlertEmail: vi.fn().mockReturnValue('<html></html>'),
+}))
+
 // Import after mocks are registered
 import { POST } from '@/app/api/webhooks/stripe/route'
 import { stripe } from '@/lib/stripe'
@@ -42,7 +64,7 @@ function makeRequest(body = 'raw-body') {
   })
 }
 
-function makeEvent(type: string, dataObject: any) {
+function makeEvent(type: string, dataObject: Record<string, unknown>) {
   return { type, data: { object: dataObject } }
 }
 
@@ -268,7 +290,7 @@ describe('Stripe Webhook POST handler', () => {
     const subId = 'sub_recurring_1'
     const invoiceId = 'in_test_123'
 
-    function makeInvoice(overrides: any = {}) {
+    function makeInvoice(overrides: Record<string, unknown> = {}) {
       return {
         id: invoiceId,
         parent: {

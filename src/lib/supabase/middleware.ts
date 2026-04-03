@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
   // Track cookies set during auth (token refresh)
-  const cookiesToApply: { name: string; value: string; options: any }[] = []
+  const cookiesToApply: { name: string; value: string; options: Record<string, unknown> }[] = []
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

@@ -100,7 +100,9 @@ export async function POST(
         .eq('id', id)
         .single()
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const donor = (agreement?.donors as any)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mosque = (agreement?.mosques as any)
 
       if (donor?.email && mosque?.name) {
