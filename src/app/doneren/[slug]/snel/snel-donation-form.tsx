@@ -193,7 +193,7 @@ export function SnelDonationForm({ mosqueSlug, mosqueName, primaryColor, funds }
               inputMode="decimal"
               min={MIN_AMOUNT}
               max={MAX_AMOUNT}
-              step="0.01"
+              step="any"
               value={customAmount}
               onChange={(e) => {
                 setCustomAmount(e.target.value)

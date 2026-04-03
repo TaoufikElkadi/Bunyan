@@ -606,7 +606,7 @@ export function PeriodicGiftStep({
               type="number"
               inputMode="decimal"
               min="1"
-              step="0.01"
+              step="any"
               value={annualAmount}
               onChange={(e) => setAnnualAmount(e.target.value)}
               placeholder="0"

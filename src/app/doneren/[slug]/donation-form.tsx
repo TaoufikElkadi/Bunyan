@@ -282,7 +282,7 @@ export function DonationForm({
               type="number"
               inputMode="decimal"
               min="1"
-              step="0.01"
+              step="any"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0"
