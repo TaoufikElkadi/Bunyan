@@ -102,8 +102,7 @@ export async function POST(request: Request) {
     })
 
     if (createError) {
-      // If user already exists, try to get their ID via generateLink
-      // which will work for existing users and return their info
+      // User already exists in auth.users — check if they belong to a mosque
       const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
         type: 'magiclink',
         email: normalizedEmail,
@@ -118,6 +117,20 @@ export async function POST(request: Request) {
         return NextResponse.json(
           { error: 'Uitnodiging aanmaken mislukt. Controleer het e-mailadres.' },
           { status: 500 }
+        )
+      }
+
+      // Check if this user already belongs to another mosque
+      const { data: existingProfile } = await admin
+        .from('users')
+        .select('id, mosque_id')
+        .eq('id', linkData.user.id)
+        .single()
+
+      if (existingProfile) {
+        return NextResponse.json(
+          { error: 'Dit e-mailadres is al gekoppeld aan een andere moskee. Een gebruiker kan maar bij één moskee horen.' },
+          { status: 409 }
         )
       }
 
