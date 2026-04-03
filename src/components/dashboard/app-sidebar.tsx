@@ -18,6 +18,7 @@ import {
   Shield,
   Banknote,
   Wallet,
+  LifeBuoy,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -203,6 +204,13 @@ export function AppSidebar({ user, mosque, isPlatformAdmin, pendingSignatures = 
 
       {/* ---- Footer ---- */}
       <SidebarFooter className="border-t border-[#e3dfd5] px-5 py-4">
+        <a
+          href="mailto:info@bunyan.nl"
+          className="mb-3 flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] text-[#8a8478] hover:bg-[#e3dfd5]/40 hover:text-[#261b07] transition-all duration-150"
+        >
+          <LifeBuoy className="h-[18px] w-[18px] shrink-0" strokeWidth={1.5} />
+          Hulp & Support
+        </a>
         {isPlatformAdmin && (
           <button
             onClick={switchToAdmin}

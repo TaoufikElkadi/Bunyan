@@ -31,6 +31,7 @@ export default async function DashboardLayout({
   }
 
   return (
+    <div dir="ltr">
     <SidebarProvider>
       <AppSidebar user={profile} mosque={mosque} isPlatformAdmin={isPlatformAdmin} pendingSignatures={pendingSignatures} />
       <SidebarInset>
@@ -54,5 +55,6 @@ export default async function DashboardLayout({
         <main className="flex-1 p-6 md:p-8 bg-[#f8f7f5]">{children}</main>
       </SidebarInset>
     </SidebarProvider>
+    </div>
   )
 }
