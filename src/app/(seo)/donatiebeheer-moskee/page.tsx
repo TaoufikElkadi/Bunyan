@@ -106,8 +106,23 @@ export default function DonatiebeheerMoskeePage() {
               </Link>
             </li>
             <li>
+              <Link href="/online-doneren-moskee" className="text-[15px] text-[#261b07] hover:opacity-60 transition-opacity">
+                Online doneren voor moskeeën via iDEAL
+              </Link>
+            </li>
+            <li>
               <Link href="/anbi-giftenverklaring-moskee" className="text-[15px] text-[#261b07] hover:opacity-60 transition-opacity">
                 ANBI-giftenverklaringen voor moskeeën
+              </Link>
+            </li>
+            <li>
+              <Link href="/periodieke-giften-moskee" className="text-[15px] text-[#261b07] hover:opacity-60 transition-opacity">
+                Periodieke giften voor moskeeën
+              </Link>
+            </li>
+            <li>
+              <Link href="/qr-code-donatie-moskee" className="text-[15px] text-[#261b07] hover:opacity-60 transition-opacity">
+                QR-code donatiepagina voor moskeeën
               </Link>
             </li>
             <li>

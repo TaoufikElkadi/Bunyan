@@ -5,6 +5,7 @@ import { DashboardMockup } from "@/components/landing/dashboard-mockup"
 import { FeatureScroll } from "@/components/landing/feature-scroll"
 import { MobileHeroMockup } from "@/components/landing/mobile-hero-mockup"
 import { ContactForm } from "@/components/landing/contact-form"
+import { FaqSection } from "@/components/landing/faq-section"
 
 /* ------------------------------------------------------------------ */
 /*  DATA                                                               */
@@ -436,6 +437,11 @@ export default function HomePage() {
           </div>
         </section>
         {/* ============================================================ */}
+        {/*  FAQ                                                         */}
+        {/* ============================================================ */}
+        <FaqSection />
+
+        {/* ============================================================ */}
         {/*  CONTACT FORM                                                */}
         {/* ============================================================ */}
         <ContactForm />
@@ -479,10 +485,11 @@ export default function HomePage() {
               <ul className="space-y-3">
                 {[
                   { label: "Donatiebeheer voor moskeeën", href: "/donatiebeheer-moskee" },
+                  { label: "Online doneren voor moskeeën", href: "/online-doneren-moskee" },
                   { label: "ANBI-giftenverklaringen", href: "/anbi-giftenverklaring-moskee" },
                   { label: "Leden- & donorprofielen", href: "/ledenbeheer-moskee" },
-                  { label: "Periodieke giften & iDEAL", href: "/donatiebeheer-moskee" },
-                  { label: "QR-code donatiepagina", href: "/donatiebeheer-moskee" },
+                  { label: "Periodieke giften voor moskeeën", href: "/periodieke-giften-moskee" },
+                  { label: "QR-code donatiepagina", href: "/qr-code-donatie-moskee" },
                 ].map(({ label, href }) => (
                   <li key={label}>
                     <Link href={href} className="text-[15px] text-[#1a1510] hover:opacity-50 transition-opacity">
@@ -502,7 +509,7 @@ export default function HomePage() {
                 {[
                   { label: "Handleidingen", href: "#" },
                   { label: "Documentatie", href: "#" },
-                  { label: "Veelgestelde vragen", href: "#" },
+                  { label: "Veelgestelde vragen", href: "#faq" },
                 ].map(({ label, href }) => (
                   <li key={label}>
                     <a href={href} className="text-[15px] text-[#1a1510] hover:opacity-50 transition-opacity">

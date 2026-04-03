@@ -132,9 +132,9 @@ export function DashboardHeader({ user, mosque }: DashboardHeaderProps) {
   // Fetch search results with debounce
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
-    if (abortRef.current) abortRef.current.abort()
 
     if (trimmed.length < 2) {
+      if (abortRef.current) abortRef.current.abort()
       setApiResults(null)
       setLoading(false)
       return
@@ -143,6 +143,8 @@ export function DashboardHeader({ user, mosque }: DashboardHeaderProps) {
     setLoading(true)
 
     debounceRef.current = setTimeout(async () => {
+      // Abort any in-flight request before starting a new one
+      if (abortRef.current) abortRef.current.abort()
       const controller = new AbortController()
       abortRef.current = controller
 
@@ -150,14 +152,12 @@ export function DashboardHeader({ user, mosque }: DashboardHeaderProps) {
         const res = await fetch(`/api/search?q=${encodeURIComponent(trimmed)}`, {
           signal: controller.signal,
         })
-        if (res.ok) {
+        if (!controller.signal.aborted && res.ok) {
           const data: SearchResults = await res.json()
           setApiResults(data)
-        } else {
-          setApiResults(null)
         }
-      } catch {
-        // aborted or network error — ignore
+      } catch (e: unknown) {
+        if (e instanceof DOMException && e.name === 'AbortError') return
       } finally {
         if (!controller.signal.aborted) {
           setLoading(false)
