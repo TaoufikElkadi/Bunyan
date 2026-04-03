@@ -43,6 +43,12 @@ export default function DashboardError({
         >
           Opnieuw proberen
         </button>
+        <p className="mt-5 text-[12px] text-[#b5ac98]">
+          Blijft dit probleem zich voordoen?{' '}
+          <a href="mailto:info@bunyan.nl" className="underline hover:text-[#9B8E7B]">
+            Neem contact op via info@bunyan.nl
+          </a>
+        </p>
       </div>
     </div>
   )

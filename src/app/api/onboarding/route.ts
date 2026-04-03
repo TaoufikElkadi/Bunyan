@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { rateLimit, getClientIp } from '@/lib/rate-limit'
+import { sendWelcomeEmail } from '@/lib/email/templates/welcome'
 
 export async function POST(request: Request) {
   try {
@@ -103,6 +104,17 @@ export async function POST(request: Request) {
         // Non-critical — mosque is created, funds can be added later
       }
     }
+
+    // Fire-and-forget welcome email
+    const email = userData.email || user.email!
+    const userName = userData.name || email
+    void sendWelcomeEmail({
+      to: email,
+      name: userName,
+      mosqueName: mosque.name,
+      donationUrl: `${process.env.NEXT_PUBLIC_APP_URL}/doneren/${mosque.slug}`,
+      dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/instellingen`,
+    }).catch(err => console.error('Welcome email error:', err))
 
     return NextResponse.json({ success: true, mosque_id: newMosque.id })
   } catch (err) {

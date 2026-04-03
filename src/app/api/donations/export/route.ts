@@ -83,6 +83,10 @@ export async function GET(request: NextRequest) {
       query = query.eq('fund_id', fundId)
     }
 
+    // Safety cap: limit to 10K rows to prevent timeouts on large mosques.
+    // CSV exports beyond this size should use a background job instead.
+    query = query.limit(10000)
+
     const { data: donations, error } = await query
 
     if (error) {

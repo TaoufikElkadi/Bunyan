@@ -64,6 +64,13 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        // Cache static assets for 1 year (fingerprinted by Next.js)
+        source: "/:path*.(svg|jpg|jpeg|png|webp|ico|woff|woff2)",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
         // Apply security headers to every route
         source: "/:path*",
         headers: securityHeaders,

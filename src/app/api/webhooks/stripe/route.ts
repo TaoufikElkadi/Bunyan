@@ -11,7 +11,9 @@ import { webhookAlertEmail } from '@/lib/email/templates/webhook-alert'
 type AdminClient = ReturnType<typeof createAdminClient>
 
 // ---------------------------------------------------------------------------
-// In-memory cooldown: max 1 alert per event type per 5 minutes
+// In-memory cooldown: max 1 alert per event type per 5 minutes.
+// This Map grows unbounded but that's fine on Vercel serverless — each
+// invocation is short-lived and the Map is garbage-collected with the process.
 // ---------------------------------------------------------------------------
 const alertCooldowns = new Map<string, number>()
 const ALERT_COOLDOWN_MS = 5 * 60 * 1000
@@ -179,12 +181,8 @@ async function handlePaymentSuccess(
     await incrementPlanUsage(admin, pi.metadata.mosque_id)
   }
 
-  // Send donation confirmation email (non-blocking — don't fail the webhook)
-  try {
-    await sendDonationConfirmation(admin, pi.id, pi.metadata)
-  } catch (emailErr) {
-    console.error('Donation confirmation email error:', emailErr)
-  }
+  // Fire-and-forget — don't block the webhook response
+  void sendDonationConfirmation(admin, pi.id, pi.metadata).catch(err => console.error('Email error:', err))
 
   // Donor aggregates are updated automatically via DB trigger
 }
@@ -314,12 +312,8 @@ async function handleFirstSubscriptionPayment(
 
   await incrementPlanUsage(admin, recurring.mosque_id)
 
-  // Send confirmation email (non-blocking)
-  try {
-    await sendRecurringPaymentConfirmation(admin, recurring)
-  } catch (emailErr) {
-    console.error('First recurring payment confirmation email error:', emailErr)
-  }
+  // Fire-and-forget — don't block the webhook response
+  void sendRecurringPaymentConfirmation(admin, recurring).catch(err => console.error('Email error:', err))
 }
 
 async function incrementPlanUsage(admin: AdminClient, mosqueId: string) {
@@ -480,12 +474,8 @@ async function handleInvoicePaymentSucceeded(
     throw new Error(`Failed to update recurring ${recurring.id}: ${recurringUpdateError.message}`)
   }
 
-  // Send recurring payment confirmation email (non-blocking)
-  try {
-    await sendRecurringPaymentConfirmation(admin, recurring)
-  } catch (emailErr) {
-    console.error('Recurring payment confirmation email error:', emailErr)
-  }
+  // Fire-and-forget — don't block the webhook response
+  void sendRecurringPaymentConfirmation(admin, recurring).catch(err => console.error('Email error:', err))
 }
 
 async function handleSubscriptionDeleted(
@@ -515,12 +505,8 @@ async function handleSubscriptionDeleted(
 
   revalidateDonationPages()
 
-  // Send cancellation confirmation email (non-blocking)
-  try {
-    await sendRecurringCancelEmail(admin, recurring.id)
-  } catch (emailErr) {
-    console.error('Recurring cancel email error:', emailErr)
-  }
+  // Fire-and-forget — don't block the webhook response
+  void sendRecurringCancelEmail(admin, recurring.id).catch(err => console.error('Email error:', err))
 }
 
 async function handleCheckoutSessionCompleted(

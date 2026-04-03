@@ -21,7 +21,7 @@ import type { MemberStatus, ChurnRisk } from '@/types'
 
 export const revalidate = 60
 
-const PAGE_SIZE = 20
+const PAGE_SIZE = 50
 
 const STATUS_OPTIONS: { value: MemberStatus | ''; label: string }[] = [
   { value: '', label: 'Alle statussen' },
@@ -85,19 +85,32 @@ export default async function LedenPage({
   const riskFilter = (params.risk ?? '') as ChurnRisk | ''
   const showAnonymous = params.anonymous === '1' || statusFilter === 'anonymous'
 
-  // Fetch all donors (status/risk are computed, so we can't filter in DB)
+  const page = Math.max(1, parseInt(params.page ?? '1', 10) || 1)
+  const hasComputedFilters = !!statusFilter || !!riskFilter || params.periodic === 'no'
+
+  // When computed filters are active we need all rows to filter in JS.
+  // Otherwise, paginate at the DB level for performance.
   let query = supabase
     .from('donors')
-    .select('*')
+    .select('*', { count: 'exact' })
     .eq('mosque_id', mosqueId)
 
   if (!showAnonymous) {
     query = query.or('email.not.is.null,name.not.is.null')
   }
 
-  query = query.order('total_donated', { ascending: false }).limit(2000)
+  query = query.order('total_donated', { ascending: false })
 
-  const { data: donors } = await query
+  if (hasComputedFilters) {
+    // Status/risk are computed in JS, so fetch up to 2000 and filter post-query
+    query = query.limit(2000)
+  } else {
+    const from = (page - 1) * PAGE_SIZE
+    const to = from + PAGE_SIZE - 1
+    query = query.range(from, to)
+  }
+
+  const { data: donors, count: dbCount } = await query
 
   // Batch fetch recurring & periodic status for all donors
   const donorIds = (donors ?? []).map((d) => d.id)
@@ -149,11 +162,19 @@ export default async function LedenPage({
     members = members.filter((m) => !m.has_active_periodic)
   }
 
-  const filteredCount = members.length
+  let filteredCount: number
+  if (hasComputedFilters) {
+    // Computed filters applied in JS — paginate the filtered result
+    filteredCount = members.length
+    const totalFiltered = Math.ceil(filteredCount / PAGE_SIZE)
+    const safePage = Math.min(page, totalFiltered || 1)
+    const from = (safePage - 1) * PAGE_SIZE
+    members = members.slice(from, from + PAGE_SIZE)
+  } else {
+    // DB already paginated — use the exact count from the query
+    filteredCount = dbCount ?? members.length
+  }
   const totalPages = Math.ceil(filteredCount / PAGE_SIZE)
-  const page = Math.max(1, Math.min(parseInt(params.page ?? '1', 10) || 1, totalPages || 1))
-  const from = (page - 1) * PAGE_SIZE
-  members = members.slice(from, from + PAGE_SIZE)
 
   // Build filter URL helper
   function filterUrl(overrides: Record<string, string>) {

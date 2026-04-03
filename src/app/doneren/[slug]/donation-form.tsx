@@ -663,11 +663,27 @@ function PaymentStep({
           <PaymentElement />
 
           {error && (
-            <div
-              className="rounded-2xl px-4 py-3 text-sm font-medium"
-              style={{ background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626' }}
-            >
-              {error}
+            <div className="space-y-3">
+              <div
+                className="rounded-2xl px-4 py-3 text-sm font-medium"
+                style={{ background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626' }}
+              >
+                {error}
+              </div>
+              <button
+                type="button"
+                onClick={() => setError(null)}
+                className="w-full h-11 rounded-2xl text-sm font-semibold transition-all duration-200"
+                style={{
+                  background: 'transparent',
+                  color: '#1B2541',
+                  border: '1px solid #EDE8DF',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#F7F3EC'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+              >
+                Opnieuw proberen
+              </button>
             </div>
           )}
 

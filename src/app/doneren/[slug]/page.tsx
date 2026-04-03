@@ -42,7 +42,7 @@ export default async function DonerenPage({ params }: Props) {
 
   const { data: mosque } = await admin
     .from('mosques')
-    .select('id, name, slug, primary_color, welcome_msg, logo_url, language, anbi_status, rsin, iban, status, stripe_account_id')
+    .select('id, name, slug, primary_color, welcome_msg, logo_url, language, anbi_status, rsin, iban, status, stripe_account_id, contact_email')
     .eq('slug', slug)
     .single()
 
@@ -90,6 +90,7 @@ export default async function DonerenPage({ params }: Props) {
           mosqueName={mosque.name}
           logoUrl={mosque.logo_url}
           primaryColor={mosque.primary_color || '#6B5E4C'}
+          contactEmail={mosque.contact_email}
         />
       </DonationPageShell>
     )

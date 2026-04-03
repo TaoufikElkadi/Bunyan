@@ -28,6 +28,12 @@ export default function GlobalError({
         >
           Opnieuw proberen
         </button>
+        <p className="mt-6 text-xs text-gray-400">
+          Blijft dit probleem zich voordoen?{' '}
+          <a href="mailto:info@bunyan.nl" className="underline hover:text-gray-500">
+            Neem contact op via info@bunyan.nl
+          </a>
+        </p>
       </div>
     </div>
   )
