@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { Plus_Jakarta_Sans, Outfit } from "next/font/google"
+import { Toaster } from "@/components/ui/sonner"
 import "./globals.css"
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -128,6 +129,7 @@ export default function RootLayout({
       </head>
       <body className={`${plusJakarta.variable} ${outfit.variable} ${plusJakarta.className} antialiased`} suppressHydrationWarning>
         {children}
+        <Toaster position="top-right" duration={5000} />
       </body>
     </html>
   )
