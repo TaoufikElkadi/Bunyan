@@ -311,7 +311,7 @@ export function PeriodicGiftStep({
               Hoe betaalt u?
             </p>
             <p className="text-[12px] leading-relaxed" style={{ color: '#6B5E4C' }}>
-              Uw overeenkomst is ondertekend. Om de periodieke gift te activeren, kunt u op twee manieren betalen:
+              Uw overeenkomst is ondertekend. Om de periodieke gift te activeren, kunt u {formattedIban ? 'op twee manieren' : 'als volgt'} betalen:
             </p>
 
             {/* Option 1: Bank transfer */}

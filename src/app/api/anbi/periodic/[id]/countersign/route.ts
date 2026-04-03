@@ -5,6 +5,20 @@ import { parseSignatureBase64 } from '@/lib/signatures'
 import { sendMosqueEmail } from '@/lib/email/send'
 import { emailLayout } from '@/lib/email/templates/layout'
 import { formatMoney } from '@/lib/money'
+import { renderToBuffer } from '@react-pdf/renderer'
+import { PeriodicGiftAgreement } from '@/lib/pdf/periodic-gift-agreement'
+import type { PeriodicGiftData } from '@/lib/pdf/periodic-gift-agreement'
+
+async function downloadSignatureAsDataUrl(
+  admin: ReturnType<typeof createAdminClient>,
+  path: string | null
+): Promise<string | undefined> {
+  if (!path) return undefined
+  const { data, error } = await admin.storage.from('signatures').download(path)
+  if (error || !data) return undefined
+  const buffer = Buffer.from(await data.arrayBuffer())
+  return `data:image/png;base64,${buffer.toString('base64')}`
+}
 
 /**
  * Board member countersigns a periodic gift agreement.
@@ -92,20 +106,53 @@ export async function POST(
       return NextResponse.json({ error: 'Fout bij ondertekenen' }, { status: 500 })
     }
 
-    // Send confirmation email to donor
+    // Send confirmation email to donor with signed PDF attached
     try {
-      const { data: agreement } = await supabase
+      const { data: fullAgreement } = await supabase
         .from('periodic_gift_agreements')
-        .select('annual_amount, start_date, end_date, donors(name, email), mosques(name, contact_email)')
+        .select('*, donors(name, email, address), funds(name), mosques(name, address, rsin, kvk, contact_email)')
         .eq('id', id)
         .single()
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const donor = (agreement?.donors as any)
+      const donor = (fullAgreement?.donors as any)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const mosque = (agreement?.mosques as any)
+      const mosque = (fullAgreement?.mosques as any)
 
       if (donor?.email && mosque?.name) {
+        // Generate the signed PDF
+        const formatDate = (dateStr: string) =>
+          new Date(dateStr).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })
+
+        const [donorSigDataUrl, boardSigDataUrl] = await Promise.all([
+          downloadSignatureAsDataUrl(admin, fullAgreement!.donor_signature_url),
+          downloadSignatureAsDataUrl(admin, fullAgreement!.board_signature_url),
+        ])
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const fund = (fullAgreement?.funds as any)
+        const pdfData: PeriodicGiftData = {
+          mosqueName: mosque.name,
+          mosqueAddress: mosque.address ?? '',
+          rsin: mosque.rsin,
+          kvk: mosque.kvk ?? null,
+          donorName: donor.name ?? 'Onbekend',
+          donorAddress: donor.address ?? null,
+          annualAmount: fullAgreement!.annual_amount,
+          fundName: fund?.name ?? null,
+          startDate: formatDate(fullAgreement!.start_date),
+          endDate: formatDate(fullAgreement!.end_date),
+          issueDate: new Date().toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' }),
+          donorSignatureDataUrl: donorSigDataUrl,
+          donorSignedAt: fullAgreement!.donor_signed_at ? formatDate(fullAgreement!.donor_signed_at) : undefined,
+          boardSignatureDataUrl: boardSigDataUrl,
+          boardSignedAt: fullAgreement!.board_signed_at ? formatDate(fullAgreement!.board_signed_at) : undefined,
+          boardSignerName: fullAgreement!.board_signer_name ?? undefined,
+        }
+
+        const pdfBuffer = await renderToBuffer(PeriodicGiftAgreement({ data: pdfData }))
+        const donorName = (donor.name ?? 'onbekend').replace(/\s+/g, '_')
+
         const html = emailLayout({
           title: `Periodieke gift bevestigd — ${mosque.name}`,
           body: `
@@ -114,24 +161,24 @@ export async function POST(
               Beste ${donor.name || 'donateur'},
             </p>
             <p style="margin: 0 0 16px 0; font-size: 16px; color: #3f3f46; line-height: 1.6;">
-              Uw periodieke gift overeenkomst is door het bestuur ondertekend en nu actief.
+              Uw periodieke gift overeenkomst is door het bestuur ondertekend en nu actief. De ondertekende overeenkomst vindt u als bijlage bij deze e-mail.
             </p>
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; border-radius: 6px; margin-bottom: 24px;">
               <tr><td style="padding: 16px;">
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                   <tr>
                     <td style="padding: 4px 0; font-size: 14px; color: #71717a; width: 140px;">Jaarbedrag</td>
-                    <td style="padding: 4px 0; font-size: 14px; color: #18181b; font-weight: 500;">${formatMoney(agreement!.annual_amount)}</td>
+                    <td style="padding: 4px 0; font-size: 14px; color: #18181b; font-weight: 500;">${formatMoney(fullAgreement!.annual_amount)}</td>
                   </tr>
                   <tr>
                     <td style="padding: 4px 0; font-size: 14px; color: #71717a;">Looptijd</td>
-                    <td style="padding: 4px 0; font-size: 14px; color: #18181b; font-weight: 500;">${new Date(agreement!.start_date).toLocaleDateString('nl-NL')} t/m ${new Date(agreement!.end_date).toLocaleDateString('nl-NL')}</td>
+                    <td style="padding: 4px 0; font-size: 14px; color: #18181b; font-weight: 500;">${new Date(fullAgreement!.start_date).toLocaleDateString('nl-NL')} t/m ${new Date(fullAgreement!.end_date).toLocaleDateString('nl-NL')}</td>
                   </tr>
                 </table>
               </td></tr>
             </table>
             <p style="margin: 0; font-size: 16px; color: #3f3f46; line-height: 1.6;">
-              Bewaar dit bericht voor uw belastingaangifte. U kunt hiermee extra belastingvoordeel behalen.
+              Bewaar dit document voor uw belastingaangifte. U kunt hiermee extra belastingvoordeel behalen.
             </p>`,
         })
 
@@ -141,6 +188,11 @@ export async function POST(
           html,
           mosqueName: mosque.name,
           mosqueContactEmail: mosque.contact_email,
+          attachments: [{
+            filename: `Periodieke_gift_${donorName}.pdf`,
+            content: new Uint8Array(pdfBuffer),
+            contentType: 'application/pdf',
+          }],
         })
       }
     } catch (emailErr) {
