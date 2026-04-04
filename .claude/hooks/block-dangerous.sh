@@ -9,8 +9,8 @@ dangerous_patterns=(
   "git clean -f"
   "DROP TABLE"
   "DROP DATABASE"
-  "curl.*|.*sh"
-  "wget.*|.*bash"
+  "curl.*\\|.*sh"
+  "wget.*\\|.*bash"
   "supabase db reset"
 )
 
