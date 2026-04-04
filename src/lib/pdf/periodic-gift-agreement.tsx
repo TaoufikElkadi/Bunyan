@@ -5,88 +5,90 @@ import {
   Text,
   Image,
   StyleSheet,
-} from '@react-pdf/renderer'
+} from "@react-pdf/renderer";
 
 export type PeriodicGiftData = {
-  mosqueName: string
-  mosqueAddress: string
-  rsin: string
-  kvk: string | null
-  donorName: string
-  donorAddress: string | null
-  annualAmount: number // cents
-  fundName: string | null
-  startDate: string // formatted date string
-  endDate: string
-  issueDate: string
+  mosqueName: string;
+  mosqueAddress: string;
+  rsin: string;
+  kvk: string | null;
+  donorName: string;
+  donorAddress: string | null;
+  donorBsn: string | null;
+  annualAmount: number; // cents
+  fundName: string | null;
+  startDate: string; // formatted date string
+  endDate: string;
+  issueDate: string;
+  transactionNumber: string;
   // Optional e-signature fields
-  donorSignatureDataUrl?: string
-  donorSignedAt?: string
-  boardSignatureDataUrl?: string
-  boardSignedAt?: string
-  boardSignerName?: string
-}
+  donorSignatureDataUrl?: string;
+  donorSignedAt?: string;
+  boardSignatureDataUrl?: string;
+  boardSignedAt?: string;
+  boardSignerName?: string;
+};
 
 function formatEuro(cents: number): string {
-  const euros = cents / 100
+  const euros = cents / 100;
   return (
-    '\u20AC ' +
-    euros.toLocaleString('nl-NL', {
+    "\u20AC " +
+    euros.toLocaleString("nl-NL", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   page: {
-    fontFamily: 'Helvetica',
+    fontFamily: "Helvetica",
     fontSize: 10,
     paddingTop: 50,
     paddingBottom: 50,
     paddingHorizontal: 60,
-    color: '#000',
+    color: "#000",
   },
   header: {
     marginBottom: 24,
   },
   mosqueName: {
     fontSize: 16,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: "Helvetica-Bold",
     marginBottom: 4,
   },
   title: {
     fontSize: 13,
-    fontFamily: 'Helvetica-Bold',
-    textAlign: 'center',
+    fontFamily: "Helvetica-Bold",
+    textAlign: "center",
     marginBottom: 20,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     letterSpacing: 1,
   },
   subtitle: {
     fontSize: 10,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 24,
-    color: '#444',
+    color: "#444",
   },
   section: {
     marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 11,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: "Helvetica-Bold",
     marginBottom: 6,
     borderBottomWidth: 1,
-    borderBottomColor: '#000',
+    borderBottomColor: "#000",
     paddingBottom: 3,
   },
   row: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: 3,
   },
   label: {
     width: 160,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: "Helvetica-Bold",
   },
   value: {
     flex: 1,
@@ -96,7 +98,7 @@ const styles = StyleSheet.create({
     paddingLeft: 16,
   },
   articleTitle: {
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: "Helvetica-Bold",
     marginBottom: 4,
     marginLeft: -16,
   },
@@ -106,57 +108,57 @@ const styles = StyleSheet.create({
   },
   signatureArea: {
     marginTop: 32,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   signatureBlock: {
-    width: '45%',
+    width: "45%",
   },
   signatureLabel: {
     fontSize: 9,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: "Helvetica-Bold",
     marginBottom: 4,
   },
   signatureLine: {
     borderBottomWidth: 1,
-    borderBottomColor: '#000',
+    borderBottomColor: "#000",
     marginTop: 40,
     marginBottom: 4,
   },
   signatureHint: {
     fontSize: 8,
-    color: '#666',
+    color: "#666",
   },
   signatureImage: {
     width: 150,
     height: 50,
-    objectFit: 'contain' as const,
+    objectFit: "contain" as const,
     marginTop: 8,
     marginBottom: 4,
   },
   signatureDate: {
     fontSize: 8,
-    color: '#444',
+    color: "#444",
     marginTop: 2,
   },
   footer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 40,
     left: 60,
     right: 60,
   },
   footerDivider: {
     borderTopWidth: 0.5,
-    borderTopColor: '#ccc',
+    borderTopColor: "#ccc",
     paddingTop: 6,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   footerText: {
     fontSize: 8,
-    color: '#666',
+    color: "#666",
   },
-})
+});
 
 export function PeriodicGiftAgreement({ data }: { data: PeriodicGiftData }) {
   return (
@@ -168,9 +170,7 @@ export function PeriodicGiftAgreement({ data }: { data: PeriodicGiftData }) {
         </View>
 
         {/* Title */}
-        <Text style={styles.title}>
-          Overeenkomst Periodieke Gift in Geld
-        </Text>
+        <Text style={styles.title}>Overeenkomst Periodieke Gift in Geld</Text>
         <Text style={styles.subtitle}>
           Als bedoeld in artikel 6.38 Wet inkomstenbelasting 2001
         </Text>
@@ -211,6 +211,18 @@ export function PeriodicGiftAgreement({ data }: { data: PeriodicGiftData }) {
               <Text style={styles.value}>{data.donorAddress}</Text>
             </View>
           )}
+          {data.donorBsn && (
+            <View style={styles.row}>
+              <Text style={styles.label}>BSN:</Text>
+              <Text style={styles.value}>{data.donorBsn}</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Transaction number (art. 41 lid 1 sub e URIB 2001) */}
+        <View style={styles.row}>
+          <Text style={styles.label}>Transactienummer:</Text>
+          <Text style={styles.value}>{data.transactionNumber}</Text>
         </View>
 
         {/* Agreement articles */}
@@ -220,17 +232,22 @@ export function PeriodicGiftAgreement({ data }: { data: PeriodicGiftData }) {
           <View style={styles.article}>
             <Text style={styles.articleTitle}>Artikel 1 — Periodieke gift</Text>
             <Text style={styles.articleText}>
-              De schenker verbindt zich gedurende een tijdvak van ten minste vijf
-              jaren jaarlijks een bedrag van {formatEuro(data.annualAmount)} te
-              schenken aan de instelling
-              {data.fundName ? `, ten behoeve van het fonds "${data.fundName}"` : ''}.
+              De schenker verbindt zich om, in de vorm van vaste en gelijkmatige
+              periodieke uitkeringen die uiterlijk eindigen bij overlijden,
+              gedurende een tijdvak van ten minste vijf jaren jaarlijks een
+              bedrag van {formatEuro(data.annualAmount)} te schenken aan de
+              instelling
+              {data.fundName
+                ? `, ten behoeve van het fonds "${data.fundName}"`
+                : ""}
+              .
             </Text>
           </View>
 
           <View style={styles.article}>
             <Text style={styles.articleTitle}>Artikel 2 — Looptijd</Text>
             <Text style={styles.articleText}>
-              Deze overeenkomst gaat in op {data.startDate} en eindigt op{' '}
+              Deze overeenkomst gaat in op {data.startDate} en eindigt op{" "}
               {data.endDate}. De looptijd bedraagt ten minste vijf jaren.
             </Text>
           </View>
@@ -244,25 +261,28 @@ export function PeriodicGiftAgreement({ data }: { data: PeriodicGiftData }) {
           </View>
 
           <View style={styles.article}>
-            <Text style={styles.articleTitle}>
-              Artikel 4 — Beeindiging
-            </Text>
+            <Text style={styles.articleTitle}>Artikel 4 — Beëindiging</Text>
             <Text style={styles.articleText}>
-              De verplichting tot het doen van de periodieke uitkeringen eindigt:{'\n'}
-              a. bij overlijden van de schenker;{'\n'}
-              b. bij faillissement van de schenker;{'\n'}
-              c. bij een aanzienlijke daling van het inkomen van de schenker
-              waardoor het niet langer redelijk is de verplichting voort te zetten;{'\n'}
-              d. aan het einde van de overeengekomen looptijd.
+              De verplichting tot het doen van de periodieke uitkeringen
+              eindigt:{"\n"}
+              a. bij overlijden van de schenker;{"\n"}
+              b. bij faillissement van de schenker;{"\n"}
+              c. bij toelating van de schenker tot de wettelijke
+              schuldsaneringsregeling (WSNP);{"\n"}
+              d. bij een aanzienlijke daling van het inkomen van de schenker
+              waardoor het niet langer redelijk is de verplichting voort te
+              zetten;{"\n"}
+              e. aan het einde van de overeengekomen looptijd.
             </Text>
           </View>
 
           <View style={styles.article}>
             <Text style={styles.articleTitle}>Artikel 5 — ANBI-status</Text>
             <Text style={styles.articleText}>
-              De instelling verklaart dat zij door de Belastingdienst is aangemerkt
-              als Algemeen Nut Beogende Instelling (ANBI) als bedoeld in artikel
-              5b van de Algemene wet inzake rijksbelastingen (RSIN: {data.rsin}).
+              De instelling verklaart dat zij door de Belastingdienst is
+              aangemerkt als Algemeen Nut Beogende Instelling (ANBI) als bedoeld
+              in artikel 5b van de Algemene wet inzake rijksbelastingen (RSIN:{" "}
+              {data.rsin}).
             </Text>
           </View>
         </View>
@@ -275,10 +295,15 @@ export function PeriodicGiftAgreement({ data }: { data: PeriodicGiftData }) {
             {data.donorSignatureDataUrl ? (
               <>
                 {/* eslint-disable-next-line jsx-a11y/alt-text */}
-                <Image src={data.donorSignatureDataUrl} style={styles.signatureImage} />
+                <Image
+                  src={data.donorSignatureDataUrl}
+                  style={styles.signatureImage}
+                />
                 <Text style={styles.signatureHint}>{data.donorName}</Text>
                 {data.donorSignedAt && (
-                  <Text style={styles.signatureDate}>Ondertekend: {data.donorSignedAt}</Text>
+                  <Text style={styles.signatureDate}>
+                    Ondertekend: {data.donorSignedAt}
+                  </Text>
                 )}
               </>
             ) : (
@@ -297,12 +322,17 @@ export function PeriodicGiftAgreement({ data }: { data: PeriodicGiftData }) {
             {data.boardSignatureDataUrl ? (
               <>
                 {/* eslint-disable-next-line jsx-a11y/alt-text */}
-                <Image src={data.boardSignatureDataUrl} style={styles.signatureImage} />
+                <Image
+                  src={data.boardSignatureDataUrl}
+                  style={styles.signatureImage}
+                />
                 <Text style={styles.signatureHint}>
                   {data.boardSignerName ?? data.mosqueName}
                 </Text>
                 {data.boardSignedAt && (
-                  <Text style={styles.signatureDate}>Ondertekend: {data.boardSignedAt}</Text>
+                  <Text style={styles.signatureDate}>
+                    Ondertekend: {data.boardSignedAt}
+                  </Text>
                 )}
               </>
             ) : (
@@ -327,5 +357,5 @@ export function PeriodicGiftAgreement({ data }: { data: PeriodicGiftData }) {
         </View>
       </Page>
     </Document>
-  )
+  );
 }

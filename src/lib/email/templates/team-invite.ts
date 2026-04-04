@@ -1,32 +1,34 @@
-import { emailLayout } from './layout'
+import { escapeHtml } from "@/lib/escape-html";
+import { emailLayout } from "./layout";
 
 interface TeamInviteParams {
-  mosqueName: string
-  inviterName: string
-  role: string
-  signupUrl: string
+  mosqueName: string;
+  inviterName: string;
+  role: string;
+  signupUrl: string;
 }
 
 const roleDescriptions: Record<string, string> = {
-  admin: 'Beheerder — volledige toegang tot alle instellingen en gegevens',
-  treasurer: 'Penningmeester — toegang tot donaties, rapporten en financieel beheer',
-  viewer: 'Bekijker — alleen-lezen toegang tot het dashboard',
-}
+  admin: "Beheerder — volledige toegang tot alle instellingen en gegevens",
+  treasurer:
+    "Penningmeester — toegang tot donaties, rapporten en financieel beheer",
+  viewer: "Bekijker — alleen-lezen toegang tot het dashboard",
+};
 
 export function teamInviteEmail(params: TeamInviteParams): string {
-  const { mosqueName, inviterName, role, signupUrl } = params
+  const { mosqueName, inviterName, role, signupUrl } = params;
 
-  const roleDescription = roleDescriptions[role] || role
+  const roleDescription = roleDescriptions[role] || escapeHtml(role);
 
   const body = `
               <h1 style="margin: 0 0 8px 0; font-size: 20px; font-weight: 600; color: #18181b;">
-                ${mosqueName}
+                ${escapeHtml(mosqueName)}
               </h1>
               <p style="margin: 0 0 24px 0; font-size: 16px; color: #3f3f46; line-height: 1.6;">
                 Beste,
               </p>
               <p style="margin: 0 0 16px 0; font-size: 16px; color: #3f3f46; line-height: 1.6;">
-                ${inviterName} heeft u uitgenodigd voor <strong>${mosqueName}</strong> op Bunyan.
+                ${escapeHtml(inviterName)} heeft u uitgenodigd voor <strong>${escapeHtml(mosqueName)}</strong> op Bunyan.
               </p>
               <p style="margin: 0 0 24px 0; font-size: 14px; color: #71717a; line-height: 1.6;">
                 Uw rol: <strong>${roleDescription}</strong>
@@ -45,7 +47,10 @@ export function teamInviteEmail(params: TeamInviteParams): string {
               <p style="margin: 0; font-size: 14px; color: #a1a1aa; line-height: 1.6;">
                 Of kopieer deze link in uw browser:<br />
                 <a href="${signupUrl}" style="color: #2563eb; text-decoration: underline; word-break: break-all;">${signupUrl}</a>
-              </p>`
+              </p>`;
 
-  return emailLayout({ title: `Uitnodiging voor ${mosqueName} - Bunyan`, body })
+  return emailLayout({
+    title: `Uitnodiging voor ${escapeHtml(mosqueName)} - Bunyan`,
+    body,
+  });
 }

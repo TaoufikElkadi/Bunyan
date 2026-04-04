@@ -1,14 +1,17 @@
-import { emailLayout } from './layout'
+import { escapeHtml } from "@/lib/escape-html";
+import { emailLayout } from "./layout";
 
 interface WebhookAlertParams {
-  eventType: string
-  errorMessage: string
-  eventId?: string
+  eventType: string;
+  errorMessage: string;
+  eventId?: string;
 }
 
 export function webhookAlertEmail(params: WebhookAlertParams): string {
-  const { eventType, errorMessage, eventId } = params
-  const timestamp = new Date().toLocaleString('nl-NL', { timeZone: 'Europe/Amsterdam' })
+  const { eventType, errorMessage, eventId } = params;
+  const timestamp = new Date().toLocaleString("nl-NL", {
+    timeZone: "Europe/Amsterdam",
+  });
 
   const body = `
               <h1 style="margin: 0 0 8px 0; font-size: 20px; font-weight: 600; color: #18181b;">
@@ -24,19 +27,23 @@ export function webhookAlertEmail(params: WebhookAlertParams): string {
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                       <tr>
                         <td style="padding: 4px 0; font-size: 14px; color: #71717a; width: 120px;">Event type</td>
-                        <td style="padding: 4px 0; font-size: 14px; color: #18181b; font-weight: 500;">${eventType}</td>
+                        <td style="padding: 4px 0; font-size: 14px; color: #18181b; font-weight: 500;">${escapeHtml(eventType)}</td>
                       </tr>
-                      ${eventId ? `<tr>
+                      ${
+                        eventId
+                          ? `<tr>
                         <td style="padding: 4px 0; font-size: 14px; color: #71717a;">Event ID</td>
-                        <td style="padding: 4px 0; font-size: 14px; color: #18181b; font-weight: 500; font-family: monospace; font-size: 13px;">${eventId}</td>
-                      </tr>` : ''}
+                        <td style="padding: 4px 0; font-size: 14px; color: #18181b; font-weight: 500; font-family: monospace; font-size: 13px;">${escapeHtml(eventId)}</td>
+                      </tr>`
+                          : ""
+                      }
                       <tr>
                         <td style="padding: 4px 0; font-size: 14px; color: #71717a;">Tijdstip</td>
                         <td style="padding: 4px 0; font-size: 14px; color: #18181b; font-weight: 500;">${timestamp}</td>
                       </tr>
                       <tr>
                         <td style="padding: 4px 0; font-size: 14px; color: #71717a; vertical-align: top;">Fout</td>
-                        <td style="padding: 4px 0; font-size: 14px; color: #991b1b; font-weight: 500; font-family: monospace; font-size: 13px; word-break: break-all;">${errorMessage}</td>
+                        <td style="padding: 4px 0; font-size: 14px; color: #991b1b; font-weight: 500; font-family: monospace; font-size: 13px; word-break: break-all;">${escapeHtml(errorMessage)}</td>
                       </tr>
                     </table>
                   </td>
@@ -45,7 +52,7 @@ export function webhookAlertEmail(params: WebhookAlertParams): string {
 
               <p style="margin: 0; font-size: 14px; color: #71717a; line-height: 1.6;">
                 Controleer de server logs voor meer details. Dit event wordt mogelijk opnieuw aangeboden door Stripe.
-              </p>`
+              </p>`;
 
-  return emailLayout({ title: 'Webhook fout — Bunyan', body })
+  return emailLayout({ title: "Webhook fout — Bunyan", body });
 }

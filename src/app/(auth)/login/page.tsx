@@ -1,97 +1,103 @@
-'use client'
+"use client";
 
-import { useState, useMemo, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
+import { useState, useMemo, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   return (
     <Suspense>
       <LoginForm />
     </Suspense>
-  )
+  );
 }
 
 function LoginForm() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [otp, setOtp] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [otpSent, setOtpSent] = useState(false)
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const redirect = searchParams.get('redirect') || '/dashboard'
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [otp, setOtp] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const rawRedirect = searchParams.get("redirect") || "/dashboard";
+  const redirect =
+    rawRedirect.startsWith("/") && !rawRedirect.startsWith("//")
+      ? rawRedirect
+      : "/dashboard";
 
-  const supabase = useMemo(() => createClient(), [])
+  const supabase = useMemo(() => createClient(), []);
 
   async function handleLogin(e: React.FormEvent) {
-    e.preventDefault()
-    setError(null)
-    setLoading(true)
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
-    })
+    });
 
     if (error) {
-      setError(error.message)
-      setLoading(false)
-      return
+      setError(error.message);
+      setLoading(false);
+      return;
     }
 
-    const isPlatformAdmin = data.user?.app_metadata?.platform_role === 'platform_admin'
-    router.push(isPlatformAdmin ? '/admin' : redirect)
-    router.refresh()
+    const isPlatformAdmin =
+      data.user?.app_metadata?.platform_role === "platform_admin";
+    router.push(isPlatformAdmin ? "/admin" : redirect);
+    router.refresh();
   }
 
   async function handleOtpRequest() {
     if (!email) {
-      setError('Vul een e-mailadres in')
-      return
+      setError("Vul een e-mailadres in");
+      return;
     }
-    setError(null)
-    setLoading(true)
+    setError(null);
+    setLoading(true);
 
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
         shouldCreateUser: false,
       },
-    })
+    });
 
     if (error) {
-      setError(error.message)
-      setLoading(false)
-      return
+      setError(error.message);
+      setLoading(false);
+      return;
     }
 
-    setOtpSent(true)
-    setLoading(false)
+    setOtpSent(true);
+    setLoading(false);
   }
 
   async function handleOtpVerify(e: React.FormEvent) {
-    e.preventDefault()
-    setError(null)
-    setLoading(true)
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
 
     const { data, error } = await supabase.auth.verifyOtp({
       email,
       token: otp,
-      type: 'email',
-    })
+      type: "email",
+    });
 
     if (error) {
-      setError(error.message)
-      setLoading(false)
-      return
+      setError(error.message);
+      setLoading(false);
+      return;
     }
 
-    const isPlatformAdmin = data.user?.app_metadata?.platform_role === 'platform_admin'
-    router.push(isPlatformAdmin ? '/admin' : redirect)
-    router.refresh()
+    const isPlatformAdmin =
+      data.user?.app_metadata?.platform_role === "platform_admin";
+    router.push(isPlatformAdmin ? "/admin" : redirect);
+    router.refresh();
   }
 
   if (otpSent) {
@@ -114,25 +120,23 @@ function LoginForm() {
             maxLength={6}
             placeholder="000000"
             value={otp}
-            onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+            onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
             required
             autoFocus
             autoComplete="one-time-code"
             className="w-full rounded-lg border border-[#e3dfd5] bg-white px-4 py-3 text-center text-[24px] font-semibold tracking-[0.5em] text-[#261b07] placeholder:text-[#b5b0a5] placeholder:tracking-[0.5em] outline-none focus:border-[#261b07]/30 focus:ring-1 focus:ring-[#261b07]/10 transition-colors"
           />
-          {error && (
-            <p className="text-[13px] text-red-600">{error}</p>
-          )}
+          {error && <p className="text-[13px] text-red-600">{error}</p>}
           <button
             type="submit"
             disabled={loading || otp.length < 6}
             className="w-full rounded-lg bg-[#261b07] py-3 text-[14px] font-semibold text-[#f8f7f5] hover:bg-[#3a2c14] disabled:opacity-50 transition-colors"
           >
-            {loading ? 'Bezig...' : 'Verifiëren'}
+            {loading ? "Bezig..." : "Verifiëren"}
           </button>
         </form>
         <p className="mt-4 text-center text-[13px] text-[#a09888]">
-          Geen code ontvangen?{' '}
+          Geen code ontvangen?{" "}
           <button
             onClick={handleOtpRequest}
             className="text-[#261b07] underline underline-offset-2"
@@ -141,13 +145,17 @@ function LoginForm() {
           </button>
         </p>
         <button
-          onClick={() => { setOtpSent(false); setOtp(''); setError(null) }}
+          onClick={() => {
+            setOtpSent(false);
+            setOtp("");
+            setError(null);
+          }}
           className="mt-2 w-full py-3 rounded-lg border border-[#e3dfd5] text-[14px] font-medium text-[#261b07] hover:bg-[#f0ede6] transition-colors"
         >
           Ander e-mailadres gebruiken
         </button>
       </div>
-    )
+    );
   }
 
   return (
@@ -181,16 +189,14 @@ function LoginForm() {
           className="w-full rounded-lg border border-[#e3dfd5] bg-white px-4 py-3 text-[14px] text-[#261b07] placeholder:text-[#b5b0a5] outline-none focus:border-[#261b07]/30 focus:ring-1 focus:ring-[#261b07]/10 transition-colors"
         />
 
-        {error && (
-          <p className="text-[13px] text-red-600">{error}</p>
-        )}
+        {error && <p className="text-[13px] text-red-600">{error}</p>}
 
         <button
           type="submit"
           disabled={loading}
           className="w-full rounded-lg bg-[#261b07] py-3 text-[14px] font-semibold text-[#f8f7f5] hover:bg-[#3a2c14] disabled:opacity-50 transition-colors"
         >
-          {loading ? 'Bezig...' : 'Inloggen met e-mail'}
+          {loading ? "Bezig..." : "Inloggen met e-mail"}
         </button>
       </form>
 
@@ -200,7 +206,9 @@ function LoginForm() {
           <div className="w-full border-t border-[#e3dfd5]" />
         </div>
         <div className="relative flex justify-center">
-          <span className="bg-[#f8f7f5] px-3 text-[12px] uppercase tracking-wide text-[#b5b0a5]">of</span>
+          <span className="bg-[#f8f7f5] px-3 text-[12px] uppercase tracking-wide text-[#b5b0a5]">
+            of
+          </span>
         </div>
       </div>
 
@@ -210,25 +218,43 @@ function LoginForm() {
         disabled={loading}
         className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#e3dfd5] bg-white py-3 text-[14px] font-medium text-[#261b07] hover:bg-[#f8f7f5] disabled:opacity-50 transition-colors"
       >
-        <svg className="w-4 h-4 text-[#a09888]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+        <svg
+          className="w-4 h-4 text-[#a09888]"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={1.5}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"
+          />
         </svg>
         Inloggen met e-mail code
       </button>
 
       {/* Help + legal */}
       <p className="mt-6 text-center text-[13px] text-[#a09888]">
-        Hulp nodig?{' '}
-        <Link href="/forgot-password" className="text-[#261b07] underline underline-offset-2">
+        Hulp nodig?{" "}
+        <Link
+          href="/forgot-password"
+          className="text-[#261b07] underline underline-offset-2"
+        >
           Wachtwoord vergeten?
         </Link>
       </p>
       <p className="mt-4 text-center text-[12px] text-[#b5b0a5]">
-        Door Bunyan te gebruiken gaat u akkoord met onze{' '}
-        <a href="#" className="underline underline-offset-2">Voorwaarden</a>
-        {' '}en{' '}
-        <a href="#" className="underline underline-offset-2">Privacybeleid</a>.
+        Door Bunyan te gebruiken gaat u akkoord met onze{" "}
+        <a href="#" className="underline underline-offset-2">
+          Voorwaarden
+        </a>{" "}
+        en{" "}
+        <a href="#" className="underline underline-offset-2">
+          Privacybeleid
+        </a>
+        .
       </p>
     </div>
-  )
+  );
 }

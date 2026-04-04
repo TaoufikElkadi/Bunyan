@@ -1,32 +1,38 @@
-import { NextResponse } from "next/server"
-import { sendEmail } from "@/lib/email/send"
-import { rateLimit, getClientIp } from "@/lib/rate-limit"
+import { NextResponse } from "next/server";
+import { sendEmail } from "@/lib/email/send";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { escapeHtml } from "@/lib/escape-html";
 
 export async function POST(request: Request) {
   try {
-    const ip = getClientIp(request)
-    const { success } = await rateLimit(`contact:${ip}`, 3, 60_000)
+    const ip = getClientIp(request);
+    const { success } = await rateLimit(`contact:${ip}`, 3, 60_000);
     if (!success) {
       return NextResponse.json(
         { error: "Te veel verzoeken, probeer later opnieuw." },
-        { status: 429 }
-      )
+        { status: 429 },
+      );
     }
 
-    const { name, email, phone, message } = await request.json()
+    const { name, email, phone, message } = await request.json();
 
     if (!name || !email || !message) {
       return NextResponse.json(
         { error: "Naam, e-mail en bericht zijn verplicht." },
-        { status: 400 }
-      )
+        { status: 400 },
+      );
     }
 
-    if (name.length > 100 || email.length > 200 || message.length > 5000 || (phone && phone.length > 30)) {
+    if (
+      name.length > 100 ||
+      email.length > 200 ||
+      message.length > 5000 ||
+      (phone && phone.length > 30)
+    ) {
       return NextResponse.json(
         { error: "Een of meer velden zijn te lang." },
-        { status: 400 }
-      )
+        { status: 400 },
+      );
     }
 
     const html = `
@@ -38,27 +44,19 @@ export async function POST(request: Request) {
       </table>
       <hr style="margin:16px 0;border:none;border-top:1px solid #e3dfd5;" />
       <p style="white-space:pre-wrap;font-size:14px;line-height:1.6;">${escapeHtml(message)}</p>
-    `
+    `;
 
     await sendEmail({
       to: "info@bunyan.nl",
       subject: `Contactformulier: ${name}`,
       html,
-    })
+    });
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json(
       { error: "Er ging iets mis. Probeer het later opnieuw." },
-      { status: 500 }
-    )
+      { status: 500 },
+    );
   }
-}
-
-function escapeHtml(str: string) {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
 }

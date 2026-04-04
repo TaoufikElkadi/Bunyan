@@ -1,81 +1,81 @@
-import type { Viewport } from 'next'
-import { createAdminClient } from '@/lib/supabase/admin'
-import { notFound } from 'next/navigation'
-import { redirectIfOldSlug } from '@/lib/slug-redirect'
-import { DonationForm } from './donation-form'
-import { DonationPageShell } from './donation-page-shell'
-import { StripeNotConnected } from './stripe-not-connected'
-import type { Locale } from '@/types'
+import type { Viewport } from "next";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { notFound } from "next/navigation";
+import { redirectIfOldSlug } from "@/lib/slug-redirect";
+import { DonationForm } from "./donation-form";
+import { DonationPageShell } from "./donation-page-shell";
+import { StripeNotConnected } from "./stripe-not-connected";
+import type { Locale } from "@/types";
 
-export const revalidate = 300 // ISR: revalidate every 5 minutes
+export const revalidate = 300; // ISR: revalidate every 5 minutes
 
 export const viewport: Viewport = {
-  width: 'device-width',
+  width: "device-width",
   initialScale: 1,
-  viewportFit: 'cover',
-}
+  viewportFit: "cover",
+};
 
 type Props = {
-  params: Promise<{ slug: string }>
-}
+  params: Promise<{ slug: string }>;
+};
 
 export async function generateMetadata({ params }: Props) {
-  const { slug } = await params
-  const admin = createAdminClient()
+  const { slug } = await params;
+  const admin = createAdminClient();
   const { data: mosque } = await admin
-    .from('mosques')
-    .select('name, status')
-    .eq('slug', slug)
-    .single()
+    .from("mosques")
+    .select("name, status")
+    .eq("slug", slug)
+    .single();
 
-  if (!mosque || mosque.status !== 'active') return { title: 'Doneren — Bunyan' }
+  if (!mosque || mosque.status !== "active")
+    return { title: "Doneren — Bunyan" };
 
   return {
     title: `Doneer aan ${mosque.name} — Bunyan`,
     description: `Doe een donatie aan ${mosque.name} via Bunyan.`,
-  }
+  };
 }
 
 export default async function DonerenPage({ params }: Props) {
-  const { slug } = await params
-  const admin = createAdminClient()
+  const { slug } = await params;
+  const admin = createAdminClient();
 
   const { data: mosque } = await admin
-    .from('mosques')
-    .select('id, name, slug, primary_color, welcome_msg, logo_url, language, anbi_status, rsin, iban, status, stripe_account_id, contact_email')
-    .eq('slug', slug)
-    .single()
+    .from("mosques")
+    .select(
+      "id, name, slug, primary_color, welcome_msg, logo_url, language, anbi_status, rsin, iban, status, stripe_account_id, contact_email",
+    )
+    .eq("slug", slug)
+    .single();
 
-  if (!mosque || mosque.status !== 'active') {
-    await redirectIfOldSlug(slug, (s) => `/doneren/${s}`)
-    notFound()
+  if (!mosque || mosque.status !== "active") {
+    await redirectIfOldSlug(slug, (s) => `/doneren/${s}`);
+    notFound();
   }
 
   const { data: funds } = await admin
-    .from('funds')
-    .select('id, name, description, icon, goal_amount')
-    .eq('mosque_id', mosque.id)
-    .eq('is_active', true)
-    .order('sort_order', { ascending: true })
+    .from("funds")
+    .select("id, name, description, icon, goal_amount")
+    .eq("mosque_id", mosque.id)
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true });
 
-  // Aggregate completed donations per fund
-  const { data: fundTotals } = await admin
-    .from('donations')
-    .select('fund_id, amount')
-    .eq('mosque_id', mosque.id)
-    .eq('status', 'completed')
+  const { data: fundTotals } = await admin.rpc("get_public_fund_totals", {
+    p_mosque_id: mosque.id,
+  });
 
-  const totalsByFund = new Map<string, number>()
-  for (const d of fundTotals ?? []) {
-    totalsByFund.set(d.fund_id, (totalsByFund.get(d.fund_id) ?? 0) + d.amount)
+  const totalsByFund = new Map<string, number>();
+  for (const d of (fundTotals ?? []) as { fund_id: string; total: number }[]) {
+    totalsByFund.set(d.fund_id, d.total);
   }
 
   const fundsWithProgress = (funds ?? []).map((f) => ({
     ...f,
     raised: totalsByFund.get(f.id) ?? 0,
-  }))
+  }));
 
-  const defaultLocale = (mosque.language as Locale) || 'nl'
+  const defaultLocale = (mosque.language as Locale) || "nl";
 
   if (!mosque.stripe_account_id) {
     return (
@@ -89,11 +89,11 @@ export default async function DonerenPage({ params }: Props) {
         <StripeNotConnected
           mosqueName={mosque.name}
           logoUrl={mosque.logo_url}
-          primaryColor={mosque.primary_color || '#6B5E4C'}
+          primaryColor={mosque.primary_color || "#6B5E4C"}
           contactEmail={mosque.contact_email}
         />
       </DonationPageShell>
-    )
+    );
   }
 
   return (
@@ -107,7 +107,7 @@ export default async function DonerenPage({ params }: Props) {
       <DonationForm
         mosqueSlug={mosque.slug}
         mosqueName={mosque.name}
-        primaryColor={mosque.primary_color || '#6B5E4C'}
+        primaryColor={mosque.primary_color || "#6B5E4C"}
         welcomeMsg={mosque.welcome_msg}
         logoUrl={mosque.logo_url}
         funds={fundsWithProgress}
@@ -116,5 +116,5 @@ export default async function DonerenPage({ params }: Props) {
         mosqueRsin={mosque.rsin}
       />
     </DonationPageShell>
-  )
+  );
 }

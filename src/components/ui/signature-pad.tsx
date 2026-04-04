@@ -1,26 +1,67 @@
-'use client'
+"use client";
 
-import { useRef, useCallback } from 'react'
-import SignatureCanvas from 'react-signature-canvas'
+import { useRef, useEffect, useCallback } from "react";
+import SignaturePadLib from "signature_pad";
 
 type Props = {
-  onSign: (base64Png: string) => void
-  onClear: () => void
-  disabled?: boolean
-}
+  onSign: (base64Png: string) => void;
+  onClear: () => void;
+  disabled?: boolean;
+};
 
 export function SignaturePad({ onSign, onClear, disabled }: Props) {
-  const canvasRef = useRef<SignatureCanvas>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const padRef = useRef<SignaturePadLib | null>(null);
 
-  const handleEnd = useCallback(() => {
-    if (canvasRef.current && !canvasRef.current.isEmpty()) {
-      onSign(canvasRef.current.toDataURL('image/png'))
+  const resizeCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ratio = Math.max(window.devicePixelRatio ?? 1, 1);
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * ratio;
+    canvas.height = rect.height * ratio;
+    const ctx = canvas.getContext("2d");
+    if (ctx) ctx.scale(ratio, ratio);
+    // Clear after resize to avoid distortion
+    padRef.current?.clear();
+  }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const pad = new SignaturePadLib(canvas, {
+      penColor: "#1B2541",
+      minWidth: 1,
+      maxWidth: 2.5,
+      velocityFilterWeight: 0.7,
+    });
+
+    pad.addEventListener("endStroke", () => {
+      if (!pad.isEmpty()) {
+        onSign(pad.toDataURL("image/png"));
+      }
+    });
+
+    padRef.current = pad;
+    resizeCanvas();
+
+    window.addEventListener("resize", resizeCanvas);
+    return () => {
+      window.removeEventListener("resize", resizeCanvas);
+      pad.off();
+    };
+  }, [onSign, resizeCanvas]);
+
+  useEffect(() => {
+    if (padRef.current) {
+      disabled ? padRef.current.off() : padRef.current.on();
     }
-  }, [onSign])
+  }, [disabled]);
 
   function handleClear() {
-    canvasRef.current?.clear()
-    onClear()
+    padRef.current?.clear();
+    onClear();
   }
 
   return (
@@ -28,37 +69,30 @@ export function SignaturePad({ onSign, onClear, disabled }: Props) {
       <div
         className="rounded-2xl overflow-hidden"
         style={{
-          border: '1px solid #EDE8DF',
-          background: '#FFFDF8',
-          touchAction: 'none',
+          border: "1px solid #EDE8DF",
+          background: "#FFFDF8",
+          touchAction: "none",
           opacity: disabled ? 0.5 : 1,
-          pointerEvents: disabled ? 'none' : 'auto',
         }}
       >
-        <SignatureCanvas
+        <canvas
           ref={canvasRef}
-          penColor="#1B2541"
-          canvasProps={{
-            className: 'w-full',
-            height: 160,
-            style: { width: '100%', height: 160 },
-          }}
-          onEnd={handleEnd}
+          style={{ width: "100%", height: 160, display: "block" }}
         />
       </div>
       <div className="flex items-center justify-between mt-2">
-        <span className="text-[11px] font-medium" style={{ color: '#9B8E7B' }}>
+        <span className="text-[11px] font-medium" style={{ color: "#9B8E7B" }}>
           Teken uw handtekening hierboven
         </span>
         <button
           type="button"
           onClick={handleClear}
           className="text-[11px] font-medium px-2 py-1 rounded-lg transition-colors hover:bg-[#F7F3EC]"
-          style={{ color: '#9B8E7B' }}
+          style={{ color: "#9B8E7B" }}
         >
           Wissen
         </button>
       </div>
     </div>
-  )
+  );
 }

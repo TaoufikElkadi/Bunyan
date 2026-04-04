@@ -1,26 +1,27 @@
-import { formatMoney } from '@/lib/money'
-import { emailLayout } from './layout'
+import { formatMoney } from "@/lib/money";
+import { escapeHtml } from "@/lib/escape-html";
+import { emailLayout } from "./layout";
 
 interface AnbiReceiptParams {
-  mosqueName: string
-  donorName: string
-  year: number
-  totalAmount: number // cents
+  mosqueName: string;
+  donorName: string;
+  year: number;
+  totalAmount: number; // cents
 }
 
 export function anbiReceiptEmail(params: AnbiReceiptParams): string {
-  const { mosqueName, donorName, year, totalAmount } = params
-  const formattedAmount = formatMoney(totalAmount)
+  const { mosqueName, donorName, year, totalAmount } = params;
+  const formattedAmount = formatMoney(totalAmount);
 
   const body = `
               <h1 style="margin: 0 0 8px 0; font-size: 20px; font-weight: 600; color: #18181b;">
-                ${mosqueName}
+                ${escapeHtml(mosqueName)}
               </h1>
               <p style="margin: 0 0 24px 0; font-size: 16px; color: #3f3f46; line-height: 1.6;">
-                Beste ${donorName},
+                Beste ${escapeHtml(donorName)},
               </p>
               <p style="margin: 0 0 16px 0; font-size: 16px; color: #3f3f46; line-height: 1.6;">
-                Hierbij ontvangt u uw jaaroverzicht giften ${year} van ${mosqueName}.
+                Hierbij ontvangt u uw jaaroverzicht giften ${year} van ${escapeHtml(mosqueName)}.
               </p>
 
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; border-radius: 6px; margin-bottom: 24px;">
@@ -45,7 +46,10 @@ export function anbiReceiptEmail(params: AnbiReceiptParams): string {
               </p>
               <p style="margin: 0 0 0 0; font-size: 16px; color: #3f3f46; line-height: 1.6;">
                 Bewaar dit document voor uw belastingaangifte.
-              </p>`
+              </p>`;
 
-  return emailLayout({ title: `Jaaroverzicht giften ${year} - ${mosqueName}`, body })
+  return emailLayout({
+    title: `Jaaroverzicht giften ${year} - ${escapeHtml(mosqueName)}`,
+    body,
+  });
 }

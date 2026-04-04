@@ -1,24 +1,25 @@
-import { emailLayout } from './layout'
+import { escapeHtml } from "@/lib/escape-html";
+import { emailLayout } from "./layout";
 
 interface WelcomeEmailParams {
-  name: string
-  mosqueName: string
-  donationUrl: string
-  dashboardUrl: string
+  name: string;
+  mosqueName: string;
+  donationUrl: string;
+  dashboardUrl: string;
 }
 
 export function welcomeEmail(params: WelcomeEmailParams): string {
-  const { name, mosqueName, donationUrl, dashboardUrl } = params
+  const { name, mosqueName, donationUrl, dashboardUrl } = params;
 
   const body = `
               <h1 style="margin: 0 0 8px 0; font-size: 20px; font-weight: 600; color: #18181b;">
                 Welkom bij Bunyan!
               </h1>
               <p style="margin: 0 0 24px 0; font-size: 16px; color: #3f3f46; line-height: 1.6;">
-                Beste ${name},
+                Beste ${escapeHtml(name)},
               </p>
               <p style="margin: 0 0 24px 0; font-size: 16px; color: #3f3f46; line-height: 1.6;">
-                Gefeliciteerd! <strong>${mosqueName}</strong> is succesvol aangemeld op Bunyan.
+                Gefeliciteerd! <strong>${escapeHtml(mosqueName)}</strong> is succesvol aangemeld op Bunyan.
                 Uw donatiepagina is klaar:
               </p>
 
@@ -68,19 +69,22 @@ export function welcomeEmail(params: WelcomeEmailParams): string {
 
               <p style="margin: 0; font-size: 14px; color: #71717a; line-height: 1.6;">
                 Vragen? Neem contact op via <a href="mailto:info@bunyan.nl" style="color: #2563eb; text-decoration: underline;">info@bunyan.nl</a>
-              </p>`
+              </p>`;
 
-  return emailLayout({ title: `Welkom bij Bunyan - ${mosqueName}`, body })
+  return emailLayout({
+    title: `Welkom bij Bunyan - ${escapeHtml(mosqueName)}`,
+    body,
+  });
 }
 
 export async function sendWelcomeEmail(params: {
-  to: string
-  name: string
-  mosqueName: string
-  donationUrl: string
-  dashboardUrl: string
+  to: string;
+  name: string;
+  mosqueName: string;
+  donationUrl: string;
+  dashboardUrl: string;
 }) {
-  const { sendEmail } = await import('../send')
+  const { sendEmail } = await import("../send");
 
   return sendEmail({
     to: params.to,
@@ -91,5 +95,5 @@ export async function sendWelcomeEmail(params: {
       donationUrl: params.donationUrl,
       dashboardUrl: params.dashboardUrl,
     }),
-  })
+  });
 }

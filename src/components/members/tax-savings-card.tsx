@@ -1,21 +1,21 @@
-'use client'
+"use client";
 
-import useSWR from 'swr'
-import Link from 'next/link'
-import { formatMoney } from '@/lib/money'
-import { ArrowRight, Check, Clock } from 'lucide-react'
-import type { TaxOpportunityData } from '@/app/api/members/tax-opportunity/route'
+import useSWR from "swr";
+import Link from "next/link";
+import { formatMoney } from "@/lib/money";
+import { ArrowRight, Check, Clock } from "lucide-react";
+import type { TaxOpportunityData } from "@/app/api/members/tax-opportunity/route";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json())
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-const MIN_ELIGIBLE = 5
+const MIN_ELIGIBLE = 5;
 
 export function TaxSavingsCard() {
   const { data, isLoading } = useSWR<TaxOpportunityData>(
-    '/api/members/tax-opportunity',
+    "/api/members/tax-opportunity",
     fetcher,
-    { revalidateOnFocus: false },
-  )
+    { revalidateOnFocus: false, dedupingInterval: 60_000 },
+  );
 
   if (isLoading) {
     return (
@@ -27,12 +27,17 @@ export function TaxSavingsCard() {
           <div className="h-3 w-3/4 rounded bg-[#f3f1ec] animate-pulse" />
         </div>
       </div>
-    )
+    );
   }
 
-  if (!data) return null
+  if (!data) return null;
 
-  const { eligible_count, avg_estimated_annual, total_missed_savings, tax_rate } = data
+  const {
+    eligible_count,
+    avg_estimated_annual,
+    total_missed_savings,
+    tax_rate,
+  } = data;
 
   // State: insufficient data
   if (eligible_count < MIN_ELIGIBLE) {
@@ -46,11 +51,12 @@ export function TaxSavingsCard() {
             <Clock className="h-3.5 w-3.5 text-[#a09888]" strokeWidth={1.5} />
           </div>
           <p className="text-[12px] text-[#a09888] leading-relaxed">
-            Zodra er meer donatiegegevens beschikbaar zijn, berekenen wij het mogelijke belastingvoordeel voor uw gemeenschap.
+            Zodra er meer donatiegegevens beschikbaar zijn, berekenen wij het
+            mogelijke belastingvoordeel voor uw gemeenschap.
           </p>
         </div>
       </div>
-    )
+    );
   }
 
   // State: all active donors have periodic gifts
@@ -69,11 +75,11 @@ export function TaxSavingsCard() {
           </p>
         </div>
       </div>
-    )
+    );
   }
 
   // State: opportunity — show the full calculation
-  const taxRateLabel = `${(tax_rate * 100).toFixed(2).replace('.', ',')}%`
+  const taxRateLabel = `${(tax_rate * 100).toFixed(2).replace(".", ",")}%`;
 
   return (
     <div className="rounded-2xl bg-white p-5 shadow-[0_1px_3px_rgba(38,27,7,0.04),0_1px_2px_rgba(38,27,7,0.02)]">
@@ -86,23 +92,38 @@ export function TaxSavingsCard() {
 
       {/* Big number */}
       <p className="text-[28px] font-bold tracking-tight text-[#C87D3A] leading-none mb-4">
-        <span className="text-[16px] font-semibold">tot </span>{formatMoney(total_missed_savings)}
-        <span className="text-[13px] font-medium text-[#a09888] ml-1">/jaar</span>
+        <span className="text-[16px] font-semibold">tot </span>
+        {formatMoney(total_missed_savings)}
+        <span className="text-[13px] font-medium text-[#a09888] ml-1">
+          /jaar
+        </span>
       </p>
 
       {/* Supporting stats */}
       <div className="grid grid-cols-3 gap-3 mb-4">
         <div>
-          <p className="text-[18px] font-bold text-[#261b07] leading-none">{eligible_count}</p>
-          <p className="text-[10px] text-[#a09888] mt-1 leading-tight">leden zonder periodieke gift</p>
+          <p className="text-[18px] font-bold text-[#261b07] leading-none">
+            {eligible_count}
+          </p>
+          <p className="text-[10px] text-[#a09888] mt-1 leading-tight">
+            leden zonder periodieke gift
+          </p>
         </div>
         <div>
-          <p className="text-[18px] font-bold text-[#261b07] leading-none">{formatMoney(avg_estimated_annual)}</p>
-          <p className="text-[10px] text-[#a09888] mt-1 leading-tight">gem. jaardonatie</p>
+          <p className="text-[18px] font-bold text-[#261b07] leading-none">
+            {formatMoney(avg_estimated_annual)}
+          </p>
+          <p className="text-[10px] text-[#a09888] mt-1 leading-tight">
+            gem. jaardonatie
+          </p>
         </div>
         <div>
-          <p className="text-[18px] font-bold text-[#261b07] leading-none">{taxRateLabel}</p>
-          <p className="text-[10px] text-[#a09888] mt-1 leading-tight">belastingtarief</p>
+          <p className="text-[18px] font-bold text-[#261b07] leading-none">
+            {taxRateLabel}
+          </p>
+          <p className="text-[10px] text-[#a09888] mt-1 leading-tight">
+            belastingtarief
+          </p>
         </div>
       </div>
 
@@ -115,5 +136,5 @@ export function TaxSavingsCard() {
         <ArrowRight className="h-3 w-3" />
       </Link>
     </div>
-  )
+  );
 }

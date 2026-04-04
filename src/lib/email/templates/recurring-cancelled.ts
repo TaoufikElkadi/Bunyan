@@ -1,31 +1,36 @@
-import { formatMoney } from '@/lib/money'
-import { emailLayout } from './layout'
+import { formatMoney } from "@/lib/money";
+import { escapeHtml } from "@/lib/escape-html";
+import { emailLayout } from "./layout";
 
 interface RecurringCancelledParams {
-  mosqueName: string
-  donorName?: string
-  amount: number // cents
-  frequency: string
-  fundName: string
+  mosqueName: string;
+  donorName?: string;
+  amount: number; // cents
+  frequency: string;
+  fundName: string;
 }
 
-export function recurringCancelledEmail(params: RecurringCancelledParams): string {
-  const { mosqueName, donorName, amount, frequency, fundName } = params
-  const formattedAmount = formatMoney(amount)
+export function recurringCancelledEmail(
+  params: RecurringCancelledParams,
+): string {
+  const { mosqueName, donorName, amount, frequency, fundName } = params;
+  const formattedAmount = formatMoney(amount);
 
-  const greeting = donorName ? `Beste ${donorName}` : 'Beste donateur'
+  const greeting = donorName
+    ? `Beste ${escapeHtml(donorName)}`
+    : "Beste donateur";
 
   const frequencyLabel: Record<string, string> = {
-    monthly: 'maandelijkse',
-    quarterly: 'kwartaal',
-    yearly: 'jaarlijkse',
-  }
+    monthly: "maandelijkse",
+    quarterly: "kwartaal",
+    yearly: "jaarlijkse",
+  };
 
-  const freqText = frequencyLabel[frequency] || frequency
+  const freqText = frequencyLabel[frequency] || escapeHtml(frequency);
 
   const body = `
               <h1 style="margin: 0 0 8px 0; font-size: 20px; font-weight: 600; color: #18181b;">
-                ${mosqueName}
+                ${escapeHtml(mosqueName)}
               </h1>
               <p style="margin: 0 0 24px 0; font-size: 16px; color: #3f3f46; line-height: 1.6;">
                 ${greeting},
@@ -48,7 +53,7 @@ export function recurringCancelledEmail(params: RecurringCancelledParams): strin
                       </tr>
                       <tr>
                         <td style="padding: 4px 0; font-size: 14px; color: #71717a;">Fonds</td>
-                        <td style="padding: 4px 0; font-size: 14px; color: #18181b; font-weight: 500;">${fundName}</td>
+                        <td style="padding: 4px 0; font-size: 14px; color: #18181b; font-weight: 500;">${escapeHtml(fundName)}</td>
                       </tr>
                     </table>
                   </td>
@@ -57,7 +62,10 @@ export function recurringCancelledEmail(params: RecurringCancelledParams): strin
 
               <p style="margin: 0; font-size: 16px; color: #3f3f46; line-height: 1.6;">
                 U kunt altijd een nieuwe donatie starten via onze donatiepagina.
-              </p>`
+              </p>`;
 
-  return emailLayout({ title: `Donatie stopgezet - ${mosqueName}`, body })
+  return emailLayout({
+    title: `Donatie stopgezet - ${escapeHtml(mosqueName)}`,
+    body,
+  });
 }

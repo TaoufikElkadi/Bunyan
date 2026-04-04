@@ -8,19 +8,20 @@ import { withSentryConfig } from "@sentry/nextjs";
 // per-request nonces in the App Router (see next.js#48448). For now
 // 'unsafe-inline' is required because Next.js injects inline <script> tags.
 // ---------------------------------------------------------------------------
+const isDev = process.env.NODE_ENV === "development";
 const ContentSecurityPolicy = `
   default-src 'self';
   script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://m.stripe.network;
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   img-src 'self' data: blob: https://*.supabase.co;
   font-src 'self' https://fonts.gstatic.com;
-  connect-src 'self' https://*.supabase.co https://api.stripe.com https://m.stripe.network https://vitals.vercel-insights.com https://*.ingest.sentry.io;
+  connect-src 'self' ${isDev ? "http://127.0.0.1:* http://localhost:* ws://localhost:* ws://127.0.0.1:*" : ""} https://*.supabase.co https://api.stripe.com https://m.stripe.network https://vitals.vercel-insights.com https://*.ingest.sentry.io;
   frame-src https://js.stripe.com https://hooks.stripe.com;
   frame-ancestors 'none';
   object-src 'none';
   base-uri 'self';
   form-action 'self';
-  upgrade-insecure-requests;
+  ${isDev ? "" : "upgrade-insecure-requests;"}
 `
   .replace(/\n/g, " ")
   .trim();
@@ -30,7 +31,10 @@ const ContentSecurityPolicy = `
 // ---------------------------------------------------------------------------
 const securityHeaders = [
   // Force HTTPS for 2 years, including subdomains; eligible for preload list
-  { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+  {
+    key: "Strict-Transport-Security",
+    value: "max-age=63072000; includeSubDomains; preload",
+  },
   // Prevent the page from being embedded in frames (clickjacking defence)
   { key: "X-Frame-Options", value: "DENY" },
   // Stop browsers from MIME-sniffing the content-type
@@ -38,7 +42,10 @@ const securityHeaders = [
   // Send full URL as referrer only to same origin; origin-only cross-origin
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   // Disable browser APIs the app does not use
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  {
+    key: "Permissions-Policy",
+    value: "camera=(), microphone=(), geolocation=()",
+  },
   // Allow DNS prefetching for linked resources (perf benefit)
   { key: "X-DNS-Prefetch-Control", value: "on" },
   // Content Security Policy — see directive comments above
@@ -50,10 +57,7 @@ const nextConfig: NextConfig = {
 
   experimental: {
     // Prevents full barrel file imports
-    optimizePackageImports: [
-      '@base-ui/react',
-      'lucide-react',
-    ],
+    optimizePackageImports: ["@base-ui/react", "lucide-react", "recharts"],
     // Client-side router cache: keep visited pages cached for 5 min
     // so navigating back is instant (0ms)
     staleTimes: {
@@ -67,7 +71,10 @@ const nextConfig: NextConfig = {
         // Cache static assets for 1 year (fingerprinted by Next.js)
         source: "/:path*.(svg|jpg|jpeg|png|webp|ico|woff|woff2)",
         headers: [
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
         ],
       },
       {
