@@ -243,9 +243,9 @@ export default function HomePage() {
                           Gratis
                         </h3>
                         <p className="text-[13px] leading-[1.55] text-[color:rgba(26,21,16,0.5)] flex-1 mb-7">
-                          Ideaal om te starten — ontvang donaties via iDEAL,
-                          bouw donorprofielen op en deel uw QR-donatiepagina.
-                          Geen kosten, geen limiet op giften.
+                          Ideaal om te starten — ontvang tot 30 donaties per
+                          maand via iDEAL, 2 fondsen en 1 beheerder. Geen
+                          kosten, geen verrassingen.
                         </p>
                         <Link
                           href="/signup"
@@ -269,7 +269,7 @@ export default function HomePage() {
                             <rect x="2" y="3" width="12" height="10" rx="1.5" />
                             <path d="M5 6.5h6M5 9h4" strokeLinecap="round" />
                           </svg>
-                          Onbeperkte donaties
+                          Tot 30 donaties per maand
                         </div>
                         <div className="flex items-center gap-2 text-[13px] text-[color:rgba(26,21,16,0.55)] mb-6">
                           <svg
@@ -285,7 +285,7 @@ export default function HomePage() {
                               strokeLinecap="round"
                             />
                           </svg>
-                          1 beheerder
+                          1 beheerder, 2 fondsen
                         </div>
                         <p className="text-[10px] font-semibold tracking-[0.55px] uppercase text-[color:rgba(26,21,16,0.35)] mb-3">
                           Gratis inclusief:
@@ -294,7 +294,7 @@ export default function HomePage() {
                           {[
                             "iDEAL betalingen",
                             "Donorprofielen",
-                            "QR-donatiepagina",
+                            "Donatiepagina",
                           ].map((f) => (
                             <li
                               key={f}
@@ -328,7 +328,7 @@ export default function HomePage() {
                       {/* Plan info */}
                       <div className="flex-1 p-7 flex flex-col">
                         <span className="self-start text-[10px] font-semibold tracking-[0.55px] uppercase bg-[#edeae4] text-[color:rgba(26,21,16,0.5)] rounded-[6px] px-3 py-1.5 mb-7">
-                          €49 per maand
+                          €69 per maand
                         </span>
                         <h3
                           className="text-[40px] font-[380] leading-none tracking-[-1px] text-[#1a1510] mb-3"
@@ -339,9 +339,9 @@ export default function HomePage() {
                           Starter
                         </h3>
                         <p className="text-[13px] leading-[1.55] text-[color:rgba(26,21,16,0.5)] flex-1 mb-7">
-                          Genereer automatisch ANBI-jaaropgaven, beheer meerdere
-                          fondsen en houd uw complete ledenadministratie bij —
-                          alles in één dashboard.
+                          Onbeperkte donaties, tot 5 fondsen, ANBI-jaaropgaven,
+                          QR-codes, campagnes en team toegang — alles voor een
+                          groeiende moskee.
                         </p>
                         <Link
                           href="/signup"
@@ -381,17 +381,18 @@ export default function HomePage() {
                               strokeLinecap="round"
                             />
                           </svg>
-                          5 beheerders
+                          3 beheerders, 5 fondsen
                         </div>
                         <p className="text-[10px] font-semibold tracking-[0.55px] uppercase text-[color:rgba(26,21,16,0.35)] mb-3">
-                          Alles in gratis, en:
+                          Alles in Gratis, en:
                         </p>
                         <ul className="space-y-2.5">
                           {[
                             "ANBI-jaaropgaven",
-                            "Meerdere fondsen",
-                            "Excel & PDF export",
-                            "E-mailnotificaties",
+                            "Terugkerende giften",
+                            "QR-codes & campagnes",
+                            "CSV export",
+                            "Donor CRM",
                           ].map((f) => (
                             <li
                               key={f}
@@ -420,13 +421,13 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                {/* ── Right column: Enterprise — tall card ── */}
+                {/* ── Right column: Compleet — tall card ── */}
                 <div className="bg-white rounded-[14px] border border-[#dddad3] overflow-hidden flex flex-col">
                   {/* Top: plan info + lime image */}
                   <div className="p-7 flex gap-4 items-start">
                     <div className="flex-1 flex flex-col">
                       <span className="self-start text-[10px] font-semibold tracking-[0.55px] uppercase bg-[#edeae4] text-[color:rgba(26,21,16,0.5)] rounded-[6px] px-3 py-1.5 mb-7">
-                        Maatwerk prijs
+                        €149 per maand
                       </span>
                       <h3
                         className="text-[40px] font-[380] leading-none tracking-[-1px] text-[#1a1510] mb-3"
@@ -434,19 +435,19 @@ export default function HomePage() {
                           fontFamily: "var(--font-display), sans-serif",
                         }}
                       >
-                        Enterprise
+                        Compleet
                       </h3>
                       <p className="text-[13px] leading-[1.55] text-[color:rgba(26,21,16,0.5)] mb-7">
-                        Voor koepelorganisaties en grote moskeeën die
-                        rapportages, compliance en gemeenschapsinzicht over
-                        meerdere locaties willen centraliseren.
+                        Alles onbeperkt — voor grote moskeeën en stichtingen die
+                        volledige controle willen over fondsen, team, campagnes
+                        en donateurbeheer.
                       </p>
-                      <a
-                        href="mailto:info@bunyan.nl"
+                      <Link
+                        href="/signup"
                         className="self-start inline-flex items-center justify-center rounded-[8px] bg-[#1a1510] px-5 py-[9px] text-[13px] font-semibold text-white hover:bg-[#2c2018] transition-colors"
                       >
-                        Contact opnemen
-                      </a>
+                        Nu aanmelden
+                      </Link>
                     </div>
                     {/* Lime decorative block */}
                     <div
@@ -539,24 +540,20 @@ export default function HomePage() {
                           strokeLinecap="round"
                         />
                       </svg>
-                      Onbeperkte beheerders
+                      Onbeperkte beheerders, fondsen & campagnes
                     </div>
                     <p className="text-[10px] font-semibold tracking-[0.55px] uppercase text-[color:rgba(26,21,16,0.35)] mb-3">
-                      Enterprise inclusief:
+                      Alles in Starter, en:
                     </p>
                     <ul className="space-y-2.5">
                       {[
-                        "Toegang tot alle functies van Starter",
-                        "Multi-moskee dashboard",
-                        "Aangepaste ANBI-rapporten",
-                        "Terugkerende giften via SEPA",
-                        "Campagnebeheer",
-                        "QR-scan analyse",
-                        "Excel & PDF export",
-                        "Alle Bunyan AI-functies",
-                        "Geautomatiseerde financiële rapporten",
-                        "Enterprise beveiliging & AVG-audit",
-                        "Prioriteit support & accountmanager",
+                        "Onbeperkte fondsen & campagnes",
+                        "Onbeperkte QR-codes",
+                        "Onbeperkte beheerders",
+                        "Bulk ANBI-jaaropgaven",
+                        "Donateursegmenten & alerts",
+                        "Geavanceerde exports & rapportages",
+                        "Prioriteit support",
                       ].map((f) => (
                         <li
                           key={f}

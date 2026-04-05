@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { useState } from "react"
+import { useState } from "react";
 
 const faqs = [
   {
@@ -21,7 +21,7 @@ const faqs = [
   {
     question: "Is Bunyan gratis te gebruiken?",
     answer:
-      "Ja, Bunyan heeft een gratis plan waarmee u direct kunt starten. U ontvangt onbeperkt donaties via iDEAL, bouwt automatisch donorprofielen op en deelt uw eigen donatiepagina via een QR-code. Er zijn geen transactiekosten bovenop de standaard Stripe-kosten. Voor uitgebreidere functies zoals ANBI-jaaropgaven, meerdere fondsen en e-mailnotificaties kunt u upgraden naar het Starter-plan (€49/maand).",
+      "Ja, Bunyan heeft een gratis plan waarmee u direct kunt starten. U ontvangt tot 30 donaties per maand via iDEAL, beheert 2 fondsen en deelt uw eigen donatiepagina. Er zijn geen transactiekosten bovenop de standaard Stripe-kosten. Voor uitgebreidere functies zoals ANBI-jaaropgaven, QR-codes, campagnes en onbeperkte donaties kunt u upgraden naar het Starter-plan (€69/maand) of Compleet (€149/maand) voor alles onbeperkt.",
   },
   {
     question: "Hoe veilig zijn de gegevens van onze donateurs?",
@@ -43,10 +43,10 @@ const faqs = [
     answer:
       "De meeste moskee-apps richten zich op gebedstijden, livestreams en communicatie. Bunyan focust specifiek op het financiële hart van uw moskee: donaties ontvangen, administreren en verantwoorden. Denk aan online doneren via iDEAL, automatische ANBI-giftenverklaringen, fondsbeheer en donorprofielen. Bunyan is gebouwd voor de Nederlandse markt, met iDEAL als primaire betaalmethode en ANBI-compliance volgens de eisen van de Belastingdienst.",
   },
-]
+];
 
 export function FaqSection() {
-  const [openIndex, setOpenIndex] = useState(0)
+  const [openIndex, setOpenIndex] = useState(0);
 
   return (
     <section id="faq" className="py-28 sm:py-40 bg-[#f8f7f5]">
@@ -61,14 +61,15 @@ export function FaqSection() {
               Veelgestelde vragen
             </h2>
             <p className="text-[15px] leading-[1.6] text-[#261b07]/50">
-              Alles wat u wilt weten over moskee software, online doneren en ANBI-giftenverklaringen.
+              Alles wat u wilt weten over moskee software, online doneren en
+              ANBI-giftenverklaringen.
             </p>
           </div>
 
           {/* Right — accordion */}
           <div className="flex-1 flex flex-col gap-2.5">
             {faqs.map((faq, i) => {
-              const isOpen = openIndex === i
+              const isOpen = openIndex === i;
               return (
                 <div
                   key={i}
@@ -113,7 +114,7 @@ export function FaqSection() {
                     </div>
                   </div>
                 </div>
-              )
+              );
             })}
           </div>
         </div>
@@ -138,5 +139,5 @@ export function FaqSection() {
         }}
       />
     </section>
-  )
+  );
 }

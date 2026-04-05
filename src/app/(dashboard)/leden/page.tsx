@@ -311,10 +311,10 @@ export default async function LedenPage({
         </div>
       </div>
 
-      {/* Alerts (growth only) */}
+      {/* Alerts (compleet only) */}
       {limits.hasMemberAlerts && <AlertBanner />}
 
-      {/* Funnel + Segments (growth only) */}
+      {/* Funnel + Segments (compleet only) */}
       {limits.hasMemberSegments && (
         <div className="grid gap-6 lg:grid-cols-2">
           <ConversionFunnel />

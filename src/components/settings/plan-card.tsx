@@ -1,94 +1,110 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import type { Mosque, MosquePlan } from '@/types'
-import { SparklesIcon, Loader2Icon, ExternalLinkIcon } from 'lucide-react'
+import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import type { Mosque, MosquePlan } from "@/types";
+import { SparklesIcon, Loader2Icon, ExternalLinkIcon } from "lucide-react";
 
-const PLAN_INFO: Record<string, { label: string; description: string; price: string; variant: 'default' | 'secondary' | 'outline' }> = {
+const PLAN_INFO: Record<
+  string,
+  {
+    label: string;
+    description: string;
+    price: string;
+    variant: "default" | "secondary" | "outline";
+  }
+> = {
   free: {
-    label: 'Gratis',
-    description: 'Tot 100 donaties per maand, 1 fonds, basisfunctionaliteit.',
-    price: '€0',
-    variant: 'secondary',
+    label: "Gratis",
+    description: "Tot 30 donaties per maand, 2 fondsen, basisfunctionaliteit.",
+    price: "€0",
+    variant: "secondary",
   },
   starter: {
-    label: 'Starter',
-    description: 'Onbeperkte donaties, 5 fondsen, team toegang.',
-    price: '€49',
-    variant: 'default',
+    label: "Starter",
+    description:
+      "Onbeperkte donaties, 5 fondsen, ANBI, QR-codes, campagnes en team toegang.",
+    price: "€69",
+    variant: "default",
   },
-  growth: {
-    label: 'Growth',
-    description: 'Alles in Starter plus campagnes, QR-codes, ANBI rapporten en prioriteitsondersteuning.',
-    price: '€99',
-    variant: 'default',
+  compleet: {
+    label: "Compleet",
+    description:
+      "Alles onbeperkt plus donateursegmenten, alerts, geavanceerde exports en prioriteitsondersteuning.",
+    price: "€149",
+    variant: "default",
   },
-}
+};
 
 interface Props {
-  mosque: Mosque
+  mosque: Mosque;
 }
 
 export function PlanCard({ mosque }: Props) {
-  const info = PLAN_INFO[mosque.plan] ?? PLAN_INFO.free
-  const [loadingPlan, setLoadingPlan] = useState<MosquePlan | null>(null)
-  const [loadingPortal, setLoadingPortal] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const info = PLAN_INFO[mosque.plan] ?? PLAN_INFO.free;
+  const [loadingPlan, setLoadingPlan] = useState<MosquePlan | null>(null);
+  const [loadingPortal, setLoadingPortal] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleUpgrade(plan: MosquePlan) {
-    setLoadingPlan(plan)
-    setError(null)
+    setLoadingPlan(plan);
+    setError(null);
 
     try {
-      const res = await fetch('/api/settings/billing/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/settings/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan }),
-      })
+      });
 
-      const data = await res.json()
+      const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Er ging iets mis')
-        return
+        setError(data.error || "Er ging iets mis");
+        return;
       }
 
       if (data.url) {
-        window.location.href = data.url
+        window.location.href = data.url;
       }
     } catch {
-      setError('Er ging iets mis bij het aanmaken van de checkout sessie')
+      setError("Er ging iets mis bij het aanmaken van de checkout sessie");
     } finally {
-      setLoadingPlan(null)
+      setLoadingPlan(null);
     }
   }
 
   async function handleManage() {
-    setLoadingPortal(true)
-    setError(null)
+    setLoadingPortal(true);
+    setError(null);
 
     try {
-      const res = await fetch('/api/settings/billing/portal', {
-        method: 'POST',
-      })
+      const res = await fetch("/api/settings/billing/portal", {
+        method: "POST",
+      });
 
-      const data = await res.json()
+      const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Er ging iets mis')
-        return
+        setError(data.error || "Er ging iets mis");
+        return;
       }
 
       if (data.url) {
-        window.location.href = data.url
+        window.location.href = data.url;
       }
     } catch {
-      setError('Er ging iets mis bij het openen van het billing portal')
+      setError("Er ging iets mis bij het openen van het billing portal");
     } finally {
-      setLoadingPortal(false)
+      setLoadingPortal(false);
     }
   }
 
@@ -106,9 +122,7 @@ export function PlanCard({ mosque }: Props) {
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <p className="text-sm font-medium">{info.label}</p>
-              <Badge variant={info.variant}>
-                {info.label}
-              </Badge>
+              <Badge variant={info.variant}>{info.label}</Badge>
             </div>
             <p className="text-xs text-muted-foreground">{info.description}</p>
           </div>
@@ -116,7 +130,8 @@ export function PlanCard({ mosque }: Props) {
 
         {mosque.plan_started_at && (
           <p className="text-xs text-muted-foreground">
-            Actief sinds {new Date(mosque.plan_started_at).toLocaleDateString('nl-NL')}
+            Actief sinds{" "}
+            {new Date(mosque.plan_started_at).toLocaleDateString("nl-NL")}
           </p>
         )}
 
@@ -126,7 +141,7 @@ export function PlanCard({ mosque }: Props) {
           </div>
         )}
 
-        {mosque.plan === 'free' && (
+        {mosque.plan === "free" && (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
               Upgrade voor meer functionaliteit:
@@ -135,38 +150,46 @@ export function PlanCard({ mosque }: Props) {
               <div className="rounded-lg border p-3 space-y-2">
                 <div className="flex items-baseline justify-between">
                   <p className="text-sm font-medium">Starter</p>
-                  <p className="text-sm font-semibold">{PLAN_INFO.starter.price}/mo</p>
+                  <p className="text-sm font-semibold">
+                    {PLAN_INFO.starter.price}/mo
+                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground">{PLAN_INFO.starter.description}</p>
+                <p className="text-xs text-muted-foreground">
+                  {PLAN_INFO.starter.description}
+                </p>
                 <Button
                   size="sm"
                   className="w-full"
                   disabled={loadingPlan !== null}
-                  onClick={() => handleUpgrade('starter')}
+                  onClick={() => handleUpgrade("starter")}
                 >
-                  {loadingPlan === 'starter' ? (
+                  {loadingPlan === "starter" ? (
                     <Loader2Icon className="size-4 animate-spin" />
                   ) : (
-                    'Upgraden'
+                    "Upgraden"
                   )}
                 </Button>
               </div>
               <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
                 <div className="flex items-baseline justify-between">
-                  <p className="text-sm font-medium">Growth</p>
-                  <p className="text-sm font-semibold">{PLAN_INFO.growth.price}/mo</p>
+                  <p className="text-sm font-medium">Compleet</p>
+                  <p className="text-sm font-semibold">
+                    {PLAN_INFO.compleet.price}/mo
+                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground">{PLAN_INFO.growth.description}</p>
+                <p className="text-xs text-muted-foreground">
+                  {PLAN_INFO.compleet.description}
+                </p>
                 <Button
                   size="sm"
                   className="w-full"
                   disabled={loadingPlan !== null}
-                  onClick={() => handleUpgrade('growth')}
+                  onClick={() => handleUpgrade("compleet")}
                 >
-                  {loadingPlan === 'growth' ? (
+                  {loadingPlan === "compleet" ? (
                     <Loader2Icon className="size-4 animate-spin" />
                   ) : (
-                    'Upgraden'
+                    "Upgraden"
                   )}
                 </Button>
               </div>
@@ -174,23 +197,27 @@ export function PlanCard({ mosque }: Props) {
           </div>
         )}
 
-        {mosque.plan === 'starter' && (
+        {mosque.plan === "starter" && (
           <div className="space-y-3">
             <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
               <div className="flex items-baseline justify-between">
-                <p className="text-sm font-medium">Upgrade naar Growth</p>
-                <p className="text-sm font-semibold">{PLAN_INFO.growth.price}/mo</p>
+                <p className="text-sm font-medium">Upgrade naar Compleet</p>
+                <p className="text-sm font-semibold">
+                  {PLAN_INFO.compleet.price}/mo
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground">{PLAN_INFO.growth.description}</p>
+              <p className="text-xs text-muted-foreground">
+                {PLAN_INFO.compleet.description}
+              </p>
               <Button
                 size="sm"
                 disabled={loadingPlan !== null}
-                onClick={() => handleUpgrade('growth')}
+                onClick={() => handleUpgrade("compleet")}
               >
-                {loadingPlan === 'growth' ? (
+                {loadingPlan === "compleet" ? (
                   <Loader2Icon className="size-4 animate-spin" />
                 ) : (
-                  'Upgraden naar Growth'
+                  "Upgraden naar Compleet"
                 )}
               </Button>
             </div>
@@ -212,7 +239,7 @@ export function PlanCard({ mosque }: Props) {
           </div>
         )}
 
-        {mosque.plan === 'growth' && (
+        {mosque.plan === "compleet" && (
           <Button
             variant="outline"
             size="sm"
@@ -231,5 +258,5 @@ export function PlanCard({ mosque }: Props) {
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

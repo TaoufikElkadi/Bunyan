@@ -1,8 +1,8 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Label } from '@/components/ui/label'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogClose,
-} from '@/components/ui/dialog'
+} from "@/components/ui/dialog";
 import {
   Ban,
   Building2,
@@ -28,310 +28,359 @@ import {
   TrendingUp,
   UserPlus,
   Users,
-} from 'lucide-react'
+} from "lucide-react";
 
 interface PlatformMetrics {
-  totalMosques: number
-  totalDonations: number
-  totalRevenue: number
-  totalUsers: number
-  monthlyRevenue: number
+  totalMosques: number;
+  totalDonations: number;
+  totalRevenue: number;
+  totalUsers: number;
+  monthlyRevenue: number;
 }
 
 const formatEur = (cents: number) =>
-  new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(cents / 100)
+  new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(
+    cents / 100,
+  );
 
 interface User {
-  id: string
-  name: string
-  email: string
-  role: string
-  banned: boolean
-  mosque_id: string
-  created_at: string
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  banned: boolean;
+  mosque_id: string;
+  created_at: string;
 }
 
 interface Mosque {
-  id: string
-  name: string
-  slug: string
-  city: string
-  plan: string
-  status: 'pending' | 'active' | 'rejected'
-  created_at: string
-  users: User[]
+  id: string;
+  name: string;
+  slug: string;
+  city: string;
+  plan: string;
+  status: "pending" | "active" | "rejected";
+  created_at: string;
+  users: User[];
 }
 
 function slugify(name: string): string {
   return name
     .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-]/g, '')
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "");
 }
 
 const PLAN_STYLES: Record<string, { bg: string; text: string; dot: string }> = {
-  free: { bg: 'bg-[#f3f1ec]', text: 'text-[#8a8478]', dot: 'bg-[#b5b0a5]' },
-  starter: { bg: 'bg-[#e8f5e9]', text: 'text-[#2e7d32]', dot: 'bg-[#4caf50]' },
-  growth: { bg: 'bg-[#fff8e1]', text: 'text-[#f57f17]', dot: 'bg-[#f9a600]' },
-}
+  free: { bg: "bg-[#f3f1ec]", text: "text-[#8a8478]", dot: "bg-[#b5b0a5]" },
+  starter: { bg: "bg-[#e8f5e9]", text: "text-[#2e7d32]", dot: "bg-[#4caf50]" },
+  compleet: { bg: "bg-[#fff8e1]", text: "text-[#f57f17]", dot: "bg-[#f9a600]" },
+};
 
-const STATUS_STYLES: Record<string, { bg: string; text: string; dot: string; label: string }> = {
-  pending: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-400', label: 'Wacht op goedkeuring' },
-  active: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500', label: 'Actief' },
-  rejected: { bg: 'bg-red-50', text: 'text-red-600', dot: 'bg-red-400', label: 'Afgewezen' },
-}
+const STATUS_STYLES: Record<
+  string,
+  { bg: string; text: string; dot: string; label: string }
+> = {
+  pending: {
+    bg: "bg-amber-50",
+    text: "text-amber-700",
+    dot: "bg-amber-400",
+    label: "Wacht op goedkeuring",
+  },
+  active: {
+    bg: "bg-emerald-50",
+    text: "text-emerald-700",
+    dot: "bg-emerald-500",
+    label: "Actief",
+  },
+  rejected: {
+    bg: "bg-red-50",
+    text: "text-red-600",
+    dot: "bg-red-400",
+    label: "Afgewezen",
+  },
+};
 
 function timeAgo(dateStr: string): string {
-  const now = new Date()
-  const date = new Date(dateStr)
-  const diffMs = now.getTime() - date.getTime()
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+  const now = new Date();
+  const date = new Date(dateStr);
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-  if (diffDays === 0) return 'vandaag'
-  if (diffDays === 1) return 'gisteren'
-  if (diffDays < 7) return `${diffDays}d geleden`
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w geleden`
-  if (diffDays < 365) return `${Math.floor(diffDays / 30)}m geleden`
-  return `${Math.floor(diffDays / 365)}j geleden`
+  if (diffDays === 0) return "vandaag";
+  if (diffDays === 1) return "gisteren";
+  if (diffDays < 7) return `${diffDays}d geleden`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w geleden`;
+  if (diffDays < 365) return `${Math.floor(diffDays / 30)}m geleden`;
+  return `${Math.floor(diffDays / 365)}j geleden`;
 }
 
-export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metrics: PlatformMetrics }) {
-  const router = useRouter()
-  const [expandedMosqueId, setExpandedMosqueId] = useState<string | null>(null)
-  const [addMosqueOpen, setAddMosqueOpen] = useState(false)
-  const [addUserMosqueId, setAddUserMosqueId] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [actionMenuId, setActionMenuId] = useState<string | null>(null)
+export function AdminDashboard({
+  mosques,
+  metrics,
+}: {
+  mosques: Mosque[];
+  metrics: PlatformMetrics;
+}) {
+  const router = useRouter();
+  const [expandedMosqueId, setExpandedMosqueId] = useState<string | null>(null);
+  const [addMosqueOpen, setAddMosqueOpen] = useState(false);
+  const [addUserMosqueId, setAddUserMosqueId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [actionMenuId, setActionMenuId] = useState<string | null>(null);
 
   // Add Mosque form state
-  const [mosqueName, setMosqueName] = useState('')
-  const [mosqueSlug, setMosqueSlug] = useState('')
-  const [mosqueCity, setMosqueCity] = useState('')
+  const [mosqueName, setMosqueName] = useState("");
+  const [mosqueSlug, setMosqueSlug] = useState("");
+  const [mosqueCity, setMosqueCity] = useState("");
 
   // Add User form state
-  const [userEmail, setUserEmail] = useState('')
-  const [userName, setUserName] = useState('')
-  const [userRole, setUserRole] = useState('admin')
+  const [userEmail, setUserEmail] = useState("");
+  const [userName, setUserName] = useState("");
+  const [userRole, setUserRole] = useState("admin");
 
   function toggleExpanded(id: string) {
-    setExpandedMosqueId((prev) => (prev === id ? null : id))
+    setExpandedMosqueId((prev) => (prev === id ? null : id));
   }
 
   function resetMosqueForm() {
-    setMosqueName('')
-    setMosqueSlug('')
-    setMosqueCity('')
+    setMosqueName("");
+    setMosqueSlug("");
+    setMosqueCity("");
   }
 
   function resetUserForm() {
-    setUserEmail('')
-    setUserName('')
-    setUserRole('admin')
+    setUserEmail("");
+    setUserName("");
+    setUserRole("admin");
   }
 
   async function handleAddMosque(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
+    e.preventDefault();
+    setLoading(true);
     try {
-      const res = await fetch('/api/admin/mosques', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/admin/mosques", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: mosqueName,
           slug: mosqueSlug,
           city: mosqueCity,
         }),
-      })
+      });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        alert(data.error || 'Failed to create mosque')
-        return
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Failed to create mosque");
+        return;
       }
-      setAddMosqueOpen(false)
-      resetMosqueForm()
-      router.refresh()
+      setAddMosqueOpen(false);
+      resetMosqueForm();
+      router.refresh();
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   async function handleAddUser(e: React.FormEvent, mosqueId: string) {
-    e.preventDefault()
-    setLoading(true)
+    e.preventDefault();
+    setLoading(true);
     try {
       const res = await fetch(`/api/admin/mosques/${mosqueId}/users`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: userEmail,
           name: userName,
           role: userRole,
         }),
-      })
+      });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        alert(data.error || 'Failed to add user')
-        return
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Failed to add user");
+        return;
       }
-      setAddUserMosqueId(null)
-      resetUserForm()
-      router.refresh()
+      setAddUserMosqueId(null);
+      resetUserForm();
+      router.refresh();
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   async function handleDeleteMosque(mosqueId: string, mosqueName: string) {
-    if (!window.confirm(`Delete "${mosqueName}"? This cannot be undone.`)) return
-    setLoading(true)
+    if (!window.confirm(`Delete "${mosqueName}"? This cannot be undone.`))
+      return;
+    setLoading(true);
     try {
       const res = await fetch(`/api/admin/mosques/${mosqueId}`, {
-        method: 'DELETE',
-      })
+        method: "DELETE",
+      });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        alert(data.error || 'Failed to delete mosque')
-        return
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Failed to delete mosque");
+        return;
       }
-      router.refresh()
+      router.refresh();
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   async function handleStatusChange(mosqueId: string, newStatus: string) {
-    setLoading(true)
+    setLoading(true);
     try {
       const res = await fetch(`/api/admin/mosques/${mosqueId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
-      })
+      });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        alert(data.error || 'Failed to update status')
-        return
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Failed to update status");
+        return;
       }
-      router.refresh()
+      router.refresh();
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   async function handlePlanChange(mosqueId: string, newPlan: string) {
-    setLoading(true)
+    setLoading(true);
     try {
       const res = await fetch(`/api/admin/mosques/${mosqueId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan: newPlan }),
-      })
+      });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        alert(data.error || 'Failed to update plan')
-        return
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Failed to update plan");
+        return;
       }
-      router.refresh()
+      router.refresh();
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
-  async function handleRemoveUser(mosqueId: string, userId: string, userName: string) {
-    if (!window.confirm(`Remove user "${userName}" from this mosque?`)) return
-    setLoading(true)
+  async function handleRemoveUser(
+    mosqueId: string,
+    userId: string,
+    userName: string,
+  ) {
+    if (!window.confirm(`Remove user "${userName}" from this mosque?`)) return;
+    setLoading(true);
     try {
       const res = await fetch(
         `/api/admin/mosques/${mosqueId}/users?userId=${userId}`,
-        { method: 'DELETE' }
-      )
+        { method: "DELETE" },
+      );
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        alert(data.error || 'Failed to remove user')
-        return
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Failed to remove user");
+        return;
       }
-      router.refresh()
+      router.refresh();
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
-  async function handleToggleBan(userId: string, userName: string, currentlyBanned: boolean) {
-    const action = currentlyBanned ? 'unban' : 'ban'
-    if (!window.confirm(`${currentlyBanned ? 'Unban' : 'Ban'} user "${userName}"?`)) return
-    setLoading(true)
+  async function handleToggleBan(
+    userId: string,
+    userName: string,
+    currentlyBanned: boolean,
+  ) {
+    const action = currentlyBanned ? "unban" : "ban";
+    if (
+      !window.confirm(
+        `${currentlyBanned ? "Unban" : "Ban"} user "${userName}"?`,
+      )
+    )
+      return;
+    setLoading(true);
     try {
       const res = await fetch(`/api/admin/users/${userId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action }),
-      })
+      });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        alert(data.error || 'Failed to update user')
-        return
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Failed to update user");
+        return;
       }
-      router.refresh()
+      router.refresh();
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   async function handleResetPassword(userId: string) {
-    if (!window.confirm('Send a password reset email to this user?')) return
-    setLoading(true)
+    if (!window.confirm("Send a password reset email to this user?")) return;
+    setLoading(true);
     try {
       const res = await fetch(`/api/admin/users/${userId}/reset-password`, {
-        method: 'POST',
-      })
-      const data = await res.json().catch(() => ({}))
+        method: "POST",
+      });
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        alert(data.error || 'Failed to send reset email')
-        return
+        alert(data.error || "Failed to send reset email");
+        return;
       }
-      alert(data.message || 'Password reset email sent.')
+      alert(data.message || "Password reset email sent.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
-  async function handleRoleChange(mosqueId: string, userId: string, newRole: string) {
-    setLoading(true)
+  async function handleRoleChange(
+    mosqueId: string,
+    userId: string,
+    newRole: string,
+  ) {
+    setLoading(true);
     try {
       const res = await fetch(`/api/admin/users/${userId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ role: newRole, mosqueId }),
-      })
+      });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        alert(data.error || 'Failed to change role')
-        return
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Failed to change role");
+        return;
       }
-      router.refresh()
+      router.refresh();
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   const filteredMosques = searchQuery
-    ? mosques.filter((m) =>
-        m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        m.slug.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        m.city?.toLowerCase().includes(searchQuery.toLowerCase())
+    ? mosques.filter(
+        (m) =>
+          m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          m.slug.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          m.city?.toLowerCase().includes(searchQuery.toLowerCase()),
       )
-    : mosques
+    : mosques;
 
-  const inputClasses = "w-full rounded-lg border border-[#e3dfd5] bg-white px-4 py-2.5 text-[14px] text-[#261b07] placeholder:text-[#b5b0a5] outline-none focus:border-[#261b07]/30 focus:ring-1 focus:ring-[#261b07]/10 transition-colors"
-  const selectClasses = "w-full rounded-lg border border-[#e3dfd5] bg-white px-3 py-2.5 text-[14px] text-[#261b07] outline-none focus:border-[#261b07]/30 focus:ring-1 focus:ring-[#261b07]/10 transition-colors"
+  const inputClasses =
+    "w-full rounded-lg border border-[#e3dfd5] bg-white px-4 py-2.5 text-[14px] text-[#261b07] placeholder:text-[#b5b0a5] outline-none focus:border-[#261b07]/30 focus:ring-1 focus:ring-[#261b07]/10 transition-colors";
+  const selectClasses =
+    "w-full rounded-lg border border-[#e3dfd5] bg-white px-3 py-2.5 text-[14px] text-[#261b07] outline-none focus:border-[#261b07]/30 focus:ring-1 focus:ring-[#261b07]/10 transition-colors";
 
   return (
     <div className="space-y-8">
       {/* Page header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-[22px] sm:text-[24px] font-bold tracking-[-0.5px] text-[#261b07]">Mosques</h1>
+          <h1 className="text-[22px] sm:text-[24px] font-bold tracking-[-0.5px] text-[#261b07]">
+            Mosques
+          </h1>
           <p className="text-[13px] sm:text-[14px] text-[#a09888] mt-0.5">
             Beheer alle moskeeën op het platform
           </p>
@@ -340,7 +389,10 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
           <DialogTrigger
             render={
               <button
-                onClick={() => { resetMosqueForm(); setAddMosqueOpen(true) }}
+                onClick={() => {
+                  resetMosqueForm();
+                  setAddMosqueOpen(true);
+                }}
                 className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-[#261b07] text-[13px] font-medium text-[#f8f7f5] hover:bg-[#3a2c14] transition-colors shadow-sm"
               >
                 <Plus className="h-3.5 w-3.5" />
@@ -354,13 +406,18 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
             </DialogHeader>
             <form onSubmit={handleAddMosque} className="space-y-4 mt-2">
               <div className="space-y-1.5">
-                <Label htmlFor="mosque-name" className="text-[13px] font-medium text-[#261b07]">Naam</Label>
+                <Label
+                  htmlFor="mosque-name"
+                  className="text-[13px] font-medium text-[#261b07]"
+                >
+                  Naam
+                </Label>
                 <input
                   id="mosque-name"
                   value={mosqueName}
                   onChange={(e) => {
-                    setMosqueName(e.target.value)
-                    setMosqueSlug(slugify(e.target.value))
+                    setMosqueName(e.target.value);
+                    setMosqueSlug(slugify(e.target.value));
                   }}
                   placeholder="Al-Hijra Moskee"
                   required
@@ -368,9 +425,16 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="mosque-slug" className="text-[13px] font-medium text-[#261b07]">Slug</Label>
+                <Label
+                  htmlFor="mosque-slug"
+                  className="text-[13px] font-medium text-[#261b07]"
+                >
+                  Slug
+                </Label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[14px] text-[#b5b0a5]">bunyan.nl/doneren/</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[14px] text-[#b5b0a5]">
+                    bunyan.nl/doneren/
+                  </span>
                   <input
                     id="mosque-slug"
                     value={mosqueSlug}
@@ -382,7 +446,12 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="mosque-city" className="text-[13px] font-medium text-[#261b07]">Stad</Label>
+                <Label
+                  htmlFor="mosque-city"
+                  className="text-[13px] font-medium text-[#261b07]"
+                >
+                  Stad
+                </Label>
                 <input
                   id="mosque-city"
                   value={mosqueCity}
@@ -405,7 +474,7 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
                   disabled={loading}
                   className="h-9 px-4 rounded-lg bg-[#261b07] text-[13px] font-medium text-[#f8f7f5] hover:bg-[#3a2c14] transition-colors disabled:opacity-50"
                 >
-                  {loading ? 'Aanmaken...' : 'Aanmaken'}
+                  {loading ? "Aanmaken..." : "Aanmaken"}
                 </button>
               </div>
             </form>
@@ -420,37 +489,55 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
             <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[#f3f1ec]">
               <Building2 className="h-3 w-3 text-[#8a8478]" strokeWidth={2} />
             </div>
-            <span className="text-[11px] font-medium text-[#a09888] uppercase tracking-wide">Moskeeën</span>
+            <span className="text-[11px] font-medium text-[#a09888] uppercase tracking-wide">
+              Moskeeën
+            </span>
           </div>
-          <p className="text-[20px] md:text-[22px] font-bold tracking-tight text-[#261b07]">{metrics.totalMosques}</p>
+          <p className="text-[20px] md:text-[22px] font-bold tracking-tight text-[#261b07]">
+            {metrics.totalMosques}
+          </p>
         </div>
         <div className="rounded-xl border border-[#e3dfd5] bg-white px-4 py-3 md:px-5 md:py-4">
           <div className="flex items-center gap-2 mb-1">
             <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[#f3f1ec]">
               <Users className="h-3 w-3 text-[#8a8478]" strokeWidth={2} />
             </div>
-            <span className="text-[11px] font-medium text-[#a09888] uppercase tracking-wide">Gebruikers</span>
+            <span className="text-[11px] font-medium text-[#a09888] uppercase tracking-wide">
+              Gebruikers
+            </span>
           </div>
-          <p className="text-[20px] md:text-[22px] font-bold tracking-tight text-[#261b07]">{metrics.totalUsers}</p>
+          <p className="text-[20px] md:text-[22px] font-bold tracking-tight text-[#261b07]">
+            {metrics.totalUsers}
+          </p>
         </div>
         <div className="rounded-xl border border-[#e3dfd5] bg-white px-4 py-3 md:px-5 md:py-4">
           <div className="flex items-center gap-2 mb-1">
             <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[#f3f1ec]">
               <Heart className="h-3 w-3 text-[#8a8478]" strokeWidth={2} />
             </div>
-            <span className="text-[11px] font-medium text-[#a09888] uppercase tracking-wide">Totale omzet</span>
+            <span className="text-[11px] font-medium text-[#a09888] uppercase tracking-wide">
+              Totale omzet
+            </span>
           </div>
-          <p className="text-[20px] md:text-[22px] font-bold tracking-tight text-[#261b07]">{formatEur(metrics.totalRevenue)}</p>
-          <p className="text-[11px] text-[#b5b0a5] mt-0.5">{metrics.totalDonations} donaties</p>
+          <p className="text-[20px] md:text-[22px] font-bold tracking-tight text-[#261b07]">
+            {formatEur(metrics.totalRevenue)}
+          </p>
+          <p className="text-[11px] text-[#b5b0a5] mt-0.5">
+            {metrics.totalDonations} donaties
+          </p>
         </div>
         <div className="rounded-xl border border-[#e3dfd5] bg-white px-4 py-3 md:px-5 md:py-4">
           <div className="flex items-center gap-2 mb-1">
             <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[#f3f1ec]">
               <TrendingUp className="h-3 w-3 text-[#8a8478]" strokeWidth={2} />
             </div>
-            <span className="text-[11px] font-medium text-[#a09888] uppercase tracking-wide">Deze maand</span>
+            <span className="text-[11px] font-medium text-[#a09888] uppercase tracking-wide">
+              Deze maand
+            </span>
           </div>
-          <p className="text-[20px] md:text-[22px] font-bold tracking-tight text-[#261b07]">{formatEur(metrics.monthlyRevenue)}</p>
+          <p className="text-[20px] md:text-[22px] font-bold tracking-tight text-[#261b07]">
+            {formatEur(metrics.monthlyRevenue)}
+          </p>
         </div>
       </div>
 
@@ -481,40 +568,49 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
               <Building2 className="h-7 w-7 text-[#a09888]" strokeWidth={1.5} />
             </div>
             <p className="text-[14px] font-medium text-[#261b07] mb-1">
-              {searchQuery ? 'Geen resultaten' : 'Nog geen moskeeën'}
+              {searchQuery ? "Geen resultaten" : "Nog geen moskeeën"}
             </p>
             <p className="text-[13px] text-[#a09888]">
-              {searchQuery ? 'Probeer een andere zoekopdracht.' : 'Voeg een moskee toe om te beginnen.'}
+              {searchQuery
+                ? "Probeer een andere zoekopdracht."
+                : "Voeg een moskee toe om te beginnen."}
             </p>
           </div>
         )}
 
         {filteredMosques.map((mosque) => {
-          const isExpanded = expandedMosqueId === mosque.id
-          const planStyle = PLAN_STYLES[mosque.plan] ?? PLAN_STYLES.free
+          const isExpanded = expandedMosqueId === mosque.id;
+          const planStyle = PLAN_STYLES[mosque.plan] ?? PLAN_STYLES.free;
 
           return (
             <div key={mosque.id}>
               {/* Mosque row */}
               <div
                 className={`group flex items-center gap-3 md:gap-4 px-4 md:px-5 py-3.5 md:py-4 transition-colors cursor-pointer ${
-                  isExpanded ? 'bg-[#fafaf8]' : 'hover:bg-[#fdfcfb]'
+                  isExpanded ? "bg-[#fafaf8]" : "hover:bg-[#fdfcfb]"
                 }`}
                 onClick={() => toggleExpanded(mosque.id)}
               >
                 {/* Avatar */}
                 <div className="flex h-9 w-9 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-full bg-[#f3f1ec] border border-[#e3dfd5]">
-                  <Building2 className="h-4 w-4 text-[#8a8478]" strokeWidth={1.5} />
+                  <Building2
+                    className="h-4 w-4 text-[#8a8478]"
+                    strokeWidth={1.5}
+                  />
                 </div>
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-[13px] md:text-[14px] font-semibold text-[#261b07] truncate">{mosque.name}</span>
+                    <span className="text-[13px] md:text-[14px] font-semibold text-[#261b07] truncate">
+                      {mosque.name}
+                    </span>
                     <button
                       onClick={(e) => {
-                        e.stopPropagation()
-                        navigator.clipboard.writeText(`bunyan.nl/doneren/${mosque.slug}`)
+                        e.stopPropagation();
+                        navigator.clipboard.writeText(
+                          `bunyan.nl/doneren/${mosque.slug}`,
+                        );
                       }}
                       className="hidden md:inline-block opacity-0 group-hover:opacity-100 transition-opacity"
                       title="Kopieer URL"
@@ -529,24 +625,42 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
                         {mosque.city}
                       </span>
                     )}
-                    <span className="hidden md:inline text-[12px] text-[#e3dfd5]">&middot;</span>
-                    <span className="hidden md:inline text-[12px] text-[#a09888]">/doneren/{mosque.slug}</span>
-                    <span className="text-[11px] md:text-[12px] text-[#e3dfd5]">&middot;</span>
-                    <span className="text-[11px] md:text-[12px] text-[#a09888]">{timeAgo(mosque.created_at)}</span>
+                    <span className="hidden md:inline text-[12px] text-[#e3dfd5]">
+                      &middot;
+                    </span>
+                    <span className="hidden md:inline text-[12px] text-[#a09888]">
+                      /doneren/{mosque.slug}
+                    </span>
+                    <span className="text-[11px] md:text-[12px] text-[#e3dfd5]">
+                      &middot;
+                    </span>
+                    <span className="text-[11px] md:text-[12px] text-[#a09888]">
+                      {timeAgo(mosque.created_at)}
+                    </span>
                   </div>
                   {/* Mobile badges */}
                   <div className="flex items-center gap-1.5 mt-1.5 md:hidden">
-                    {mosque.status !== 'active' && (() => {
-                      const statusStyle = STATUS_STYLES[mosque.status] ?? STATUS_STYLES.pending
-                      return (
-                        <div className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusStyle.bg} ${statusStyle.text}`}>
-                          <div className={`h-1.5 w-1.5 rounded-full ${statusStyle.dot}`} />
-                          {statusStyle.label}
-                        </div>
-                      )
-                    })()}
-                    <div className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${planStyle.bg} ${planStyle.text}`}>
-                      <div className={`h-1.5 w-1.5 rounded-full ${planStyle.dot}`} />
+                    {mosque.status !== "active" &&
+                      (() => {
+                        const statusStyle =
+                          STATUS_STYLES[mosque.status] ?? STATUS_STYLES.pending;
+                        return (
+                          <div
+                            className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusStyle.bg} ${statusStyle.text}`}
+                          >
+                            <div
+                              className={`h-1.5 w-1.5 rounded-full ${statusStyle.dot}`}
+                            />
+                            {statusStyle.label}
+                          </div>
+                        );
+                      })()}
+                    <div
+                      className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${planStyle.bg} ${planStyle.text}`}
+                    >
+                      <div
+                        className={`h-1.5 w-1.5 rounded-full ${planStyle.dot}`}
+                      />
                       {mosque.plan}
                     </div>
                   </div>
@@ -562,27 +676,44 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
 
                   {/* Status badge (desktop) */}
                   <div className="hidden md:block">
-                    {mosque.status !== 'active' && (() => {
-                      const statusStyle = STATUS_STYLES[mosque.status] ?? STATUS_STYLES.pending
-                      return (
-                        <div className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusStyle.bg} ${statusStyle.text}`}>
-                          <div className={`h-1.5 w-1.5 rounded-full ${statusStyle.dot}`} />
-                          {statusStyle.label}
-                        </div>
-                      )
-                    })()}
+                    {mosque.status !== "active" &&
+                      (() => {
+                        const statusStyle =
+                          STATUS_STYLES[mosque.status] ?? STATUS_STYLES.pending;
+                        return (
+                          <div
+                            className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusStyle.bg} ${statusStyle.text}`}
+                          >
+                            <div
+                              className={`h-1.5 w-1.5 rounded-full ${statusStyle.dot}`}
+                            />
+                            {statusStyle.label}
+                          </div>
+                        );
+                      })()}
                   </div>
 
                   {/* Plan badge (desktop) */}
-                  <div className={`hidden md:flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${planStyle.bg} ${planStyle.text}`}>
-                    <div className={`h-1.5 w-1.5 rounded-full ${planStyle.dot}`} />
+                  <div
+                    className={`hidden md:flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${planStyle.bg} ${planStyle.text}`}
+                  >
+                    <div
+                      className={`h-1.5 w-1.5 rounded-full ${planStyle.dot}`}
+                    />
                     {mosque.plan}
                   </div>
 
                   {/* Actions dropdown - always visible on mobile */}
-                  <div className="relative" onClick={(e) => e.stopPropagation()}>
+                  <div
+                    className="relative"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <button
-                      onClick={() => setActionMenuId(actionMenuId === mosque.id ? null : mosque.id)}
+                      onClick={() =>
+                        setActionMenuId(
+                          actionMenuId === mosque.id ? null : mosque.id,
+                        )
+                      }
                       className="flex h-8 w-8 items-center justify-center rounded-lg text-[#b5b0a5] md:opacity-0 md:group-hover:opacity-100 hover:bg-[#f3f1ec] hover:text-[#261b07] transition-all"
                     >
                       <MoreVertical className="h-4 w-4" />
@@ -590,14 +721,17 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
 
                     {actionMenuId === mosque.id && (
                       <>
-                        <div className="fixed inset-0 z-10" onClick={() => setActionMenuId(null)} />
+                        <div
+                          className="fixed inset-0 z-10"
+                          onClick={() => setActionMenuId(null)}
+                        />
                         <div className="absolute right-0 top-full mt-1 z-20 w-48 rounded-xl border border-[#e3dfd5] bg-white py-1 shadow-lg shadow-black/[0.08]">
-                          {mosque.status === 'pending' && (
+                          {mosque.status === "pending" && (
                             <>
                               <button
                                 onClick={() => {
-                                  handleStatusChange(mosque.id, 'active')
-                                  setActionMenuId(null)
+                                  handleStatusChange(mosque.id, "active");
+                                  setActionMenuId(null);
                                 }}
                                 disabled={loading}
                                 className="flex w-full items-center gap-2.5 px-3.5 py-2 text-[13px] text-emerald-600 hover:bg-emerald-50 transition-colors font-medium"
@@ -607,8 +741,8 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
                               </button>
                               <button
                                 onClick={() => {
-                                  handleStatusChange(mosque.id, 'rejected')
-                                  setActionMenuId(null)
+                                  handleStatusChange(mosque.id, "rejected");
+                                  setActionMenuId(null);
                                 }}
                                 disabled={loading}
                                 className="flex w-full items-center gap-2.5 px-3.5 py-2 text-[13px] text-red-500 hover:bg-red-50 transition-colors"
@@ -619,12 +753,12 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
                               <div className="my-1 border-t border-[#f0ede8]" />
                             </>
                           )}
-                          {mosque.status === 'rejected' && (
+                          {mosque.status === "rejected" && (
                             <>
                               <button
                                 onClick={() => {
-                                  handleStatusChange(mosque.id, 'active')
-                                  setActionMenuId(null)
+                                  handleStatusChange(mosque.id, "active");
+                                  setActionMenuId(null);
                                 }}
                                 disabled={loading}
                                 className="flex w-full items-center gap-2.5 px-3.5 py-2 text-[13px] text-emerald-600 hover:bg-emerald-50 transition-colors font-medium"
@@ -637,8 +771,8 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
                           )}
                           <button
                             onClick={() => {
-                              window.open(`/doneren/${mosque.slug}`, '_blank')
-                              setActionMenuId(null)
+                              window.open(`/doneren/${mosque.slug}`, "_blank");
+                              setActionMenuId(null);
                             }}
                             className="flex w-full items-center gap-2.5 px-3.5 py-2 text-[13px] text-[#8a8478] hover:bg-[#faf9f7] hover:text-[#261b07] transition-colors"
                           >
@@ -647,20 +781,22 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
                           </button>
                           <div className="my-1 border-t border-[#f0ede8]" />
                           <div className="px-3.5 py-1.5">
-                            <p className="text-[10px] font-medium text-[#b5b0a5] uppercase tracking-wide mb-1">Plan wijzigen</p>
+                            <p className="text-[10px] font-medium text-[#b5b0a5] uppercase tracking-wide mb-1">
+                              Plan wijzigen
+                            </p>
                             <div className="flex gap-1">
-                              {['free', 'starter', 'growth'].map((plan) => (
+                              {["free", "starter", "compleet"].map((plan) => (
                                 <button
                                   key={plan}
                                   onClick={() => {
-                                    handlePlanChange(mosque.id, plan)
-                                    setActionMenuId(null)
+                                    handlePlanChange(mosque.id, plan);
+                                    setActionMenuId(null);
                                   }}
                                   disabled={loading}
                                   className={`flex-1 rounded-md px-2 py-1 text-[11px] font-medium capitalize transition-colors ${
                                     mosque.plan === plan
-                                      ? 'bg-[#261b07] text-white'
-                                      : 'bg-[#f3f1ec] text-[#8a8478] hover:bg-[#e3dfd5]'
+                                      ? "bg-[#261b07] text-white"
+                                      : "bg-[#f3f1ec] text-[#8a8478] hover:bg-[#e3dfd5]"
                                   }`}
                                 >
                                   {plan}
@@ -671,8 +807,8 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
                           <div className="my-1 border-t border-[#f0ede8]" />
                           <button
                             onClick={() => {
-                              handleDeleteMosque(mosque.id, mosque.name)
-                              setActionMenuId(null)
+                              handleDeleteMosque(mosque.id, mosque.name);
+                              setActionMenuId(null);
                             }}
                             disabled={loading}
                             className="flex w-full items-center gap-2.5 px-3.5 py-2 text-[13px] text-red-500 hover:bg-red-50 transition-colors"
@@ -686,7 +822,9 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
                   </div>
 
                   {/* Expand chevron */}
-                  <ChevronRight className={`h-4 w-4 text-[#b5b0a5] transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                  <ChevronRight
+                    className={`h-4 w-4 text-[#b5b0a5] transition-transform ${isExpanded ? "rotate-90" : ""}`}
+                  />
                 </div>
               </div>
 
@@ -707,10 +845,10 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
                       open={addUserMosqueId === mosque.id}
                       onOpenChange={(open) => {
                         if (open) {
-                          resetUserForm()
-                          setAddUserMosqueId(mosque.id)
+                          resetUserForm();
+                          setAddUserMosqueId(mosque.id);
                         } else {
-                          setAddUserMosqueId(null)
+                          setAddUserMosqueId(null);
                         }
                       }}
                     >
@@ -733,7 +871,10 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
                           className="space-y-4 mt-2"
                         >
                           <div className="space-y-1.5">
-                            <Label htmlFor={`user-email-${mosque.id}`} className="text-[13px] font-medium text-[#261b07]">
+                            <Label
+                              htmlFor={`user-email-${mosque.id}`}
+                              className="text-[13px] font-medium text-[#261b07]"
+                            >
                               Email
                             </Label>
                             <input
@@ -747,7 +888,10 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
                             />
                           </div>
                           <div className="space-y-1.5">
-                            <Label htmlFor={`user-name-${mosque.id}`} className="text-[13px] font-medium text-[#261b07]">
+                            <Label
+                              htmlFor={`user-name-${mosque.id}`}
+                              className="text-[13px] font-medium text-[#261b07]"
+                            >
                               Naam
                             </Label>
                             <input
@@ -760,7 +904,10 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
                             />
                           </div>
                           <div className="space-y-1.5">
-                            <Label htmlFor={`user-role-${mosque.id}`} className="text-[13px] font-medium text-[#261b07]">
+                            <Label
+                              htmlFor={`user-role-${mosque.id}`}
+                              className="text-[13px] font-medium text-[#261b07]"
+                            >
                               Rol
                             </Label>
                             <select
@@ -786,7 +933,7 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
                               disabled={loading}
                               className="h-9 px-4 rounded-lg bg-[#261b07] text-[13px] font-medium text-[#f8f7f5] hover:bg-[#3a2c14] transition-colors disabled:opacity-50"
                             >
-                              {loading ? 'Toevoegen...' : 'Toevoegen'}
+                              {loading ? "Toevoegen..." : "Toevoegen"}
                             </button>
                           </div>
                         </form>
@@ -806,28 +953,34 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
                         <div
                           key={user.id}
                           className={`group/user flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-lg px-3 py-2.5 text-[13px] transition-colors gap-2 sm:gap-0 ${
-                            user.banned
-                              ? 'bg-red-50/80'
-                              : 'hover:bg-white'
+                            user.banned ? "bg-red-50/80" : "hover:bg-white"
                           }`}
                         >
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${
-                              user.banned
-                                ? 'bg-red-100 text-red-600'
-                                : 'bg-[#261b07] text-white'
-                            }`}>
-                              {user.name?.charAt(0)?.toUpperCase() ?? '?'}
+                            <div
+                              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${
+                                user.banned
+                                  ? "bg-red-100 text-red-600"
+                                  : "bg-[#261b07] text-white"
+                              }`}
+                            >
+                              {user.name?.charAt(0)?.toUpperCase() ?? "?"}
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-medium text-[#261b07] truncate">{user.name}</span>
-                                <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-medium ${
-                                  user.role === 'admin'
-                                    ? 'bg-[#f3f1ec] text-[#8a8478]'
-                                    : 'bg-[#f3f1ec] text-[#b5b0a5]'
-                                }`}>
-                                  {user.role === 'admin' ? 'Beheerder' : 'Viewer'}
+                                <span className="font-medium text-[#261b07] truncate">
+                                  {user.name}
+                                </span>
+                                <span
+                                  className={`rounded-md px-1.5 py-0.5 text-[10px] font-medium ${
+                                    user.role === "admin"
+                                      ? "bg-[#f3f1ec] text-[#8a8478]"
+                                      : "bg-[#f3f1ec] text-[#b5b0a5]"
+                                  }`}
+                                >
+                                  {user.role === "admin"
+                                    ? "Beheerder"
+                                    : "Viewer"}
                                 </span>
                                 {user.banned && (
                                   <span className="rounded-md bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-600">
@@ -835,14 +988,22 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
                                   </span>
                                 )}
                               </div>
-                              <span className="text-[12px] text-[#a09888] truncate block">{user.email}</span>
+                              <span className="text-[12px] text-[#a09888] truncate block">
+                                {user.email}
+                              </span>
                             </div>
                           </div>
 
                           <div className="flex items-center gap-0.5 sm:opacity-0 sm:group-hover/user:opacity-100 transition-opacity ml-11 sm:ml-0 shrink-0">
                             <select
                               value={user.role}
-                              onChange={(e) => handleRoleChange(mosque.id, user.id, e.target.value)}
+                              onChange={(e) =>
+                                handleRoleChange(
+                                  mosque.id,
+                                  user.id,
+                                  e.target.value,
+                                )
+                              }
                               onClick={(e) => e.stopPropagation()}
                               disabled={loading}
                               className="h-7 rounded-md border border-[#e3dfd5] bg-white px-1.5 text-[11px] font-medium text-[#261b07] transition-colors focus:border-[#261b07]/30 focus:outline-none"
@@ -859,19 +1020,27 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
                               <KeyRound className="h-3 w-3" />
                             </button>
                             <button
-                              onClick={() => handleToggleBan(user.id, user.name, user.banned)}
+                              onClick={() =>
+                                handleToggleBan(user.id, user.name, user.banned)
+                              }
                               disabled={loading}
-                              title={user.banned ? 'Deblokkeren' : 'Blokkeren'}
+                              title={user.banned ? "Deblokkeren" : "Blokkeren"}
                               className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors ${
                                 user.banned
-                                  ? 'text-[#4a7c10] hover:bg-[#e8f0d4]'
-                                  : 'text-[#a09888] hover:bg-red-50 hover:text-red-500'
+                                  ? "text-[#4a7c10] hover:bg-[#e8f0d4]"
+                                  : "text-[#a09888] hover:bg-red-50 hover:text-red-500"
                               }`}
                             >
-                              {user.banned ? <ShieldCheck className="h-3 w-3" /> : <Ban className="h-3 w-3" />}
+                              {user.banned ? (
+                                <ShieldCheck className="h-3 w-3" />
+                              ) : (
+                                <Ban className="h-3 w-3" />
+                              )}
                             </button>
                             <button
-                              onClick={() => handleRemoveUser(mosque.id, user.id, user.name)}
+                              onClick={() =>
+                                handleRemoveUser(mosque.id, user.id, user.name)
+                              }
                               disabled={loading}
                               title="Verwijderen"
                               className="flex h-7 w-7 items-center justify-center rounded-md text-[#a09888] hover:bg-red-50 hover:text-red-500 transition-colors"
@@ -886,17 +1055,17 @@ export function AdminDashboard({ mosques, metrics }: { mosques: Mosque[]; metric
                 </div>
               )}
             </div>
-          )
+          );
         })}
 
         {/* Footer */}
         {filteredMosques.length > 0 && (
           <div className="px-5 py-3 text-[12px] text-[#b5b0a5] bg-[#fafaf8]">
-            {filteredMosques.length} moskee{filteredMosques.length !== 1 ? 'ën' : ''}
+            {filteredMosques.length} moskee
+            {filteredMosques.length !== 1 ? "ën" : ""}
           </div>
         )}
       </div>
-
     </div>
-  )
+  );
 }
