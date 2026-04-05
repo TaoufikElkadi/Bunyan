@@ -88,10 +88,10 @@ export default async function LedenPage({
       <div className="space-y-6">
         <div>
           <h1 className="text-[28px] font-bold tracking-[-0.5px] text-[#261b07]">
-            Leden
+            Dragers
           </h1>
           <p className="text-[14px] text-[#8a8478] mt-1">
-            Ledenintelligentie en gemeenschapsinzichten
+            Dragersintelligentie en gemeenschapsinzichten
           </p>
         </div>
         <div className="rounded-xl border border-[#e3dfd5] bg-white">
@@ -103,7 +103,7 @@ export default async function LedenPage({
               Upgrade vereist
             </h3>
             <p className="text-[13px] text-[#a09888] text-center max-w-sm leading-relaxed">
-              Ledenintelligentie is beschikbaar vanaf het Starter-abonnement.
+              Dragersintelligentie is beschikbaar vanaf het Starter-abonnement.
               Upgrade om inzichten in uw gemeenschap te krijgen.
             </p>
           </div>
@@ -260,7 +260,7 @@ export default async function LedenPage({
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-[28px] font-bold tracking-[-0.5px] text-[#261b07]">
-            Leden
+            Dragers
           </h1>
           <p className="text-[14px] text-[#8a8478] mt-1">
             Overzicht van uw gemeenschap en donateurs

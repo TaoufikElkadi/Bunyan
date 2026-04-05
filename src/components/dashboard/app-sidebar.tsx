@@ -61,9 +61,9 @@ const NAV_SECTIONS: NavSection[] = [
     label: "BEHEER",
     items: [
       { title: "Donaties", href: "/donaties", icon: HandCoins },
-      { title: "Collecte", href: "/collecte", icon: Banknote },
+      { title: "Inzameling", href: "/collecte", icon: Banknote },
       { title: "Contributie", href: "/contributie", icon: Wallet },
-      { title: "Leden", href: "/leden", icon: Users },
+      { title: "Dragers", href: "/leden", icon: Users },
       { title: "Fondsen", href: "/fondsen", icon: Landmark },
     ],
   },
@@ -101,7 +101,13 @@ const NAV_SECTIONS: NavSection[] = [
 
 function RoleBadge({ role }: { role: string }) {
   const label =
-    role === "admin" ? "Admin" : role === "viewer" ? "Viewer" : "Lid";
+    role === "admin"
+      ? "Beheerder"
+      : role === "treasurer"
+        ? "Penningmeester"
+        : role === "viewer"
+          ? "Alleen lezen"
+          : "Lid";
   return (
     <span className="inline-flex items-center rounded-full bg-[#f9a600]/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#261b07]/60">
       {label}

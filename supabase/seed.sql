@@ -70,6 +70,6 @@ VALUES (
 -- Funds for An-Nasr
 INSERT INTO funds (id, mosque_id, name, sort_order)
 VALUES
-  (gen_random_uuid(), (SELECT id FROM mosques WHERE slug = 'an-nasr'), 'Algemeen', 0),
-  (gen_random_uuid(), (SELECT id FROM mosques WHERE slug = 'an-nasr'), 'Moskee',   1),
-  (gen_random_uuid(), (SELECT id FROM mosques WHERE slug = 'an-nasr'), 'Zakat',    2);
+  (gen_random_uuid(), (SELECT id FROM mosques WHERE slug = 'an-nasr'), 'Algemeen',      0),
+  (gen_random_uuid(), (SELECT id FROM mosques WHERE slug = 'an-nasr'), 'Zakat Al-Mal',  1),
+  (gen_random_uuid(), (SELECT id FROM mosques WHERE slug = 'an-nasr'), 'Zakat Al-Fitr', 2);

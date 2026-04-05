@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import { useState, useRef, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import { SidebarTrigger } from '@/components/ui/sidebar'
-import { formatMoney } from '@/lib/money'
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { formatMoney } from "@/lib/money";
 import {
   Search,
   Bell,
@@ -17,244 +17,278 @@ import {
   Megaphone,
   FileText,
   Loader2,
-} from 'lucide-react'
+} from "lucide-react";
 
 interface DashboardHeaderProps {
-  user: { name: string; role: string }
-  mosque: { name: string }
+  user: { name: string; role: string };
+  mosque: { name: string };
 }
 
 type PageResult = {
-  type: 'page'
-  label: string
-  href: string
-}
+  type: "page";
+  label: string;
+  href: string;
+};
 
 type DonorResult = {
-  type: 'donor'
-  id: string
-  name: string | null
-  email: string | null
-  total_donated: number
-}
+  type: "donor";
+  id: string;
+  name: string | null;
+  email: string | null;
+  total_donated: number;
+};
 
 type FundResult = {
-  type: 'fund'
-  id: string
-  name: string
-  is_active: boolean
-}
+  type: "fund";
+  id: string;
+  name: string;
+  is_active: boolean;
+};
 
 type CampaignResult = {
-  type: 'campaign'
-  id: string
-  title: string
-  slug: string
-  is_active: boolean
-}
+  type: "campaign";
+  id: string;
+  title: string;
+  slug: string;
+  is_active: boolean;
+};
 
-type SearchItem = PageResult | DonorResult | FundResult | CampaignResult
+type SearchItem = PageResult | DonorResult | FundResult | CampaignResult;
 
 const NAV_ITEMS: PageResult[] = [
-  { type: 'page', label: 'Dashboard', href: '/dashboard' },
-  { type: 'page', label: 'Donaties', href: '/donaties' },
-  { type: 'page', label: 'Donateurs', href: '/leden' },
-  { type: 'page', label: 'Leden', href: '/leden' },
-  { type: 'page', label: 'Fondsen', href: '/fondsen' },
-  { type: 'page', label: 'Campagnes', href: '/campagnes' },
-  { type: 'page', label: 'Collecte', href: '/collecte' },
-  { type: 'page', label: 'Contributie', href: '/contributie' },
-  { type: 'page', label: 'ANBI', href: '/anbi' },
-  { type: 'page', label: 'Giftenverklaring', href: '/anbi' },
-  { type: 'page', label: 'QR Codes', href: '/qr' },
-  { type: 'page', label: 'Instellingen', href: '/instellingen' },
-  { type: 'page', label: 'Team beheren', href: '/instellingen' },
-  { type: 'page', label: 'Activiteitenlog', href: '/audit' },
-]
+  { type: "page", label: "Dashboard", href: "/dashboard" },
+  { type: "page", label: "Donaties", href: "/donaties" },
+  { type: "page", label: "Donateurs", href: "/leden" },
+  { type: "page", label: "Dragers", href: "/leden" },
+  { type: "page", label: "Fondsen", href: "/fondsen" },
+  { type: "page", label: "Campagnes", href: "/campagnes" },
+  { type: "page", label: "Inzameling", href: "/collecte" },
+  { type: "page", label: "Contributie", href: "/contributie" },
+  { type: "page", label: "ANBI", href: "/anbi" },
+  { type: "page", label: "Giftenverklaring", href: "/anbi" },
+  { type: "page", label: "QR Codes", href: "/qr" },
+  { type: "page", label: "Instellingen", href: "/instellingen" },
+  { type: "page", label: "Team beheren", href: "/instellingen" },
+  { type: "page", label: "Activiteitenlog", href: "/audit" },
+];
 
 interface SearchResults {
-  donors: Array<{ id: string; name: string | null; email: string | null; total_donated: number }>
-  funds: Array<{ id: string; name: string; is_active: boolean }>
-  campaigns: Array<{ id: string; title: string; slug: string; is_active: boolean }>
+  donors: Array<{
+    id: string;
+    name: string | null;
+    email: string | null;
+    total_donated: number;
+  }>;
+  funds: Array<{ id: string; name: string; is_active: boolean }>;
+  campaigns: Array<{
+    id: string;
+    title: string;
+    slug: string;
+    is_active: boolean;
+  }>;
 }
 
 function getHref(item: SearchItem): string {
   switch (item.type) {
-    case 'page':
-      return item.href
-    case 'donor':
-      return `/leden/${item.id}`
-    case 'fund':
-      return '/fondsen'
-    case 'campaign':
-      return '/campagnes'
+    case "page":
+      return item.href;
+    case "donor":
+      return `/leden/${item.id}`;
+    case "fund":
+      return "/fondsen";
+    case "campaign":
+      return "/campagnes";
   }
 }
 
 export function DashboardHeader({ user, mosque }: DashboardHeaderProps) {
-  const router = useRouter()
-  const supabase = createClient()
-  const [dropdownOpen, setDropdownOpen] = useState(false)
-  const [searchOpen, setSearchOpen] = useState(false)
-  const [query, setQuery] = useState('')
-  const [selectedIndex, setSelectedIndex] = useState(0)
-  const [loading, setLoading] = useState(false)
-  const [apiResults, setApiResults] = useState<SearchResults | null>(null)
-  const dropdownRef = useRef<HTMLDivElement>(null)
-  const searchInputRef = useRef<HTMLInputElement>(null)
-  const searchContainerRef = useRef<HTMLDivElement>(null)
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const abortRef = useRef<AbortController | null>(null)
+  const router = useRouter();
+  const supabase = createClient();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [apiResults, setApiResults] = useState<SearchResults | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const initials = user.name
-    .split(' ')
+    .split(" ")
     .map((w) => w[0])
     .slice(0, 2)
-    .join('')
-    .toUpperCase()
+    .join("")
+    .toUpperCase();
 
   // Build flat list of all results for keyboard navigation
-  const trimmed = query.trim().toLowerCase()
+  const trimmed = query.trim().toLowerCase();
 
   const pageResults: PageResult[] =
     trimmed.length > 0
-      ? NAV_ITEMS.filter((item) => item.label.toLowerCase().includes(trimmed)).slice(0, 5)
-      : []
+      ? NAV_ITEMS.filter((item) =>
+          item.label.toLowerCase().includes(trimmed),
+        ).slice(0, 5)
+      : [];
 
-  const donorItems: DonorResult[] = (apiResults?.donors ?? []).map((d) => ({ type: 'donor' as const, ...d }))
-  const fundItems: FundResult[] = (apiResults?.funds ?? []).map((f) => ({ type: 'fund' as const, ...f }))
-  const campaignItems: CampaignResult[] = (apiResults?.campaigns ?? []).map((c) => ({ type: 'campaign' as const, ...c }))
+  const donorItems: DonorResult[] = (apiResults?.donors ?? []).map((d) => ({
+    type: "donor" as const,
+    ...d,
+  }));
+  const fundItems: FundResult[] = (apiResults?.funds ?? []).map((f) => ({
+    type: "fund" as const,
+    ...f,
+  }));
+  const campaignItems: CampaignResult[] = (apiResults?.campaigns ?? []).map(
+    (c) => ({ type: "campaign" as const, ...c }),
+  );
 
   // Group order: Donateurs, Fondsen, Campagnes, Pagina's
-  const allResults: SearchItem[] = [...donorItems, ...fundItems, ...campaignItems, ...pageResults]
-  const hasResults = allResults.length > 0
+  const allResults: SearchItem[] = [
+    ...donorItems,
+    ...fundItems,
+    ...campaignItems,
+    ...pageResults,
+  ];
+  const hasResults = allResults.length > 0;
 
   // Fetch search results with debounce
   useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (debounceRef.current) clearTimeout(debounceRef.current);
 
     if (trimmed.length < 2) {
-      if (abortRef.current) abortRef.current.abort()
-      setApiResults(null)
-      setLoading(false)
-      return
+      if (abortRef.current) abortRef.current.abort();
+      setApiResults(null);
+      setLoading(false);
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
 
     debounceRef.current = setTimeout(async () => {
       // Abort any in-flight request before starting a new one
-      if (abortRef.current) abortRef.current.abort()
-      const controller = new AbortController()
-      abortRef.current = controller
+      if (abortRef.current) abortRef.current.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
 
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(trimmed)}`, {
-          signal: controller.signal,
-        })
+        const res = await fetch(
+          `/api/search?q=${encodeURIComponent(trimmed)}`,
+          {
+            signal: controller.signal,
+          },
+        );
         if (!controller.signal.aborted && res.ok) {
-          const data: SearchResults = await res.json()
-          setApiResults(data)
+          const data: SearchResults = await res.json();
+          setApiResults(data);
         }
       } catch (e: unknown) {
-        if (e instanceof DOMException && e.name === 'AbortError') return
+        if (e instanceof DOMException && e.name === "AbortError") return;
       } finally {
         if (!controller.signal.aborted) {
-          setLoading(false)
+          setLoading(false);
         }
       }
-    }, 300)
+    }, 300);
 
     return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current)
-    }
-  }, [trimmed])
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [trimmed]);
 
   function openSearch() {
-    setSearchOpen(true)
-    setQuery('')
-    setApiResults(null)
-    setSelectedIndex(0)
-    setTimeout(() => searchInputRef.current?.focus(), 0)
+    setSearchOpen(true);
+    setQuery("");
+    setApiResults(null);
+    setSelectedIndex(0);
+    setTimeout(() => searchInputRef.current?.focus(), 0);
   }
 
   function closeSearch() {
-    setSearchOpen(false)
-    setQuery('')
-    setApiResults(null)
-    if (abortRef.current) abortRef.current.abort()
+    setSearchOpen(false);
+    setQuery("");
+    setApiResults(null);
+    if (abortRef.current) abortRef.current.abort();
   }
 
   function navigate(href: string) {
-    closeSearch()
-    router.push(href)
+    closeSearch();
+    router.push(href);
   }
 
   const handleSearchKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        closeSearch()
-      } else if (e.key === 'ArrowDown') {
-        e.preventDefault()
-        setSelectedIndex((i) => Math.min(i + 1, allResults.length - 1))
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault()
-        setSelectedIndex((i) => Math.max(i - 1, 0))
-      } else if (e.key === 'Enter' && allResults[selectedIndex]) {
-        navigate(getHref(allResults[selectedIndex]))
+      if (e.key === "Escape") {
+        closeSearch();
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSelectedIndex((i) => Math.min(i + 1, allResults.length - 1));
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSelectedIndex((i) => Math.max(i - 1, 0));
+      } else if (e.key === "Enter" && allResults[selectedIndex]) {
+        navigate(getHref(allResults[selectedIndex]));
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [allResults, selectedIndex],
-  )
+  );
 
   async function handleSignOut() {
-    await supabase.auth.signOut()
-    router.push('/login')
-    router.refresh()
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
   }
 
   // Cmd+K shortcut
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault()
-        if (searchOpen) closeSearch()
-        else openSearch()
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        if (searchOpen) closeSearch();
+        else openSearch();
       }
     }
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [searchOpen])
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [searchOpen]);
 
   // Close dropdown on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false)
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
+        setDropdownOpen(false);
       }
     }
     if (dropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener("mousedown", handleClickOutside);
     }
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [dropdownOpen])
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [dropdownOpen]);
 
   // Close search on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
-        closeSearch()
+      if (
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(e.target as Node)
+      ) {
+        closeSearch();
       }
     }
     if (searchOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener("mousedown", handleClickOutside);
     }
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [searchOpen])
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [searchOpen]);
 
   // Track the flat index so we can render group headers properly
-  let flatIndex = 0
+  let flatIndex = 0;
 
   function renderGroup<T extends SearchItem>(
     items: T[],
@@ -262,9 +296,9 @@ export function DashboardHeader({ user, mosque }: DashboardHeaderProps) {
     Icon: React.ComponentType<{ className?: string; strokeWidth?: number }>,
     renderItem: (item: T, idx: number) => React.ReactNode,
   ) {
-    if (items.length === 0) return null
-    const startIndex = flatIndex
-    flatIndex += items.length
+    if (items.length === 0) return null;
+    const startIndex = flatIndex;
+    flatIndex += items.length;
     return (
       <div key={label}>
         <div className="flex items-center gap-2 px-3 pt-2 pb-1">
@@ -275,7 +309,7 @@ export function DashboardHeader({ user, mosque }: DashboardHeaderProps) {
         </div>
         {items.map((item, i) => renderItem(item, startIndex + i))}
       </div>
-    )
+    );
   }
 
   return (
@@ -283,7 +317,10 @@ export function DashboardHeader({ user, mosque }: DashboardHeaderProps) {
       <SidebarTrigger />
 
       {/* Search */}
-      <div className="relative max-w-md flex-shrink-0 w-full sm:w-80" ref={searchContainerRef}>
+      <div
+        className="relative max-w-md flex-shrink-0 w-full sm:w-80"
+        ref={searchContainerRef}
+      >
         {!searchOpen ? (
           <button
             onClick={openSearch}
@@ -308,8 +345,8 @@ export function DashboardHeader({ user, mosque }: DashboardHeaderProps) {
                 type="text"
                 value={query}
                 onChange={(e) => {
-                  setQuery(e.target.value)
-                  setSelectedIndex(0)
+                  setQuery(e.target.value);
+                  setSelectedIndex(0);
                 }}
                 onKeyDown={handleSearchKeyDown}
                 placeholder="Zoek donateurs, fondsen, campagnes..."
@@ -328,93 +365,124 @@ export function DashboardHeader({ user, mosque }: DashboardHeaderProps) {
                 {hasResults ? (
                   <div className="p-1">
                     {/* Reset flat index for each render */}
-                    {(() => { flatIndex = 0; return null })()}
+                    {(() => {
+                      flatIndex = 0;
+                      return null;
+                    })()}
 
-                    {renderGroup(donorItems, 'Donateurs', Users, (item, idx) => (
-                      <button
-                        key={item.id}
-                        onClick={() => navigate(`/leden/${item.id}`)}
-                        onMouseEnter={() => setSelectedIndex(idx)}
-                        className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors ${
-                          idx === selectedIndex
-                            ? 'bg-[#f3f1ec] text-[#261b07]'
-                            : 'text-[#8a8478] hover:bg-[#f3f1ec] hover:text-[#261b07]'
-                        }`}
-                      >
-                        <div className="flex flex-col items-start min-w-0">
-                          <span className="font-medium truncate">{item.name ?? 'Anoniem'}</span>
-                          {item.email && (
-                            <span className="text-[11px] text-[#b5b0a5] truncate">{item.email}</span>
-                          )}
-                        </div>
-                        <span className="text-[11px] text-[#b5b0a5] shrink-0 ml-3">
-                          {formatMoney(item.total_donated)}
-                        </span>
-                      </button>
-                    ))}
-
-                    {renderGroup(fundItems, 'Fondsen', Landmark, (item, idx) => (
-                      <button
-                        key={item.id}
-                        onClick={() => navigate('/fondsen')}
-                        onMouseEnter={() => setSelectedIndex(idx)}
-                        className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors ${
-                          idx === selectedIndex
-                            ? 'bg-[#f3f1ec] text-[#261b07]'
-                            : 'text-[#8a8478] hover:bg-[#f3f1ec] hover:text-[#261b07]'
-                        }`}
-                      >
-                        <span className="font-medium truncate">{item.name}</span>
-                        <span
-                          className={`shrink-0 ml-3 text-[10px] font-medium uppercase tracking-wide px-1.5 py-0.5 rounded-full ${
-                            item.is_active
-                              ? 'bg-emerald-50 text-emerald-600'
-                              : 'bg-[#f3f1ec] text-[#a09888]'
+                    {renderGroup(
+                      donorItems,
+                      "Donateurs",
+                      Users,
+                      (item, idx) => (
+                        <button
+                          key={item.id}
+                          onClick={() => navigate(`/leden/${item.id}`)}
+                          onMouseEnter={() => setSelectedIndex(idx)}
+                          className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors ${
+                            idx === selectedIndex
+                              ? "bg-[#f3f1ec] text-[#261b07]"
+                              : "text-[#8a8478] hover:bg-[#f3f1ec] hover:text-[#261b07]"
                           }`}
                         >
-                          {item.is_active ? 'Actief' : 'Inactief'}
-                        </span>
-                      </button>
-                    ))}
+                          <div className="flex flex-col items-start min-w-0">
+                            <span className="font-medium truncate">
+                              {item.name ?? "Anoniem"}
+                            </span>
+                            {item.email && (
+                              <span className="text-[11px] text-[#b5b0a5] truncate">
+                                {item.email}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[11px] text-[#b5b0a5] shrink-0 ml-3">
+                            {formatMoney(item.total_donated)}
+                          </span>
+                        </button>
+                      ),
+                    )}
 
-                    {renderGroup(campaignItems, 'Campagnes', Megaphone, (item, idx) => (
-                      <button
-                        key={item.id}
-                        onClick={() => navigate('/campagnes')}
-                        onMouseEnter={() => setSelectedIndex(idx)}
-                        className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors ${
-                          idx === selectedIndex
-                            ? 'bg-[#f3f1ec] text-[#261b07]'
-                            : 'text-[#8a8478] hover:bg-[#f3f1ec] hover:text-[#261b07]'
-                        }`}
-                      >
-                        <span className="font-medium truncate">{item.title}</span>
-                        <span
-                          className={`shrink-0 ml-3 text-[10px] font-medium uppercase tracking-wide px-1.5 py-0.5 rounded-full ${
-                            item.is_active
-                              ? 'bg-emerald-50 text-emerald-600'
-                              : 'bg-[#f3f1ec] text-[#a09888]'
+                    {renderGroup(
+                      fundItems,
+                      "Fondsen",
+                      Landmark,
+                      (item, idx) => (
+                        <button
+                          key={item.id}
+                          onClick={() => navigate("/fondsen")}
+                          onMouseEnter={() => setSelectedIndex(idx)}
+                          className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors ${
+                            idx === selectedIndex
+                              ? "bg-[#f3f1ec] text-[#261b07]"
+                              : "text-[#8a8478] hover:bg-[#f3f1ec] hover:text-[#261b07]"
                           }`}
                         >
-                          {item.is_active ? 'Actief' : 'Inactief'}
-                        </span>
-                      </button>
-                    ))}
+                          <span className="font-medium truncate">
+                            {item.name}
+                          </span>
+                          <span
+                            className={`shrink-0 ml-3 text-[10px] font-medium uppercase tracking-wide px-1.5 py-0.5 rounded-full ${
+                              item.is_active
+                                ? "bg-emerald-50 text-emerald-600"
+                                : "bg-[#f3f1ec] text-[#a09888]"
+                            }`}
+                          >
+                            {item.is_active ? "Actief" : "Inactief"}
+                          </span>
+                        </button>
+                      ),
+                    )}
 
-                    {renderGroup(pageResults, "Pagina's", FileText, (item, idx) => (
-                      <button
-                        key={`${item.href}-${item.label}`}
-                        onClick={() => navigate(item.href)}
-                        onMouseEnter={() => setSelectedIndex(idx)}
-                        className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors ${
-                          idx === selectedIndex
-                            ? 'bg-[#f3f1ec] text-[#261b07]'
-                            : 'text-[#8a8478] hover:bg-[#f3f1ec] hover:text-[#261b07]'
-                        }`}
-                      >
-                        <span className="font-medium">{item.label}</span>
-                      </button>
-                    ))}
+                    {renderGroup(
+                      campaignItems,
+                      "Campagnes",
+                      Megaphone,
+                      (item, idx) => (
+                        <button
+                          key={item.id}
+                          onClick={() => navigate("/campagnes")}
+                          onMouseEnter={() => setSelectedIndex(idx)}
+                          className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors ${
+                            idx === selectedIndex
+                              ? "bg-[#f3f1ec] text-[#261b07]"
+                              : "text-[#8a8478] hover:bg-[#f3f1ec] hover:text-[#261b07]"
+                          }`}
+                        >
+                          <span className="font-medium truncate">
+                            {item.title}
+                          </span>
+                          <span
+                            className={`shrink-0 ml-3 text-[10px] font-medium uppercase tracking-wide px-1.5 py-0.5 rounded-full ${
+                              item.is_active
+                                ? "bg-emerald-50 text-emerald-600"
+                                : "bg-[#f3f1ec] text-[#a09888]"
+                            }`}
+                          >
+                            {item.is_active ? "Actief" : "Inactief"}
+                          </span>
+                        </button>
+                      ),
+                    )}
+
+                    {renderGroup(
+                      pageResults,
+                      "Pagina's",
+                      FileText,
+                      (item, idx) => (
+                        <button
+                          key={`${item.href}-${item.label}`}
+                          onClick={() => navigate(item.href)}
+                          onMouseEnter={() => setSelectedIndex(idx)}
+                          className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors ${
+                            idx === selectedIndex
+                              ? "bg-[#f3f1ec] text-[#261b07]"
+                              : "text-[#8a8478] hover:bg-[#f3f1ec] hover:text-[#261b07]"
+                          }`}
+                        >
+                          <span className="font-medium">{item.label}</span>
+                        </button>
+                      ),
+                    )}
                   </div>
                 ) : (
                   <div className="p-4">
@@ -454,20 +522,24 @@ export function DashboardHeader({ user, mosque }: DashboardHeaderProps) {
               {user.name}
             </span>
             <ChevronDown
-              className={`hidden size-3.5 text-[#a09888] md:block transition-transform duration-150 ${dropdownOpen ? 'rotate-180' : ''}`}
+              className={`hidden size-3.5 text-[#a09888] md:block transition-transform duration-150 ${dropdownOpen ? "rotate-180" : ""}`}
             />
           </button>
 
           {dropdownOpen && (
             <div className="absolute right-0 top-full mt-1.5 w-56 rounded-xl border border-[#e3dfd5] bg-white p-1 shadow-[0_4px_24px_rgba(38,27,7,0.08)] animate-in fade-in-0 zoom-in-95 slide-in-from-top-1">
               <div className="px-3 py-2.5 border-b border-[#e3dfd5] mb-1">
-                <p className="text-sm font-medium text-[#261b07]">{user.name}</p>
-                <p className="text-[11px] text-[#a09888] mt-0.5">{mosque.name}</p>
+                <p className="text-sm font-medium text-[#261b07]">
+                  {user.name}
+                </p>
+                <p className="text-[11px] text-[#a09888] mt-0.5">
+                  {mosque.name}
+                </p>
               </div>
               <button
                 onClick={() => {
-                  setDropdownOpen(false)
-                  router.push('/instellingen')
+                  setDropdownOpen(false);
+                  router.push("/instellingen");
                 }}
                 className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-[#8a8478] transition-colors duration-150 hover:bg-[#f3f1ec] hover:text-[#261b07]"
               >
@@ -486,5 +558,5 @@ export function DashboardHeader({ user, mosque }: DashboardHeaderProps) {
         </div>
       </div>
     </header>
-  )
+  );
 }
