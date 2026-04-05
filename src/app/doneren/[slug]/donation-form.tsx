@@ -49,6 +49,54 @@ type Props = {
 
 type Frequency = "one-time" | "weekly" | "monthly" | "yearly";
 
+/** Map Stripe error codes to actionable Dutch error messages. */
+function getPaymentErrorMessage(
+  error: {
+    code?: string;
+    decline_code?: string;
+    type?: string;
+    message?: string;
+  },
+  fallback: string,
+): string {
+  const declineCode = error.decline_code;
+  const code = error.code;
+
+  // Specific decline reasons
+  if (declineCode === "insufficient_funds" || code === "insufficient_funds") {
+    return "Onvoldoende saldo. Probeer een lager bedrag of gebruik een andere betaalmethode.";
+  }
+  if (declineCode === "lost_card" || declineCode === "stolen_card") {
+    return "Deze kaart kan niet worden gebruikt. Probeer een andere betaalmethode.";
+  }
+  if (code === "expired_card" || declineCode === "expired_card") {
+    return "Uw kaart is verlopen. Gebruik een andere kaart.";
+  }
+  if (code === "incorrect_cvc" || declineCode === "incorrect_cvc") {
+    return "De beveiligingscode (CVC) is onjuist. Controleer uw kaartgegevens.";
+  }
+  if (code === "processing_error") {
+    return "Er ging iets mis bij het verwerken. Probeer het opnieuw.";
+  }
+  if (
+    code === "card_declined" ||
+    declineCode === "generic_decline" ||
+    declineCode === "do_not_honor"
+  ) {
+    return "Uw kaart is geweigerd. Probeer een andere betaalmethode of neem contact op met uw bank.";
+  }
+
+  // Broad type-based fallbacks
+  if (error.type === "card_error") {
+    return "Er is een probleem met uw kaart. Probeer een andere betaalmethode.";
+  }
+  if (error.type === "validation_error") {
+    return "Controleer uw betaalgegevens en probeer het opnieuw.";
+  }
+
+  return fallback;
+}
+
 const AMOUNT_PRESETS = [10, 25, 50, 100];
 
 const FREQUENCY_OPTIONS: { value: Frequency; key: string }[] = [
@@ -717,7 +765,8 @@ function PaymentStep({
       elements,
       confirmParams: { return_url: returnUrl },
     });
-    if (stripeError) setError(stripeError.message || t("donate.error"));
+    if (stripeError)
+      setError(getPaymentErrorMessage(stripeError, t("donate.error")));
     setLoading(false);
   }
 

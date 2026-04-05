@@ -7,6 +7,9 @@ import { sendEmail, sendMosqueEmail } from "@/lib/email/send";
 import { donationConfirmationEmail } from "@/lib/email/templates/donation-confirmation";
 import { recurringCancelledEmail } from "@/lib/email/templates/recurring-cancelled";
 import { webhookAlertEmail } from "@/lib/email/templates/webhook-alert";
+import { paymentFailedEmail } from "@/lib/email/templates/payment-failed";
+import { paymentActionRequiredEmail } from "@/lib/email/templates/payment-action-required";
+import { formatMoney } from "@/lib/money";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
 
@@ -134,6 +137,18 @@ export async function POST(request: Request) {
       case "customer.subscription.deleted": {
         const subscription = event.data.object;
         await handleSubscriptionDeleted(admin, subscription);
+        break;
+      }
+
+      case "invoice.payment_failed": {
+        const invoice = event.data.object;
+        await handleInvoicePaymentFailed(admin, invoice);
+        break;
+      }
+
+      case "invoice.payment_action_required": {
+        const invoice = event.data.object;
+        await handleInvoicePaymentActionRequired(admin, invoice);
         break;
       }
 
@@ -414,6 +429,144 @@ async function handlePaymentFailed(admin: AdminClient, pi: { id: string }) {
   revalidateDonationPages();
 }
 
+async function handleInvoicePaymentFailed(
+  admin: AdminClient,
+  invoice: Stripe.Invoice,
+) {
+  // Extract subscription ID (same pattern as handleInvoicePaymentSucceeded)
+  const subDetails = invoice.parent?.subscription_details;
+  const subscriptionId =
+    typeof subDetails?.subscription === "string"
+      ? subDetails.subscription
+      : (subDetails?.subscription?.id ?? null);
+
+  if (!subscriptionId) return;
+
+  // Find recurring by stripe_subscription_id
+  const { data: recurring } = await admin
+    .from("recurrings")
+    .select(
+      "id, mosque_id, donor_id, fund_id, amount, frequency, failed_payment_count, status",
+    )
+    .eq("stripe_subscription_id", subscriptionId)
+    .single();
+
+  if (!recurring) {
+    console.error(
+      `Webhook invoice.payment_failed: subscription ${subscriptionId} not found in recurrings`,
+    );
+    return;
+  }
+
+  // Skip if already cancelled or paused
+  if (recurring.status === "cancelled") return;
+
+  const newFailedCount = (recurring.failed_payment_count || 0) + 1;
+  const shouldPause = newFailedCount >= 3;
+
+  // Update recurring with failure tracking
+  const updateData: Record<string, unknown> = {
+    failed_payment_count: newFailedCount,
+    last_failure_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
+  if (shouldPause) {
+    updateData.status = "paused";
+  }
+
+  const { error: updateError } = await admin
+    .from("recurrings")
+    .update(updateData)
+    .eq("id", recurring.id);
+
+  if (updateError) {
+    throw new Error(
+      `Failed to update recurring ${recurring.id} failure count: ${updateError.message}`,
+    );
+  }
+
+  revalidateDonationPages();
+
+  // Send dunning email to donor (fire-and-forget)
+  void sendPaymentFailedEmail(admin, recurring, newFailedCount).catch((err) =>
+    console.error("Dunning email error:", err),
+  );
+
+  // Alert admin about recurring payment failure
+  const alertEmail = process.env.ALERT_EMAIL;
+  if (alertEmail && shouldSendAlert(`invoice.payment_failed.${recurring.id}`)) {
+    const html = webhookAlertEmail({
+      eventType: "invoice.payment_failed",
+      errorMessage: `Recurring ${recurring.id} (${formatMoney(recurring.amount)}) failed ${newFailedCount} time(s).${shouldPause ? " Subscription paused." : ""}`,
+    });
+    void sendEmail({
+      to: alertEmail,
+      subject: `⚠️ Donatie mislukt — Bunyan`,
+      html,
+    }).catch((err) => console.error("Alert email error:", err));
+  }
+}
+
+async function handleInvoicePaymentActionRequired(
+  admin: AdminClient,
+  invoice: Stripe.Invoice,
+) {
+  const hostedUrl = invoice.hosted_invoice_url;
+  if (!hostedUrl) return;
+
+  // Extract subscription ID
+  const subDetails = invoice.parent?.subscription_details;
+  const subscriptionId =
+    typeof subDetails?.subscription === "string"
+      ? subDetails.subscription
+      : (subDetails?.subscription?.id ?? null);
+
+  if (!subscriptionId) return;
+
+  // Find recurring
+  const { data: recurring } = await admin
+    .from("recurrings")
+    .select("id, mosque_id, donor_id, amount")
+    .eq("stripe_subscription_id", subscriptionId)
+    .single();
+
+  if (!recurring) return;
+
+  // Look up donor email
+  const { data: donor } = await admin
+    .from("donors")
+    .select("name, email")
+    .eq("id", recurring.donor_id)
+    .single();
+
+  if (!donor?.email) return;
+
+  // Look up mosque name
+  const { data: mosque } = await admin
+    .from("mosques")
+    .select("name, contact_email")
+    .eq("id", recurring.mosque_id)
+    .single();
+
+  if (!mosque) return;
+
+  const html = paymentActionRequiredEmail({
+    mosqueName: mosque.name,
+    donorName: donor.name || undefined,
+    amount: recurring.amount,
+    hostedInvoiceUrl: hostedUrl,
+  });
+
+  void sendMosqueEmail({
+    to: donor.email,
+    subject: `Actie vereist voor uw donatie — ${mosque.name}`,
+    html,
+    mosqueName: mosque.name,
+    mosqueContactEmail: mosque.contact_email,
+  }).catch((err) => console.error("Action required email error:", err));
+}
+
 async function handleInvoicePaymentSucceeded(
   admin: AdminClient,
   invoice: Stripe.Invoice,
@@ -525,6 +678,8 @@ async function handleInvoicePaymentSucceeded(
     .from("recurrings")
     .update({
       next_charge_at: nextCharge.toISOString(),
+      failed_payment_count: 0,
+      last_failure_at: null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", recurring.id);
@@ -823,6 +978,80 @@ async function sendRecurringCancelEmail(
     html,
     mosqueName: mosque?.name || "Bunyan",
     mosqueContactEmail: mosque?.contact_email,
+  });
+}
+
+async function sendPaymentFailedEmail(
+  admin: AdminClient,
+  recurring: {
+    id: string;
+    mosque_id: string;
+    donor_id: string;
+    fund_id: string;
+    amount: number;
+    frequency: string;
+  },
+  failedCount: number,
+) {
+  const { data: donor } = await admin
+    .from("donors")
+    .select("name, email")
+    .eq("id", recurring.donor_id)
+    .single();
+
+  if (!donor?.email) return;
+
+  const { data: mosque } = await admin
+    .from("mosques")
+    .select("name, contact_email")
+    .eq("id", recurring.mosque_id)
+    .single();
+
+  if (!mosque) return;
+
+  const { data: fund } = await admin
+    .from("funds")
+    .select("name")
+    .eq("id", recurring.fund_id)
+    .single();
+
+  // Create a Stripe billing portal session for payment method update
+  let updatePaymentUrl: string | undefined;
+  try {
+    const { data: rec } = await admin
+      .from("recurrings")
+      .select("stripe_customer_id")
+      .eq("id", recurring.id)
+      .single();
+
+    if (rec?.stripe_customer_id) {
+      const session = await stripe.billingPortal.sessions.create({
+        customer: rec.stripe_customer_id,
+        return_url: process.env.NEXT_PUBLIC_APP_URL || "https://bunyan.nl",
+      });
+      updatePaymentUrl = session.url;
+    }
+  } catch (err) {
+    // Non-critical — send email without update link
+    console.error("Failed to create billing portal session:", err);
+  }
+
+  const html = paymentFailedEmail({
+    mosqueName: mosque.name,
+    donorName: donor.name || undefined,
+    amount: recurring.amount,
+    frequency: recurring.frequency,
+    fundName: fund?.name || "Algemeen",
+    failedCount,
+    updatePaymentUrl,
+  });
+
+  await sendMosqueEmail({
+    to: donor.email,
+    subject: `Betaling mislukt — ${mosque.name}`,
+    html,
+    mosqueName: mosque.name,
+    mosqueContactEmail: mosque.contact_email,
   });
 }
 
