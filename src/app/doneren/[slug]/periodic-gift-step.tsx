@@ -26,9 +26,18 @@ import {
   FileTextIcon,
   ChevronDownIcon,
   PenLineIcon,
+  BuildingIcon,
+  CreditCardIcon,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getFundIcon, FUND_ICON_COLORS } from "@/components/fund/fund-cards";
+import {
+  Elements,
+  PaymentElement,
+  useStripe,
+  useElements,
+} from "@stripe/react-stripe-js";
+import { getStripe } from "@/lib/stripe-client";
 
 type Fund = {
   id: string;
@@ -51,7 +60,7 @@ type Props = {
   onSwitchMode: () => void;
 };
 
-type SubStep = "details" | "review" | "sign" | "confirmation";
+type SubStep = "details" | "review" | "sign" | "payment" | "confirmation";
 
 // ─── Shared styles ──────────────────────────────────────────────────────────
 
@@ -218,6 +227,9 @@ export function PeriodicGiftStep({
   // Submission state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [agreementId, setAgreementId] = useState<string | null>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"ideal" | "bank">("ideal");
 
   const amountCents = Math.round((parseFloat(annualAmount) || 0) * 100);
   const selectedFundName =
@@ -283,7 +295,9 @@ export function PeriodicGiftStep({
         throw new Error(data.error || t("donate.error"));
       }
 
-      setSubStep("confirmation");
+      const data = await res.json();
+      setAgreementId(data.agreement_id);
+      setSubStep("payment");
     } catch (err) {
       setError(err instanceof Error ? err.message : t("donate.error"));
     } finally {
@@ -291,15 +305,41 @@ export function PeriodicGiftStep({
     }
   }
 
-  // ─── Confirmation with payment next steps ────────
+  async function handleSetupIdeal() {
+    setError(null);
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/payments/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mosque_slug: mosqueSlug,
+          fund_id: selectedFund || undefined,
+          amount: parseFloat(annualAmount),
+          frequency: "yearly",
+          donor_name: name,
+          donor_email: email,
+          periodic_gift_agreement_id: agreementId,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || t("donate.error"));
+      }
+
+      const data = await res.json();
+      setClientSecret(data.clientSecret);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("donate.error"));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ─── Confirmation (final step — all done) ────────
   if (subStep === "confirmation") {
-    const formattedIban = mosqueIban
-      ? mosqueIban.replace(/(.{4})/g, "$1 ").trim()
-      : null;
-
-    // Build the link to the regular donation page with recurring pre-selected
-    const donateUrl = `/doneren/${mosqueSlug}`;
-
     return (
       <div dir={dir} className="mx-auto max-w-lg w-full px-4 pt-6 md:pt-10">
         {anbiEnabled && <ModeTabs onSwitchMode={onSwitchMode} t={t} />}
@@ -319,137 +359,60 @@ export function PeriodicGiftStep({
               {t("donate.periodic_confirmation_title")}
             </h2>
             <p className="text-sm" style={{ color: "#9B8E7B" }}>
-              {t("donate.periodic_confirmation_desc")}
+              {paymentMethod === "ideal"
+                ? "Uw overeenkomst is ondertekend en uw betaling is ingesteld. De eerste afschrijving vindt plaats op de 1e van volgende maand."
+                : "Uw overeenkomst is ondertekend. Stel een automatische overschrijving in bij uw bank om de periodieke gift te activeren."}
             </p>
           </div>
 
-          {/* Payment next steps */}
-          <div
-            className="rounded-2xl p-4 space-y-3"
-            style={{
-              background: `${accent}08`,
-              border: `1px solid ${accent}20`,
-            }}
-          >
-            <p
-              className="text-[13px] font-semibold"
-              style={{ color: "#1B2541" }}
-            >
-              Hoe betaalt u?
-            </p>
-            <p
-              className="text-[12px] leading-relaxed"
-              style={{ color: "#6B5E4C" }}
-            >
-              Uw overeenkomst is ondertekend. Om de periodieke gift te
-              activeren, kunt u{" "}
-              {formattedIban ? "op twee manieren" : "als volgt"} betalen:
-            </p>
-
-            {/* Option 1: Bank transfer */}
-            {formattedIban && (
-              <div
-                className="rounded-xl p-3 space-y-2"
-                style={{ background: "white", border: "1px solid #EDE8DF" }}
-              >
-                <div className="flex items-center gap-2">
-                  <span
-                    className="flex size-6 items-center justify-center rounded-full text-[11px] font-bold"
-                    style={{ background: `${accent}15`, color: accent }}
-                  >
-                    1
-                  </span>
-                  <span
-                    className="text-[13px] font-semibold"
-                    style={{ color: "#1B2541" }}
-                  >
-                    Periodieke overschrijving
-                  </span>
-                </div>
-                <p
-                  className="text-[12px] leading-relaxed"
-                  style={{ color: "#6B5E4C" }}
-                >
-                  Stel een automatische overschrijving in bij uw bank naar:
-                </p>
-                <div
-                  className="rounded-lg p-3 font-mono text-sm select-all"
-                  style={{
-                    background: "#FAFAF7",
-                    border: "1px solid #EDE8DF",
-                    color: "#1B2541",
-                  }}
-                >
-                  <div className="flex justify-between">
-                    <span
-                      className="text-[11px] font-sans"
-                      style={{ color: "#9B8E7B" }}
-                    >
-                      IBAN
-                    </span>
-                    <span className="font-semibold tracking-wide">
-                      {formattedIban}
-                    </span>
-                  </div>
-                  <div className="flex justify-between mt-1">
-                    <span
-                      className="text-[11px] font-sans"
-                      style={{ color: "#9B8E7B" }}
-                    >
-                      t.n.v.
-                    </span>
-                    <span className="font-sans text-[13px]">{mosqueName}</span>
-                  </div>
-                  <div className="flex justify-between mt-1">
-                    <span
-                      className="text-[11px] font-sans"
-                      style={{ color: "#9B8E7B" }}
-                    >
-                      Bedrag
-                    </span>
-                    <span className="font-sans text-[13px]">
-                      {formatMoney(amountCents)} / jaar
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Option 2: Online via Bunyan */}
+          {/* Bank transfer details (only if they chose bank) */}
+          {paymentMethod === "bank" && mosqueIban && (
             <div
-              className="rounded-xl p-3 space-y-2"
-              style={{ background: "white", border: "1px solid #EDE8DF" }}
+              className="rounded-2xl p-4 space-y-2"
+              style={{ background: "#FAFAF7", border: "1px solid #EDE8DF" }}
             >
-              <div className="flex items-center gap-2">
-                <span
-                  className="flex size-6 items-center justify-center rounded-full text-[11px] font-bold"
-                  style={{ background: `${accent}15`, color: accent }}
-                >
-                  {formattedIban ? "2" : "1"}
-                </span>
-                <span
-                  className="text-[13px] font-semibold"
-                  style={{ color: "#1B2541" }}
-                >
-                  Online betalen via iDEAL
-                </span>
+              <div
+                className="rounded-lg p-3 font-mono text-sm select-all"
+                style={{
+                  background: "white",
+                  border: "1px solid #EDE8DF",
+                  color: "#1B2541",
+                }}
+              >
+                <div className="flex justify-between">
+                  <span
+                    className="text-[11px] font-sans"
+                    style={{ color: "#9B8E7B" }}
+                  >
+                    IBAN
+                  </span>
+                  <span className="font-semibold tracking-wide">
+                    {mosqueIban.replace(/(.{4})/g, "$1 ").trim()}
+                  </span>
+                </div>
+                <div className="flex justify-between mt-1">
+                  <span
+                    className="text-[11px] font-sans"
+                    style={{ color: "#9B8E7B" }}
+                  >
+                    t.n.v.
+                  </span>
+                  <span className="font-sans text-[13px]">{mosqueName}</span>
+                </div>
+                <div className="flex justify-between mt-1">
+                  <span
+                    className="text-[11px] font-sans"
+                    style={{ color: "#9B8E7B" }}
+                  >
+                    Bedrag
+                  </span>
+                  <span className="font-sans text-[13px]">
+                    {formatMoney(amountCents)} / jaar
+                  </span>
+                </div>
               </div>
-              <p
-                className="text-[12px] leading-relaxed"
-                style={{ color: "#6B5E4C" }}
-              >
-                U kunt ook een terugkerende betaling instellen via onze
-                donatiepagina.
-              </p>
-              <a
-                href={donateUrl}
-                className="inline-flex h-10 w-full items-center justify-center rounded-xl text-[13px] font-semibold transition-all duration-200"
-                style={{ background: accent, color: "#1B2541" }}
-              >
-                Doneer via iDEAL
-              </a>
             </div>
-          </div>
+          )}
 
           <div
             className="rounded-2xl p-3 text-center text-[11px] leading-relaxed"
@@ -471,6 +434,266 @@ export function PeriodicGiftStep({
           >
             {t("donate.back")}
           </button>
+        </Card>
+      </div>
+    );
+  }
+
+  // ─── Payment step (choose method & complete) ────
+  if (subStep === "payment") {
+    // If iDEAL selected and we have a clientSecret, show Stripe Elements
+    if (paymentMethod === "ideal" && clientSecret) {
+      return (
+        <div dir={dir} className="mx-auto max-w-lg w-full px-4 pt-6 md:pt-10">
+          {anbiEnabled && <ModeTabs onSwitchMode={onSwitchMode} t={t} />}
+          <Elements
+            stripe={getStripe()}
+            options={{
+              clientSecret,
+              appearance: {
+                theme: "stripe",
+                variables: {
+                  colorPrimary: accent,
+                  borderRadius: "14px",
+                  fontFamily: "Plus Jakarta Sans, system-ui, sans-serif",
+                  colorBackground: "#FFFDF8",
+                },
+                rules: {
+                  ".Input": {
+                    boxShadow: "none",
+                    borderColor: "#E8E0D4",
+                    backgroundColor: "#FFFDF8",
+                  },
+                  ".Input:focus": {
+                    borderColor: accent,
+                    boxShadow: `0 0 0 3px ${accent}20`,
+                  },
+                  ".Label": {
+                    color: "#1E293B",
+                    fontWeight: "600",
+                    fontSize: "13px",
+                  },
+                },
+              },
+            }}
+          >
+            <PeriodicPaymentForm
+              mosqueSlug={mosqueSlug}
+              mosqueName={mosqueName}
+              accent={accent}
+              amountCents={amountCents}
+              onBack={() => {
+                setClientSecret(null);
+              }}
+            />
+          </Elements>
+        </div>
+      );
+    }
+
+    // Payment method selection
+    return (
+      <div dir={dir} className="mx-auto max-w-lg w-full px-4 pt-6 md:pt-10">
+        {anbiEnabled && <ModeTabs onSwitchMode={onSwitchMode} t={t} />}
+        <Card>
+          {/* Back + title */}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setSubStep("sign")}
+              className="size-10 rounded-2xl flex items-center justify-center shrink-0 transition-colors"
+              style={{ background: "#F7F3EC", color: "#1B2541" }}
+            >
+              <ArrowLeftIcon className="size-4" />
+            </button>
+            <div>
+              <h2
+                className="font-semibold text-base"
+                style={{ color: "#1B2541" }}
+              >
+                Betaling instellen
+              </h2>
+              <p className="text-[12px] mt-0.5" style={{ color: "#9B8E7B" }}>
+                {formatMoney(amountCents)} per jaar
+              </p>
+            </div>
+          </div>
+
+          {/* Success banner */}
+          <div
+            className="rounded-2xl p-3 flex items-center gap-3"
+            style={{ background: "#F0FDF4", border: "1px solid #BBF7D0" }}
+          >
+            <CheckIcon
+              className="size-5 shrink-0"
+              style={{ color: "#16A34A" }}
+              strokeWidth={2.5}
+            />
+            <p className="text-[13px] font-medium" style={{ color: "#15803D" }}>
+              Overeenkomst ondertekend — stel nu uw betaling in
+            </p>
+          </div>
+
+          {/* Payment method options */}
+          <div className="space-y-2.5">
+            {/* iDEAL option */}
+            <button
+              type="button"
+              onClick={() => setPaymentMethod("ideal")}
+              className="w-full flex items-center gap-3 rounded-2xl p-4 text-start transition-all duration-200"
+              style={
+                paymentMethod === "ideal"
+                  ? {
+                      background: "#1B2541",
+                      color: "white",
+                      boxShadow: "0 4px 16px rgba(27, 37, 65, 0.2)",
+                    }
+                  : {
+                      background: "#FAFAF7",
+                      color: "#1B2541",
+                      border: "1px solid #EDE8DF",
+                    }
+              }
+            >
+              <div
+                className="flex size-10 items-center justify-center rounded-xl shrink-0"
+                style={{
+                  background:
+                    paymentMethod === "ideal"
+                      ? "rgba(255,255,255,0.12)"
+                      : `${accent}15`,
+                }}
+              >
+                <CreditCardIcon
+                  className="size-5"
+                  style={{
+                    color: paymentMethod === "ideal" ? "white" : accent,
+                  }}
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="text-[13px] font-semibold block">
+                  Online via iDEAL
+                </span>
+                <span
+                  className="text-[11px] mt-0.5 block"
+                  style={{
+                    color:
+                      paymentMethod === "ideal"
+                        ? "rgba(255,255,255,0.6)"
+                        : "#9B8E7B",
+                  }}
+                >
+                  Automatische jaarlijkse afschrijving — start 1e volgende maand
+                </span>
+              </div>
+              <div
+                className="size-5 rounded-full border-2 flex items-center justify-center shrink-0"
+                style={
+                  paymentMethod === "ideal"
+                    ? { borderColor: accent, background: accent }
+                    : { borderColor: "#D4CFC5" }
+                }
+              >
+                {paymentMethod === "ideal" && (
+                  <CheckIcon className="size-3 text-white" strokeWidth={3} />
+                )}
+              </div>
+            </button>
+
+            {/* Bank transfer option */}
+            {mosqueIban && (
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("bank")}
+                className="w-full flex items-center gap-3 rounded-2xl p-4 text-start transition-all duration-200"
+                style={
+                  paymentMethod === "bank"
+                    ? {
+                        background: "#1B2541",
+                        color: "white",
+                        boxShadow: "0 4px 16px rgba(27, 37, 65, 0.2)",
+                      }
+                    : {
+                        background: "#FAFAF7",
+                        color: "#1B2541",
+                        border: "1px solid #EDE8DF",
+                      }
+                }
+              >
+                <div
+                  className="flex size-10 items-center justify-center rounded-xl shrink-0"
+                  style={{
+                    background:
+                      paymentMethod === "bank"
+                        ? "rgba(255,255,255,0.12)"
+                        : `${accent}15`,
+                  }}
+                >
+                  <BuildingIcon
+                    className="size-5"
+                    style={{
+                      color: paymentMethod === "bank" ? "white" : accent,
+                    }}
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className="text-[13px] font-semibold block">
+                    Periodieke overschrijving
+                  </span>
+                  <span
+                    className="text-[11px] mt-0.5 block"
+                    style={{
+                      color:
+                        paymentMethod === "bank"
+                          ? "rgba(255,255,255,0.6)"
+                          : "#9B8E7B",
+                    }}
+                  >
+                    Stel zelf een automatische overschrijving in bij uw bank
+                  </span>
+                </div>
+                <div
+                  className="size-5 rounded-full border-2 flex items-center justify-center shrink-0"
+                  style={
+                    paymentMethod === "bank"
+                      ? { borderColor: accent, background: accent }
+                      : { borderColor: "#D4CFC5" }
+                  }
+                >
+                  {paymentMethod === "bank" && (
+                    <CheckIcon className="size-3 text-white" strokeWidth={3} />
+                  )}
+                </div>
+              </button>
+            )}
+          </div>
+
+          {error && <ErrorBanner message={error} />}
+
+          <PrimaryButton
+            accent={accent}
+            loading={loading}
+            onClick={
+              paymentMethod === "ideal"
+                ? handleSetupIdeal
+                : () => setSubStep("confirmation")
+            }
+          >
+            {loading ? (
+              "Laden..."
+            ) : paymentMethod === "ideal" ? (
+              <>
+                <CreditCardIcon className="size-5" />
+                Doorgaan naar iDEAL
+              </>
+            ) : (
+              <>
+                <BuildingIcon className="size-5" />
+                Afronden
+              </>
+            )}
+          </PrimaryButton>
         </Card>
       </div>
     );
@@ -898,6 +1121,105 @@ export function PeriodicGiftStep({
         </div>
       </Card>
     </div>
+  );
+}
+
+// ─── Inline Stripe payment form for periodic gifts ──────────────────────────
+
+function PeriodicPaymentForm({
+  mosqueSlug,
+  mosqueName,
+  accent,
+  amountCents,
+  onBack,
+}: {
+  mosqueSlug: string;
+  mosqueName: string;
+  accent: string;
+  amountCents: number;
+  onBack: () => void;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit() {
+    if (!stripe || !elements) return;
+    setLoading(true);
+    setError(null);
+    const returnUrl = `${window.location.origin}/doneren/${mosqueSlug}/bedankt`;
+    const { error: stripeError } = await stripe.confirmPayment({
+      elements,
+      confirmParams: { return_url: returnUrl },
+    });
+    if (stripeError)
+      setError(stripeError.message || "Er is een fout opgetreden");
+    setLoading(false);
+  }
+
+  return (
+    <Card>
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={onBack}
+          className="size-10 rounded-2xl flex items-center justify-center shrink-0 transition-colors"
+          style={{ background: "#F7F3EC", color: "#1B2541" }}
+        >
+          <ArrowLeftIcon className="size-4" />
+        </button>
+        <div>
+          <p className="font-semibold text-base" style={{ color: "#1B2541" }}>
+            Betalen via iDEAL
+          </p>
+          <p className="text-[12px] mt-0.5" style={{ color: "#9B8E7B" }}>
+            {mosqueName} — {formatMoney(amountCents)} / jaar
+          </p>
+        </div>
+      </div>
+
+      {/* Info about delayed start */}
+      <div
+        className="rounded-2xl p-3 text-[12px] leading-relaxed"
+        style={{
+          background: "#EFF6FF",
+          border: "1px solid #BFDBFE",
+          color: "#1E40AF",
+        }}
+      >
+        De eerste afschrijving vindt plaats op de 1e van volgende maand. Dit
+        geeft het bestuur tijd om de overeenkomst te ondertekenen.
+      </div>
+
+      <PaymentElement />
+
+      {error && <ErrorBanner message={error} />}
+
+      <PrimaryButton
+        accent={accent}
+        loading={loading}
+        disabled={!stripe}
+        onClick={handleSubmit}
+      >
+        {loading ? (
+          <>
+            <Loader2Icon className="size-5 animate-spin" />
+            Verwerken...
+          </>
+        ) : (
+          "Betaling instellen"
+        )}
+      </PrimaryButton>
+
+      <div className="flex items-center justify-center gap-1.5 pt-1">
+        <ShieldCheckIcon className="size-3.5" style={{ color: "#C4B99A" }} />
+        <span className="text-[11px] font-medium" style={{ color: "#B5AC98" }}>
+          Beveiligde betaling via Stripe
+        </span>
+      </div>
+    </Card>
   );
 }
 
