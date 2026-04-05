@@ -343,34 +343,50 @@ async function DashboardContent() {
       )}
 
       {hasNoDonations && (
-        <div className="flex items-center justify-center py-16">
-          <div className="rounded-2xl bg-white border border-[#eae6de]/80 shadow-[0_1px_2px_rgba(38,27,7,0.03)] p-10 text-center max-w-md w-full">
-            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#C87D3A]/10">
-              <HandCoins className="h-7 w-7 text-[#C87D3A]" strokeWidth={1.5} />
-            </div>
-            <h2 className="text-[18px] font-bold text-[#261b07] tracking-tight">
-              Nog geen donaties ontvangen
-            </h2>
-            <p className="mt-2 text-[13px] text-[#a09888] leading-relaxed">
-              Zodra uw eerste donatie binnenkomt, verschijnen hier uw
-              statistieken. Deel uw donatiepagina om te beginnen.
-            </p>
-            <div className="mt-6 flex items-center gap-2 justify-center">
-              <div className="flex-1 min-w-0 flex items-center gap-2 rounded-lg border border-[#e3dfd5] bg-[#fafaf8] px-3 py-2">
-                <span className="text-[12px] text-[#8a8478] truncate">
-                  {donationPageUrl}
-                </span>
-              </div>
-              <DonationPageCopyButton url={donationPageUrl} />
-            </div>
-            <Link
-              href={`/doneren/${mosque.slug}`}
-              target="_blank"
-              className="mt-4 inline-flex items-center gap-1.5 text-[13px] font-medium text-[#C87D3A] hover:text-[#a8632a] transition-colors"
+        <div className="relative">
+          {/* Blurred dashboard preview */}
+          <div
+            className="pointer-events-none select-none blur-[6px] opacity-60"
+            aria-hidden="true"
+          >
+            <DashboardSkeleton />
+          </div>
+          {/* Overlay card */}
+          <div className="absolute inset-0 flex items-center justify-center z-10">
+            <div
+              className="rounded-2xl bg-white border border-[#eae6de]/80 shadow-[0_4px_24px_rgba(38,27,7,0.08)] p-10 text-center max-w-md w-full"
+              data-tour="donation-link"
             >
-              <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.5} />
-              Bekijk donatiepagina
-            </Link>
+              <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#C87D3A]/10">
+                <HandCoins
+                  className="h-7 w-7 text-[#C87D3A]"
+                  strokeWidth={1.5}
+                />
+              </div>
+              <h2 className="text-[18px] font-bold text-[#261b07] tracking-tight">
+                Nog geen donaties ontvangen
+              </h2>
+              <p className="mt-2 text-[13px] text-[#a09888] leading-relaxed">
+                Zodra uw eerste donatie binnenkomt, verschijnen hier uw
+                statistieken. Deel uw donatiepagina om te beginnen.
+              </p>
+              <div className="mt-6 flex items-center gap-2 justify-center">
+                <div className="flex-1 min-w-0 flex items-center gap-2 rounded-lg border border-[#e3dfd5] bg-[#fafaf8] px-3 py-2">
+                  <span className="text-[12px] text-[#8a8478] truncate">
+                    {donationPageUrl}
+                  </span>
+                </div>
+                <DonationPageCopyButton url={donationPageUrl} />
+              </div>
+              <Link
+                href={`/doneren/${mosque.slug}`}
+                target="_blank"
+                className="mt-4 inline-flex items-center gap-1.5 text-[13px] font-medium text-[#C87D3A] hover:text-[#a8632a] transition-colors"
+              >
+                <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.5} />
+                Bekijk donatiepagina
+              </Link>
+            </div>
           </div>
         </div>
       )}

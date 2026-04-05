@@ -179,7 +179,7 @@ export function AppSidebar({
       </SidebarHeader>
 
       {/* ---- Navigation ---- */}
-      <SidebarContent className="px-2 py-2">
+      <SidebarContent className="px-2 py-2" data-tour="sidebar-nav">
         {NAV_SECTIONS.filter(
           (section) => !section.adminOnly || user.role === "admin",
         ).map((section, idx) => {
@@ -200,7 +200,12 @@ export function AppSidebar({
                     const isActive = pathname.startsWith(item.href);
 
                     return (
-                      <SidebarMenuItem key={item.href}>
+                      <SidebarMenuItem
+                        key={item.href}
+                        {...(item.href === "/instellingen"
+                          ? { "data-tour": "sidebar-settings" }
+                          : {})}
+                      >
                         <SidebarMenuButton
                           render={<Link href={item.href} />}
                           isActive={isActive}

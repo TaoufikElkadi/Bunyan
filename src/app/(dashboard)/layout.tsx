@@ -3,6 +3,7 @@ import { getCachedProfile } from "@/lib/supabase/cached";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/dashboard/app-sidebar";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
+import { OnboardingTour } from "@/components/dashboard/onboarding-tour";
 
 export default async function DashboardLayout({
   children,
@@ -67,6 +68,7 @@ export default async function DashboardLayout({
           )}
           <main className="flex-1 p-6 md:p-8 bg-[#f8f7f5]">{children}</main>
         </SidebarInset>
+        <OnboardingTour />
       </SidebarProvider>
     </div>
   );

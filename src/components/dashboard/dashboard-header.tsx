@@ -320,6 +320,7 @@ export function DashboardHeader({ user, mosque }: DashboardHeaderProps) {
       <div
         className="relative max-w-md flex-shrink-0 w-full sm:w-80"
         ref={searchContainerRef}
+        data-tour="header-search"
       >
         {!searchOpen ? (
           <button
