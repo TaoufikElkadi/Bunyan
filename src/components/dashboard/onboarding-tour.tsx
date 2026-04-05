@@ -1,17 +1,12 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { useSidebar } from "@/components/ui/sidebar";
+import { useEffect } from "react";
 import "driver.js/dist/driver.css";
 
 const STORAGE_KEY = "bunyan_tour_completed";
 const MOBILE_BREAKPOINT = 768;
 
 export function OnboardingTour() {
-  const { setOpenMobile } = useSidebar();
-  const setOpenMobileRef = useRef(setOpenMobile);
-  setOpenMobileRef.current = setOpenMobile;
-
   useEffect(() => {
     if (localStorage.getItem(STORAGE_KEY)) return;
 
@@ -19,6 +14,81 @@ export function OnboardingTour() {
 
     const timeout = setTimeout(async () => {
       const { driver } = await import("driver.js");
+      const mobile = isMobile();
+
+      const desktopSteps = [
+        {
+          popover: {
+            title: "Welkom bij Bunyan \u{1F44B}",
+            description:
+              "We laten u kort zien hoe het dashboard werkt. U kunt de rondleiding altijd overslaan.",
+          },
+        },
+        {
+          element: "[data-tour='sidebar-nav']",
+          popover: {
+            title: "Navigatie",
+            description:
+              "Hier vindt u alle pagina\u2019s: donaties, dragers, fondsen, campagnes en meer.",
+          },
+        },
+        {
+          element: "[data-tour='header-search']",
+          popover: {
+            title: "Zoeken",
+            description:
+              "Zoek snel naar donateurs, fondsen of campagnes. U kunt ook \u2318K gebruiken.",
+          },
+        },
+        {
+          element: "[data-tour='donation-link']",
+          popover: {
+            title: "Uw donatiepagina",
+            description:
+              "Deel deze link met uw gemeenschap om donaties te ontvangen.",
+          },
+        },
+        {
+          element: "[data-tour='sidebar-settings']",
+          popover: {
+            title: "Instellingen",
+            description:
+              "Configureer uw moskee, koppel Stripe en beheer uw team.",
+          },
+        },
+      ];
+
+      const mobileSteps = [
+        {
+          popover: {
+            title: "Welkom bij Bunyan \u{1F44B}",
+            description:
+              "We laten u kort zien hoe het dashboard werkt. U kunt de rondleiding altijd overslaan.",
+          },
+        },
+        {
+          element: "[data-tour='header-search']",
+          popover: {
+            title: "Zoeken",
+            description: "Zoek snel naar donateurs, fondsen of campagnes.",
+          },
+        },
+        {
+          element: "[data-tour='donation-link']",
+          popover: {
+            title: "Uw donatiepagina",
+            description:
+              "Deel deze link met uw gemeenschap om donaties te ontvangen.",
+          },
+        },
+        {
+          popover: {
+            title: "Navigatie & Instellingen",
+            description:
+              "Gebruik het menu linksboven om te navigeren naar donaties, fondsen, campagnes en instellingen.",
+          },
+        },
+      ];
 
       const driverObj = driver({
         showProgress: true,
@@ -35,58 +105,8 @@ export function OnboardingTour() {
         allowClose: true,
         onDestroyed: () => {
           localStorage.setItem(STORAGE_KEY, "true");
-          if (isMobile()) setOpenMobileRef.current(false);
         },
-        steps: [
-          {
-            popover: {
-              title: "Welkom bij Bunyan \u{1F44B}",
-              description:
-                "We laten u kort zien hoe het dashboard werkt. U kunt de rondleiding altijd overslaan.",
-            },
-          },
-          {
-            element: "[data-tour='sidebar-nav']",
-            popover: {
-              title: "Navigatie",
-              description:
-                "Hier vindt u alle pagina's: donaties, dragers, fondsen, campagnes en meer.",
-              onPopoverRender: () => {
-                if (isMobile()) setOpenMobileRef.current(true);
-              },
-            },
-          },
-          {
-            element: "[data-tour='header-search']",
-            popover: {
-              title: "Zoeken",
-              description:
-                "Zoek snel naar donateurs, fondsen of campagnes. U kunt ook \u2318K gebruiken.",
-              onPopoverRender: () => {
-                if (isMobile()) setOpenMobileRef.current(false);
-              },
-            },
-          },
-          {
-            element: "[data-tour='donation-link']",
-            popover: {
-              title: "Uw donatiepagina",
-              description:
-                "Deel deze link met uw gemeenschap om donaties te ontvangen.",
-            },
-          },
-          {
-            element: "[data-tour='sidebar-settings']",
-            popover: {
-              title: "Instellingen",
-              description:
-                "Configureer uw moskee, koppel Stripe en beheer uw team.",
-              onPopoverRender: () => {
-                if (isMobile()) setOpenMobileRef.current(true);
-              },
-            },
-          },
-        ],
+        steps: mobile ? mobileSteps : desktopSteps,
       });
 
       driverObj.drive();

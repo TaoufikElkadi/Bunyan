@@ -140,12 +140,12 @@ export async function POST() {
         });
       }
 
-      // Has pending requirements — generate a link to update info
+      // Has pending requirements — generate a link to complete info
       const accountLink = await stripe.accountLinks.create({
         account: accountId,
         refresh_url: `${APP_URL}/instellingen?tab=betalingen&stripe=refresh`,
         return_url: `${APP_URL}/instellingen?tab=betalingen&stripe=complete`,
-        type: "account_update",
+        type: "account_onboarding",
       });
 
       return NextResponse.json({ url: accountLink.url, accountId });
