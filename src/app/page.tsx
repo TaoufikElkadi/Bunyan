@@ -25,7 +25,7 @@ export default function HomePage() {
     <>
       {/* ---- Desktop: fixed navbar (outside main div so fixed positioning always works) ---- */}
       <header className="hidden lg:flex fixed top-0 left-0 right-0 z-[999] justify-center px-6 py-2">
-        <nav className="relative overflow-hidden flex items-center w-full max-w-[1080px] bg-[#efe8da] rounded-xl px-4 py-2.5 shadow-[0_1px_12px_rgba(38,27,7,0.08)] border border-[#d6cdb8]/40">
+        <nav className="relative overflow-hidden flex items-center w-full max-w-[1080px] bg-[#f8f7f5] rounded-xl px-4 py-2.5 shadow-[0_1px_12px_rgba(38,27,7,0.08)] border border-[#d6cdb8]/40">
           {/* Moorish geometric pattern overlay */}
           <div
             className="absolute inset-0 opacity-[0.25] pointer-events-none"
@@ -606,9 +606,18 @@ export default function HomePage() {
         {/* ============================================================ */}
         {/*  FOOTER                                                       */}
         {/* ============================================================ */}
-        <footer className="bg-[#f8f7f5]">
+        <footer className="relative bg-[#f8f7f5] overflow-hidden">
+          {/* Moorish pattern background */}
+          <div
+            className="absolute inset-0 opacity-[0.15] pointer-events-none"
+            style={{
+              backgroundImage: "url('/patterns/moorish_pattern.png')",
+              backgroundSize: "300px auto",
+              backgroundRepeat: "repeat",
+            }}
+          />
           {/* ── Top link columns ── */}
-          <div className="mx-auto max-w-[1216px] px-[30px] pt-16 pb-10">
+          <div className="relative mx-auto max-w-[1216px] px-[30px] pt-16 pb-10">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-10">
               {/* Col 1: Bedrijf */}
               <div>
@@ -742,7 +751,7 @@ export default function HomePage() {
           </div>
 
           {/* ── Giant brand name ── */}
-          <div className="mx-auto max-w-[1216px] px-[20px] sm:px-[30px] overflow-hidden mt-4">
+          <div className="relative mx-auto max-w-[1216px] px-[20px] sm:px-[30px] overflow-hidden mt-4">
             <h2
               className="font-[380] leading-[0.88] tracking-[-0.03em] text-[#1a1510] select-none"
               style={{
@@ -755,7 +764,7 @@ export default function HomePage() {
           </div>
 
           {/* ── Legal bar ── */}
-          <div className="border-t border-[#e3dfd5] mt-6">
+          <div className="relative border-t border-[#e3dfd5] mt-6">
             <div className="mx-auto max-w-[1216px] px-[30px] py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <p className="text-[11px] text-[color:rgba(26,21,16,0.38)]">
                 Copyright &copy; 2026 Bunyan — Moskee software voor
