@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+  <defs>
+    <style>
+      .line { fill: none; stroke: #261b07; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+    </style>
+  </defs>
+  <!-- 10-pointed star rosette at center -->
+  <polygon class="line" points="100,18 108,42 132,30 118,52 144,52 124,66 138,88 114,80 112,106 100,84 88,106 86,80 62,88 76,66 56,52 82,52 68,30 92,42" />
+  <!-- Inner star -->
+  <polygon class="line" points="100,40 106,56 122,48 114,62 130,66 116,74 124,90 110,82 106,98 100,82 94,98 90,82 76,90 84,74 70,66 86,62 78,48 94,56" />
+  <!-- Corner rosettes (quarter stars at each corner, will tile) -->
+  <!-- Top-left -->
+  <polygon class="line" points="0,0 8,24 32,12 18,34 44,34 24,48 38,70 14,62 12,88 0,66 0,0" />
+  <!-- Top-right -->
+  <polygon class="line" points="200,0 192,24 168,12 182,34 156,34 176,48 162,70 186,62 188,88 200,66 200,0" />
+  <!-- Bottom-left -->
+  <polygon class="line" points="0,200 8,176 32,188 18,166 44,166 24,152 38,130 14,138 12,112 0,134 0,200" />
+  <!-- Bottom-right -->
+  <polygon class="line" points="200,200 192,176 168,188 182,166 156,166 176,152 162,130 186,138 188,112 200,134 200,200" />
+  <!-- Connecting geometric elements - horizontal/vertical bridges -->
+  <!-- Top bridge -->
+  <path class="line" d="M68,12 L78,0 M132,12 L122,0" />
+  <path class="line" d="M44,34 L56,24 L68,30 M156,34 L144,24 L132,30" />
+  <!-- Bottom bridge -->
+  <path class="line" d="M68,188 L78,200 M132,188 L122,200" />
+  <path class="line" d="M44,166 L56,176 L68,170 M156,166 L144,176 L132,170" />
+  <!-- Left bridge -->
+  <path class="line" d="M12,88 L0,78 M12,112 L0,122" />
+  <path class="line" d="M18,34 L0,32 M18,166 L0,168" />
+  <!-- Right bridge -->
+  <path class="line" d="M188,88 L200,78 M188,112 L200,122" />
+  <path class="line" d="M182,34 L200,32 M182,166 L200,168" />
+  <!-- Interstitial pentagons -->
+  <polygon class="line" points="56,24 68,12 78,0 78,18 68,30" />
+  <polygon class="line" points="144,24 132,12 122,0 122,18 132,30" />
+  <polygon class="line" points="56,176 68,188 78,200 78,182 68,170" />
+  <polygon class="line" points="144,176 132,188 122,200 122,182 132,170" />
+  <!-- Connecting arcs between rosettes -->
+  <path class="line" d="M38,70 Q50,80 56,92 M14,62 Q0,72 0,78" />
+  <path class="line" d="M162,70 Q150,80 144,92 M186,62 Q200,72 200,78" />
+  <path class="line" d="M38,130 Q50,120 56,108 M14,138 Q0,128 0,122" />
+  <path class="line" d="M162,130 Q150,120 144,108 M186,138 Q200,128 200,122" />
+  <!-- Side diamonds -->
+  <polygon class="line" points="0,100 12,88 24,100 12,112" />
+  <polygon class="line" points="200,100 188,88 176,100 188,112" />
+  <polygon class="line" points="100,0 112,12 100,18 88,12" />
+  <polygon class="line" points="100,200 112,188 100,182 88,188" />
+</svg>
