@@ -771,7 +771,7 @@ export default function HomePage() {
               <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5">
                 {[
                   { label: "Privacybeleid", href: "/privacy" },
-                  { label: "Algemene voorwaarden", href: "/terms" },
+                  { label: "Algemene voorwaarden", href: "/voorwaarden" },
                   { label: "AVG-compliance", href: "#" },
                   { label: "Beveiliging", href: "#" },
                   { label: "Status", href: "#" },
