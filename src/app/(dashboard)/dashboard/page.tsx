@@ -191,6 +191,7 @@ async function DashboardContent() {
     { data: recurringTotal },
     { count: activeRecurrings },
     { count: totalDonors },
+    { data: newRecurringsData },
   ] = await Promise.all([
     supabase.rpc("get_dashboard_metrics", {
       p_mosque_id: mosqueId,
@@ -199,7 +200,11 @@ async function DashboardContent() {
     supabase.rpc("get_monthly_totals", { p_mosque_id: mosqueId }),
     supabase.rpc("get_fund_breakdown", {
       p_mosque_id: mosqueId,
-      p_month_start: new Date(2000, 0, 1).toISOString(),
+      p_month_start: new Date(
+        now.getFullYear(),
+        now.getMonth() - 11,
+        1,
+      ).toISOString(),
     }),
     supabase.rpc("get_monthly_totals_by_fund", { p_mosque_id: mosqueId }),
     supabase
@@ -215,7 +220,16 @@ async function DashboardContent() {
       .eq("is_active", true)
       .order("created_at", { ascending: false })
       .limit(5),
-    supabase.rpc("get_recurring_donation_total", { p_mosque_id: mosqueId }),
+    supabase
+      .from("donations")
+      .select("amount")
+      .eq("mosque_id", mosqueId)
+      .eq("status", "completed")
+      .eq("is_recurring", true)
+      .gte(
+        "created_at",
+        new Date(now.getFullYear(), now.getMonth() - 11, 1).toISOString(),
+      ),
     supabase
       .from("recurrings")
       .select("*", { count: "exact", head: true })
@@ -225,6 +239,12 @@ async function DashboardContent() {
       .from("donors")
       .select("*", { count: "exact", head: true })
       .eq("mosque_id", mosqueId),
+    supabase
+      .from("recurrings")
+      .select("amount, frequency")
+      .eq("mosque_id", mosqueId)
+      .eq("status", "active")
+      .gte("created_at", startOfMonth),
   ]);
 
   const m = (metrics ?? {}) as DashboardMetrics;
@@ -232,7 +252,34 @@ async function DashboardContent() {
   const monthlyData = (monthly ?? []) as MonthlyTotal[];
   const monthlyByFundData = (monthlyByFund ?? []) as MonthlyByFund[];
   const fundData = (byFund ?? []) as FundBreakdown[];
-  const allTimeRecurringTotal = (recurringTotal as number) ?? 0;
+  const allTimeRecurringTotal = (recurringTotal ?? []).reduce(
+    (sum: number, r: { amount: number }) => sum + r.amount,
+    0,
+  );
+
+  // MRR trend: new recurrings created this month vs previous base
+  // Normalize amounts by frequency to match the SQL MRR calculation
+  const newMrrThisMonth = (newRecurringsData ?? []).reduce(
+    (sum: number, r: { amount: number; frequency: string }) => {
+      const normalized =
+        r.frequency === "weekly"
+          ? r.amount * 4
+          : r.frequency === "yearly"
+            ? Math.floor(r.amount / 12)
+            : r.amount;
+      return sum + normalized;
+    },
+    0,
+  );
+  const currentMrr = m.recurring_mrr ?? 0;
+  const prevMrr = currentMrr - newMrrThisMonth;
+  const trendMrr = currentMrr > 0 ? calcTrend(currentMrr, prevMrr) : null;
+
+  // Donor trend: new donors this month vs previous total
+  const newDonors = m.new_donors ?? 0;
+  const prevDonorCount = (totalDonors ?? 0) - newDonors;
+  const trendDonors =
+    (totalDonors ?? 0) > 0 ? calcTrend(totalDonors ?? 0, prevDonorCount) : null;
 
   const onlineDonations = usageRows?.online_donations ?? 0;
   const maxOnline = limits.maxOnlineDonations;
@@ -349,11 +396,13 @@ async function DashboardContent() {
                 <KPICell
                   label="Maandelijks terugkerend"
                   value={formatMoney(m.recurring_mrr ?? 0)}
+                  trend={trendMrr}
                   sub={`${activeRecurrings ?? 0} actieve mandaten`}
                 />
                 <KPICell
                   label="Donateurs"
                   value={String(totalDonors ?? 0)}
+                  trend={trendDonors}
                   sub={
                     m.new_donors > 0
                       ? `+${m.new_donors} nieuw deze maand`

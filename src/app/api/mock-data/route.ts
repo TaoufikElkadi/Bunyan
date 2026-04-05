@@ -1,114 +1,329 @@
-import { NextResponse } from 'next/server'
-import { getCachedProfile } from '@/lib/supabase/cached'
+import { NextResponse } from "next/server";
+import { getCachedProfile } from "@/lib/supabase/cached";
 
-export const maxDuration = 60 // seconds (needed for bulk operations on prod)
+export const maxDuration = 60; // seconds (needed for bulk operations on prod)
 
 /* ------------------------------------------------------------------ */
 /*  REALISTIC NAME POOLS (Dutch Muslim community)                      */
 /* ------------------------------------------------------------------ */
 
 // Moroccan-Dutch (largest group in most Dutch mosques)
-const MOROCCAN_FIRST_M = ['Mohammed', 'Ahmed', 'Youssef', 'Ibrahim', 'Omar', 'Hassan', 'Rachid', 'Karim', 'Bilal', 'Hamza', 'Tariq', 'Said', 'Khalid', 'Noureddine', 'Abdel', 'Fouad', 'Driss', 'Mustapha', 'Jamal', 'Aziz', 'Mehdi', 'Soufiane', 'Amine', 'Zakaria', 'Ismail', 'Brahim', 'Redouan', 'Samir', 'Mounir', 'Abdelkader']
-const MOROCCAN_FIRST_F = ['Fatima', 'Khadija', 'Amina', 'Nadia', 'Sara', 'Layla', 'Hanan', 'Samira', 'Zineb', 'Naima', 'Houria', 'Malika', 'Souad', 'Aisha', 'Latifa', 'Hayat', 'Imane', 'Soukaina', 'Rachida', 'Karima']
-const MOROCCAN_LAST = ['El Amrani', 'Bouazza', 'Khalil', 'Bensaid', 'El Idrissi', 'Tahiri', 'Rachidi', 'Benali', 'Ziani', 'El Moussaoui', 'Haddad', 'Amrani', 'Bouzidi', 'Mansouri', 'El Fassi', 'Ouahabi', 'Tazi', 'Benchekroun', 'El Alaoui', 'Berrada', 'Bouhali', 'El Khattabi', 'Chahbi', 'Daoudi', 'El Bakkali', 'Fikri', 'Ghazi', 'Hajji', 'Ait Brahim', 'Jabri', 'Kabbaj', 'Lahlou', 'Moussaid', 'Naciri', 'Oujdi', 'Rifi', 'Seddiki', 'Talbi', 'Yaacoubi', 'Zerhouni']
+const MOROCCAN_FIRST_M = [
+  "Mohammed",
+  "Ahmed",
+  "Youssef",
+  "Ibrahim",
+  "Omar",
+  "Hassan",
+  "Rachid",
+  "Karim",
+  "Bilal",
+  "Hamza",
+  "Tariq",
+  "Said",
+  "Khalid",
+  "Noureddine",
+  "Abdel",
+  "Fouad",
+  "Driss",
+  "Mustapha",
+  "Jamal",
+  "Aziz",
+  "Mehdi",
+  "Soufiane",
+  "Amine",
+  "Zakaria",
+  "Ismail",
+  "Brahim",
+  "Redouan",
+  "Samir",
+  "Mounir",
+  "Abdelkader",
+];
+const MOROCCAN_FIRST_F = [
+  "Fatima",
+  "Khadija",
+  "Amina",
+  "Nadia",
+  "Sara",
+  "Layla",
+  "Hanan",
+  "Samira",
+  "Zineb",
+  "Naima",
+  "Houria",
+  "Malika",
+  "Souad",
+  "Aisha",
+  "Latifa",
+  "Hayat",
+  "Imane",
+  "Soukaina",
+  "Rachida",
+  "Karima",
+];
+const MOROCCAN_LAST = [
+  "El Amrani",
+  "Bouazza",
+  "Khalil",
+  "Bensaid",
+  "El Idrissi",
+  "Tahiri",
+  "Rachidi",
+  "Benali",
+  "Ziani",
+  "El Moussaoui",
+  "Haddad",
+  "Amrani",
+  "Bouzidi",
+  "Mansouri",
+  "El Fassi",
+  "Ouahabi",
+  "Tazi",
+  "Benchekroun",
+  "El Alaoui",
+  "Berrada",
+  "Bouhali",
+  "El Khattabi",
+  "Chahbi",
+  "Daoudi",
+  "El Bakkali",
+  "Fikri",
+  "Ghazi",
+  "Hajji",
+  "Ait Brahim",
+  "Jabri",
+  "Kabbaj",
+  "Lahlou",
+  "Moussaid",
+  "Naciri",
+  "Oujdi",
+  "Rifi",
+  "Seddiki",
+  "Talbi",
+  "Yaacoubi",
+  "Zerhouni",
+];
 
 // Turkish-Dutch
-const TURKISH_FIRST_M = ['Mehmet', 'Ali', 'Mustafa', 'Hasan', 'Ahmet', 'Emre', 'Burak', 'Yusuf', 'Murat', 'Serkan', 'Fatih', 'Kemal', 'Omer', 'Eren', 'Selim']
-const TURKISH_FIRST_F = ['Ayse', 'Fatma', 'Elif', 'Zeynep', 'Merve', 'Esra', 'Sema', 'Hatice', 'Derya', 'Tugba']
-const TURKISH_LAST = ['Yilmaz', 'Kaya', 'Demir', 'Celik', 'Sahin', 'Ozturk', 'Arslan', 'Dogan', 'Kilic', 'Aydin', 'Erdogan', 'Gunes', 'Polat', 'Kaplan', 'Tekin']
+const TURKISH_FIRST_M = [
+  "Mehmet",
+  "Ali",
+  "Mustafa",
+  "Hasan",
+  "Ahmet",
+  "Emre",
+  "Burak",
+  "Yusuf",
+  "Murat",
+  "Serkan",
+  "Fatih",
+  "Kemal",
+  "Omer",
+  "Eren",
+  "Selim",
+];
+const TURKISH_FIRST_F = [
+  "Ayse",
+  "Fatma",
+  "Elif",
+  "Zeynep",
+  "Merve",
+  "Esra",
+  "Sema",
+  "Hatice",
+  "Derya",
+  "Tugba",
+];
+const TURKISH_LAST = [
+  "Yilmaz",
+  "Kaya",
+  "Demir",
+  "Celik",
+  "Sahin",
+  "Ozturk",
+  "Arslan",
+  "Dogan",
+  "Kilic",
+  "Aydin",
+  "Erdogan",
+  "Gunes",
+  "Polat",
+  "Kaplan",
+  "Tekin",
+];
 
 // Somali-Dutch
-const SOMALI_FIRST_M = ['Abdi', 'Mohamed', 'Yusuf', 'Abdullahi', 'Mahad', 'Hamse', 'Bashir', 'Farah', 'Liban', 'Dahir']
-const SOMALI_FIRST_F = ['Hodan', 'Amina', 'Fadumo', 'Halimo', 'Sahra', 'Ayan', 'Nasra', 'Ifrah', 'Deeqa', 'Fartun']
-const SOMALI_LAST = ['Abdi', 'Mohamed', 'Ali', 'Hassan', 'Hussein', 'Omar', 'Warsame', 'Jama', 'Adan', 'Mohamud']
+const SOMALI_FIRST_M = [
+  "Abdi",
+  "Mohamed",
+  "Yusuf",
+  "Abdullahi",
+  "Mahad",
+  "Hamse",
+  "Bashir",
+  "Farah",
+  "Liban",
+  "Dahir",
+];
+const SOMALI_FIRST_F = [
+  "Hodan",
+  "Amina",
+  "Fadumo",
+  "Halimo",
+  "Sahra",
+  "Ayan",
+  "Nasra",
+  "Ifrah",
+  "Deeqa",
+  "Fartun",
+];
+const SOMALI_LAST = [
+  "Abdi",
+  "Mohamed",
+  "Ali",
+  "Hassan",
+  "Hussein",
+  "Omar",
+  "Warsame",
+  "Jama",
+  "Adan",
+  "Mohamud",
+];
 
 // Indonesian/Surinamese-Dutch
-const INDO_FIRST_M = ['Rizal', 'Arif', 'Fajar', 'Dian', 'Budi', 'Agus', 'Wahyu', 'Hendra']
-const INDO_FIRST_F = ['Siti', 'Dewi', 'Nur', 'Putri', 'Rani', 'Ayu']
-const INDO_LAST = ['Hakim', 'Sulaiman', 'Rahman', 'Bakri', 'Sjamsuddin', 'Kartodikromo', 'Prawiro', 'Hadiningrat']
+const INDO_FIRST_M = [
+  "Rizal",
+  "Arif",
+  "Fajar",
+  "Dian",
+  "Budi",
+  "Agus",
+  "Wahyu",
+  "Hendra",
+];
+const INDO_FIRST_F = ["Siti", "Dewi", "Nur", "Putri", "Rani", "Ayu"];
+const INDO_LAST = [
+  "Hakim",
+  "Sulaiman",
+  "Rahman",
+  "Bakri",
+  "Sjamsuddin",
+  "Kartodikromo",
+  "Prawiro",
+  "Hadiningrat",
+];
 
 // Dutch converts
-const DUTCH_FIRST_M = ['Jan', 'Willem', 'Thomas', 'Pieter', 'Joost', 'Martijn', 'Sander', 'Jeroen']
-const DUTCH_FIRST_F = ['Anna', 'Sophie', 'Lisa', 'Esther', 'Mirjam', 'Marieke']
-const DUTCH_LAST = ['de Vries', 'van den Berg', 'Bakker', 'Jansen', 'de Jong', 'Smit', 'Meijer', 'Bos']
+const DUTCH_FIRST_M = [
+  "Jan",
+  "Willem",
+  "Thomas",
+  "Pieter",
+  "Joost",
+  "Martijn",
+  "Sander",
+  "Jeroen",
+];
+const DUTCH_FIRST_F = ["Anna", "Sophie", "Lisa", "Esther", "Mirjam", "Marieke"];
+const DUTCH_LAST = [
+  "de Vries",
+  "van den Berg",
+  "Bakker",
+  "Jansen",
+  "de Jong",
+  "Smit",
+  "Meijer",
+  "Bos",
+];
 
 // Dutch cities + postal codes
 const ADDRESSES = [
   // Amsterdam
-  { street: 'Eerste van Swindenstraat', city: 'Amsterdam', postcode: '1093' },
-  { street: 'Javastraat', city: 'Amsterdam', postcode: '1094' },
-  { street: 'Dapperstraat', city: 'Amsterdam', postcode: '1093' },
-  { street: 'Molukkenstraat', city: 'Amsterdam', postcode: '1098' },
-  { street: 'Balistraat', city: 'Amsterdam', postcode: '1094' },
-  { street: 'Insulindeweg', city: 'Amsterdam', postcode: '1094' },
-  { street: 'Pretoriusstraat', city: 'Amsterdam', postcode: '1092' },
-  { street: 'Linnaeusstraat', city: 'Amsterdam', postcode: '1093' },
-  { street: 'Celebesstraat', city: 'Amsterdam', postcode: '1095' },
-  { street: 'Sumatrastraat', city: 'Amsterdam', postcode: '1094' },
+  { street: "Eerste van Swindenstraat", city: "Amsterdam", postcode: "1093" },
+  { street: "Javastraat", city: "Amsterdam", postcode: "1094" },
+  { street: "Dapperstraat", city: "Amsterdam", postcode: "1093" },
+  { street: "Molukkenstraat", city: "Amsterdam", postcode: "1098" },
+  { street: "Balistraat", city: "Amsterdam", postcode: "1094" },
+  { street: "Insulindeweg", city: "Amsterdam", postcode: "1094" },
+  { street: "Pretoriusstraat", city: "Amsterdam", postcode: "1092" },
+  { street: "Linnaeusstraat", city: "Amsterdam", postcode: "1093" },
+  { street: "Celebesstraat", city: "Amsterdam", postcode: "1095" },
+  { street: "Sumatrastraat", city: "Amsterdam", postcode: "1094" },
   // Rotterdam
-  { street: 'Katendrechtse Lagedijk', city: 'Rotterdam', postcode: '3082' },
-  { street: 'Beijerlandselaan', city: 'Rotterdam', postcode: '3072' },
-  { street: 'Dorpsweg', city: 'Rotterdam', postcode: '3083' },
-  { street: 'Dordtselaan', city: 'Rotterdam', postcode: '3073' },
-  { street: 'Groene Hilledijk', city: 'Rotterdam', postcode: '3073' },
+  { street: "Katendrechtse Lagedijk", city: "Rotterdam", postcode: "3082" },
+  { street: "Beijerlandselaan", city: "Rotterdam", postcode: "3072" },
+  { street: "Dorpsweg", city: "Rotterdam", postcode: "3083" },
+  { street: "Dordtselaan", city: "Rotterdam", postcode: "3073" },
+  { street: "Groene Hilledijk", city: "Rotterdam", postcode: "3073" },
   // Den Haag
-  { street: 'Hoefkade', city: 'Den Haag', postcode: '2526' },
-  { street: 'Schilderswijk', city: 'Den Haag', postcode: '2525' },
-  { street: 'Transvaalstraat', city: 'Den Haag', postcode: '2518' },
+  { street: "Hoefkade", city: "Den Haag", postcode: "2526" },
+  { street: "Schilderswijk", city: "Den Haag", postcode: "2525" },
+  { street: "Transvaalstraat", city: "Den Haag", postcode: "2518" },
   // Utrecht
-  { street: 'Kanaalstraat', city: 'Utrecht', postcode: '3531' },
-  { street: 'Lombok', city: 'Utrecht', postcode: '3531' },
-  { street: 'Kanaleneiland', city: 'Utrecht', postcode: '3527' },
-]
+  { street: "Kanaalstraat", city: "Utrecht", postcode: "3531" },
+  { street: "Lombok", city: "Utrecht", postcode: "3531" },
+  { street: "Kanaleneiland", city: "Utrecht", postcode: "3527" },
+];
 
 const TAGS_POOL = [
-  'bestuurslid', 'vrijwilliger', 'ramadan', 'qurbani', 'jongeren',
-  'vrouwen', 'onderwijs', 'bouw', 'vaste-donateur', 'zakaat',
-]
+  "bestuurslid",
+  "vrijwilliger",
+  "ramadan",
+  "qurbani",
+  "jongeren",
+  "vrouwen",
+  "onderwijs",
+  "bouw",
+  "vaste-donateur",
+  "zakaat",
+];
 
-const METHODS = ['ideal', 'card', 'sepa', 'cash', 'bank_transfer'] as const
+const METHODS = ["ideal", "card", "sepa", "cash", "bank_transfer"] as const;
 
 /* ------------------------------------------------------------------ */
 /*  HELPERS                                                            */
 /* ------------------------------------------------------------------ */
 
 function pick<T>(arr: readonly T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)]
+  return arr[Math.floor(Math.random() * arr.length)];
 }
 
 function pickN<T>(arr: readonly T[], n: number): T[] {
-  const shuffled = [...arr].sort(() => Math.random() - 0.5)
-  return shuffled.slice(0, n)
+  const shuffled = [...arr].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, n);
 }
 
 function weightedRandom<T>(items: readonly T[], weights: number[]): T {
-  const r = Math.random()
-  let sum = 0
+  const r = Math.random();
+  let sum = 0;
   for (let i = 0; i < items.length; i++) {
-    sum += weights[i]
-    if (r <= sum) return items[i]
+    sum += weights[i];
+    if (r <= sum) return items[i];
   }
-  return items[items.length - 1]
+  return items[items.length - 1];
 }
 
 function generateIbanHint(): string {
-  return String(Math.floor(1000 + Math.random() * 9000))
+  return String(Math.floor(1000 + Math.random() * 9000));
 }
 
 function randomDate(from: Date, to: Date): Date {
-  return new Date(from.getTime() + Math.random() * (to.getTime() - from.getTime()))
+  return new Date(
+    from.getTime() + Math.random() * (to.getTime() - from.getTime()),
+  );
 }
 
 function generatePhone(): string | null {
-  if (Math.random() > 0.6) return null
-  return `06${Math.floor(10000000 + Math.random() * 90000000)}`
+  if (Math.random() > 0.6) return null;
+  return `06${Math.floor(10000000 + Math.random() * 90000000)}`;
 }
 
 function generateAddress(): string | null {
-  if (Math.random() > 0.45) return null
-  const addr = pick(ADDRESSES)
-  const num = Math.floor(1 + Math.random() * 200)
-  return `${addr.street} ${num}, ${addr.postcode} ${addr.city}`
+  if (Math.random() > 0.45) return null;
+  const addr = pick(ADDRESSES);
+  const num = Math.floor(1 + Math.random() * 200);
+  return `${addr.street} ${num}, ${addr.postcode} ${addr.city}`;
 }
 
 /* ------------------------------------------------------------------ */
@@ -116,33 +331,40 @@ function generateAddress(): string | null {
 /* ------------------------------------------------------------------ */
 
 type DonorArchetype = {
-  name: string
+  name: string;
   /** Weight for how many donors of this archetype */
-  weight: number
+  weight: number;
   /** How to generate donation history */
   donationPattern: {
-    countRange: [number, number]
-    amountRange: [number, number] // cents
-    monthsBack: number
-    methodWeights: number[] // ideal, card, sepa, cash, bank_transfer
-    frequency: 'weekly' | 'monthly' | 'bimonthly' | 'quarterly' | 'ramadan_only' | 'irregular' | 'one_time'
-  }
-  hasEmail: boolean
-  hasRecurring: boolean
-  periodicGiftChance: number
-  tagChance: number
-}
+    countRange: [number, number];
+    amountRange: [number, number]; // cents
+    monthsBack: number;
+    methodWeights: number[]; // ideal, card, sepa, cash, bank_transfer
+    frequency:
+      | "weekly"
+      | "monthly"
+      | "bimonthly"
+      | "quarterly"
+      | "ramadan_only"
+      | "irregular"
+      | "one_time";
+  };
+  hasEmail: boolean;
+  hasRecurring: boolean;
+  periodicGiftChance: number;
+  tagChance: number;
+};
 
 const ARCHETYPES: DonorArchetype[] = [
   {
-    name: 'weekly_regular',
+    name: "weekly_regular",
     weight: 0.08,
     donationPattern: {
       countRange: [30, 52],
       amountRange: [500, 2000],
       monthsBack: 12,
       methodWeights: [0.1, 0.05, 0.05, 0.75, 0.05],
-      frequency: 'weekly',
+      frequency: "weekly",
     },
     hasEmail: true,
     hasRecurring: false,
@@ -150,14 +372,14 @@ const ARCHETYPES: DonorArchetype[] = [
     tagChance: 0.5,
   },
   {
-    name: 'monthly_steady',
+    name: "monthly_steady",
     weight: 0.18,
     donationPattern: {
       countRange: [8, 14],
       amountRange: [2000, 7500],
       monthsBack: 14,
       methodWeights: [0.45, 0.2, 0.2, 0.1, 0.05],
-      frequency: 'monthly',
+      frequency: "monthly",
     },
     hasEmail: true,
     hasRecurring: true,
@@ -165,14 +387,14 @@ const ARCHETYPES: DonorArchetype[] = [
     tagChance: 0.4,
   },
   {
-    name: 'quarterly_donor',
+    name: "quarterly_donor",
     weight: 0.12,
     donationPattern: {
       countRange: [3, 5],
       amountRange: [5000, 15000],
       monthsBack: 14,
       methodWeights: [0.5, 0.25, 0.15, 0.05, 0.05],
-      frequency: 'quarterly',
+      frequency: "quarterly",
     },
     hasEmail: true,
     hasRecurring: false,
@@ -180,14 +402,14 @@ const ARCHETYPES: DonorArchetype[] = [
     tagChance: 0.3,
   },
   {
-    name: 'ramadan_only',
+    name: "ramadan_only",
     weight: 0.15,
     donationPattern: {
       countRange: [1, 3],
       amountRange: [5000, 25000],
       monthsBack: 13,
       methodWeights: [0.5, 0.3, 0.05, 0.1, 0.05],
-      frequency: 'ramadan_only',
+      frequency: "ramadan_only",
     },
     hasEmail: true,
     hasRecurring: false,
@@ -195,14 +417,14 @@ const ARCHETYPES: DonorArchetype[] = [
     tagChance: 0.6,
   },
   {
-    name: 'big_annual',
+    name: "big_annual",
     weight: 0.04,
     donationPattern: {
       countRange: [1, 2],
       amountRange: [25000, 100000],
       monthsBack: 14,
       methodWeights: [0.2, 0.1, 0.1, 0.1, 0.5],
-      frequency: 'irregular',
+      frequency: "irregular",
     },
     hasEmail: true,
     hasRecurring: false,
@@ -210,14 +432,14 @@ const ARCHETYPES: DonorArchetype[] = [
     tagChance: 0.7,
   },
   {
-    name: 'lapsed_donor',
+    name: "lapsed_donor",
     weight: 0.12,
     donationPattern: {
       countRange: [3, 10],
       amountRange: [1500, 5000],
       monthsBack: 24,
       methodWeights: [0.35, 0.2, 0.15, 0.2, 0.1],
-      frequency: 'irregular',
+      frequency: "irregular",
     },
     hasEmail: true,
     hasRecurring: false,
@@ -225,14 +447,14 @@ const ARCHETYPES: DonorArchetype[] = [
     tagChance: 0.2,
   },
   {
-    name: 'churned',
+    name: "churned",
     weight: 0.08,
     donationPattern: {
       countRange: [2, 6],
       amountRange: [1000, 4000],
       monthsBack: 30,
       methodWeights: [0.3, 0.2, 0.1, 0.3, 0.1],
-      frequency: 'irregular',
+      frequency: "irregular",
     },
     hasEmail: true,
     hasRecurring: false,
@@ -240,14 +462,14 @@ const ARCHETYPES: DonorArchetype[] = [
     tagChance: 0.1,
   },
   {
-    name: 'cash_anonymous',
+    name: "cash_anonymous",
     weight: 0.08,
     donationPattern: {
       countRange: [1, 8],
       amountRange: [500, 5000],
       monthsBack: 12,
       methodWeights: [0, 0, 0, 1, 0],
-      frequency: 'irregular',
+      frequency: "irregular",
     },
     hasEmail: false,
     hasRecurring: false,
@@ -255,14 +477,14 @@ const ARCHETYPES: DonorArchetype[] = [
     tagChance: 0,
   },
   {
-    name: 'new_donor',
-    weight: 0.10,
+    name: "new_donor",
+    weight: 0.1,
     donationPattern: {
-      countRange: [1, 3],
+      countRange: [1, 2],
       amountRange: [1000, 5000],
-      monthsBack: 2,
+      monthsBack: 0,
       methodWeights: [0.5, 0.3, 0.05, 0.1, 0.05],
-      frequency: 'one_time',
+      frequency: "one_time",
     },
     hasEmail: true,
     hasRecurring: false,
@@ -270,98 +492,104 @@ const ARCHETYPES: DonorArchetype[] = [
     tagChance: 0.1,
   },
   {
-    name: 'bimonthly_steady',
+    name: "bimonthly_steady",
     weight: 0.05,
     donationPattern: {
       countRange: [4, 7],
       amountRange: [3000, 10000],
       monthsBack: 14,
       methodWeights: [0.4, 0.2, 0.25, 0.05, 0.1],
-      frequency: 'bimonthly',
+      frequency: "bimonthly",
     },
     hasEmail: true,
     hasRecurring: false,
     periodicGiftChance: 0.3,
     tagChance: 0.3,
   },
-]
+];
 
 /* ------------------------------------------------------------------ */
 /*  NAME GENERATION                                                    */
 /* ------------------------------------------------------------------ */
 
-function generateName(usedNames: Set<string>): { name: string | null; origin: string } {
+function generateName(usedNames: Set<string>): {
+  name: string | null;
+  origin: string;
+} {
   // Distribution: 50% Moroccan, 25% Turkish, 12% Somali, 8% Indonesian, 5% Dutch convert
   const origin = weightedRandom(
-    ['moroccan', 'turkish', 'somali', 'indonesian', 'dutch'] as const,
-    [0.50, 0.25, 0.12, 0.08, 0.05]
-  )
+    ["moroccan", "turkish", "somali", "indonesian", "dutch"] as const,
+    [0.5, 0.25, 0.12, 0.08, 0.05],
+  );
 
-  let first: string
-  let last: string
-  const isMale = Math.random() > 0.35
+  let first: string;
+  let last: string;
+  const isMale = Math.random() > 0.35;
 
   switch (origin) {
-    case 'moroccan':
-      first = isMale ? pick(MOROCCAN_FIRST_M) : pick(MOROCCAN_FIRST_F)
-      last = pick(MOROCCAN_LAST)
-      break
-    case 'turkish':
-      first = isMale ? pick(TURKISH_FIRST_M) : pick(TURKISH_FIRST_F)
-      last = pick(TURKISH_LAST)
-      break
-    case 'somali':
-      first = isMale ? pick(SOMALI_FIRST_M) : pick(SOMALI_FIRST_F)
-      last = pick(SOMALI_LAST)
-      break
-    case 'indonesian':
-      first = isMale ? pick(INDO_FIRST_M) : pick(INDO_FIRST_F)
-      last = pick(INDO_LAST)
-      break
-    case 'dutch':
-      first = isMale ? pick(DUTCH_FIRST_M) : pick(DUTCH_FIRST_F)
-      last = pick(DUTCH_LAST)
-      break
+    case "moroccan":
+      first = isMale ? pick(MOROCCAN_FIRST_M) : pick(MOROCCAN_FIRST_F);
+      last = pick(MOROCCAN_LAST);
+      break;
+    case "turkish":
+      first = isMale ? pick(TURKISH_FIRST_M) : pick(TURKISH_FIRST_F);
+      last = pick(TURKISH_LAST);
+      break;
+    case "somali":
+      first = isMale ? pick(SOMALI_FIRST_M) : pick(SOMALI_FIRST_F);
+      last = pick(SOMALI_LAST);
+      break;
+    case "indonesian":
+      first = isMale ? pick(INDO_FIRST_M) : pick(INDO_FIRST_F);
+      last = pick(INDO_LAST);
+      break;
+    case "dutch":
+      first = isMale ? pick(DUTCH_FIRST_M) : pick(DUTCH_FIRST_F);
+      last = pick(DUTCH_LAST);
+      break;
   }
 
-  let fullName = `${first} ${last}`
+  let fullName = `${first} ${last}`;
 
   // Ensure unique
-  let attempts = 0
+  let attempts = 0;
   while (usedNames.has(fullName) && attempts < 20) {
     // Add a suffix or re-pick
     switch (origin) {
-      case 'moroccan':
-        first = isMale ? pick(MOROCCAN_FIRST_M) : pick(MOROCCAN_FIRST_F)
-        last = pick(MOROCCAN_LAST)
-        break
-      case 'turkish':
-        first = isMale ? pick(TURKISH_FIRST_M) : pick(TURKISH_FIRST_F)
-        last = pick(TURKISH_LAST)
-        break
-      case 'somali':
-        first = isMale ? pick(SOMALI_FIRST_M) : pick(SOMALI_FIRST_F)
-        last = pick(SOMALI_LAST)
-        break
-      case 'indonesian':
-        first = isMale ? pick(INDO_FIRST_M) : pick(INDO_FIRST_F)
-        last = pick(INDO_LAST)
-        break
-      case 'dutch':
-        first = isMale ? pick(DUTCH_FIRST_M) : pick(DUTCH_FIRST_F)
-        last = pick(DUTCH_LAST)
-        break
+      case "moroccan":
+        first = isMale ? pick(MOROCCAN_FIRST_M) : pick(MOROCCAN_FIRST_F);
+        last = pick(MOROCCAN_LAST);
+        break;
+      case "turkish":
+        first = isMale ? pick(TURKISH_FIRST_M) : pick(TURKISH_FIRST_F);
+        last = pick(TURKISH_LAST);
+        break;
+      case "somali":
+        first = isMale ? pick(SOMALI_FIRST_M) : pick(SOMALI_FIRST_F);
+        last = pick(SOMALI_LAST);
+        break;
+      case "indonesian":
+        first = isMale ? pick(INDO_FIRST_M) : pick(INDO_FIRST_F);
+        last = pick(INDO_LAST);
+        break;
+      case "dutch":
+        first = isMale ? pick(DUTCH_FIRST_M) : pick(DUTCH_FIRST_F);
+        last = pick(DUTCH_LAST);
+        break;
     }
-    fullName = `${first} ${last}`
-    attempts++
+    fullName = `${first} ${last}`;
+    attempts++;
   }
 
-  usedNames.add(fullName)
-  return { name: fullName, origin }
+  usedNames.add(fullName);
+  return { name: fullName, origin };
 }
 
 function nameToEmail(name: string): string {
-  return `${name.toLowerCase().replace(/ /g, '.').replace(/[^a-z.]/g, '')}@example.com`
+  return `${name
+    .toLowerCase()
+    .replace(/ /g, ".")
+    .replace(/[^a-z.]/g, "")}@example.com`;
 }
 
 /* ------------------------------------------------------------------ */
@@ -372,182 +600,210 @@ function generateDonationDates(
   archetype: DonorArchetype,
   count: number,
 ): Date[] {
-  const now = new Date()
-  const { frequency, monthsBack } = archetype.donationPattern
-  const dates: Date[] = []
+  const now = new Date();
+  const { frequency, monthsBack } = archetype.donationPattern;
+  const dates: Date[] = [];
 
   // For lapsed/churned, stop donations before recent months
-  const isLapsed = archetype.name === 'lapsed_donor'
-  const isChurned = archetype.name === 'churned'
-  const latestOffset = isChurned ? 18 : isLapsed ? 12 : 0
+  const isLapsed = archetype.name === "lapsed_donor";
+  const isChurned = archetype.name === "churned";
+  const latestOffset = isChurned ? 18 : isLapsed ? 12 : 0;
 
-  const earliest = new Date(now.getFullYear(), now.getMonth() - monthsBack, 1)
-  const latest = new Date(now.getFullYear(), now.getMonth() - latestOffset, now.getDate())
+  const earliest = new Date(now.getFullYear(), now.getMonth() - monthsBack, 1);
+  const latest = new Date(
+    now.getFullYear(),
+    now.getMonth() - latestOffset,
+    now.getDate(),
+  );
 
   switch (frequency) {
-    case 'weekly': {
+    case "weekly": {
       // Generate roughly weekly dates
-      const startDate = new Date(latest)
-      startDate.setDate(startDate.getDate() - count * 7)
+      const startDate = new Date(latest);
+      startDate.setDate(startDate.getDate() - count * 7);
       for (let i = 0; i < count; i++) {
-        const d = new Date(startDate)
-        d.setDate(d.getDate() + i * 7 + Math.floor(Math.random() * 3) - 1) // +/- 1 day jitter
-        if (d <= latest && d >= earliest) dates.push(d)
+        const d = new Date(startDate);
+        d.setDate(d.getDate() + i * 7 + Math.floor(Math.random() * 3) - 1); // +/- 1 day jitter
+        if (d <= latest && d >= earliest) dates.push(d);
       }
-      break
+      break;
     }
-    case 'monthly': {
-      const startMonth = latest.getMonth() - count
+    case "monthly": {
+      const startMonth = latest.getMonth() - count;
       for (let i = 0; i < count; i++) {
-        const d = new Date(latest.getFullYear(), startMonth + i, 1 + Math.floor(Math.random() * 28))
-        if (d <= latest && d >= earliest) dates.push(d)
+        const d = new Date(
+          latest.getFullYear(),
+          startMonth + i,
+          1 + Math.floor(Math.random() * 28),
+        );
+        if (d <= latest && d >= earliest) dates.push(d);
       }
-      break
+      break;
     }
-    case 'bimonthly': {
-      const startMonth = latest.getMonth() - count * 2
+    case "bimonthly": {
+      const startMonth = latest.getMonth() - count * 2;
       for (let i = 0; i < count; i++) {
-        const d = new Date(latest.getFullYear(), startMonth + i * 2, 1 + Math.floor(Math.random() * 28))
-        if (d <= latest && d >= earliest) dates.push(d)
+        const d = new Date(
+          latest.getFullYear(),
+          startMonth + i * 2,
+          1 + Math.floor(Math.random() * 28),
+        );
+        if (d <= latest && d >= earliest) dates.push(d);
       }
-      break
+      break;
     }
-    case 'quarterly': {
-      const startMonth = latest.getMonth() - count * 3
+    case "quarterly": {
+      const startMonth = latest.getMonth() - count * 3;
       for (let i = 0; i < count; i++) {
-        const d = new Date(latest.getFullYear(), startMonth + i * 3, 1 + Math.floor(Math.random() * 28))
-        if (d <= latest && d >= earliest) dates.push(d)
+        const d = new Date(
+          latest.getFullYear(),
+          startMonth + i * 3,
+          1 + Math.floor(Math.random() * 28),
+        );
+        if (d <= latest && d >= earliest) dates.push(d);
       }
-      break
+      break;
     }
-    case 'ramadan_only': {
+    case "ramadan_only": {
       // Ramadan 2025: ~Mar 1 – Mar 30, Ramadan 2026: ~Feb 18 – Mar 20
       const ramadanWindows = [
         { start: new Date(2025, 2, 1), end: new Date(2025, 2, 30) },
         { start: new Date(2026, 1, 18), end: new Date(2026, 2, 20) },
-      ]
+      ];
       for (let i = 0; i < count; i++) {
-        const window = pick(ramadanWindows)
-        dates.push(randomDate(window.start, window.end))
+        const window = pick(ramadanWindows);
+        dates.push(randomDate(window.start, window.end));
       }
-      break
+      break;
     }
-    case 'one_time':
-    case 'irregular':
+    case "one_time":
+    case "irregular":
     default: {
       for (let i = 0; i < count; i++) {
-        dates.push(randomDate(earliest, latest))
+        dates.push(randomDate(earliest, latest));
       }
-      break
+      break;
     }
   }
 
-  return dates.sort((a, b) => a.getTime() - b.getTime())
+  return dates.sort((a, b) => a.getTime() - b.getTime());
 }
 
 function randomAmountInRange(min: number, max: number): number {
-  const raw = min + Math.random() * (max - min)
+  const raw = min + Math.random() * (max - min);
   // Round to nearest 50 cents for realistic amounts
-  return Math.round(raw / 50) * 50
+  return Math.round(raw / 50) * 50;
 }
 
 /* ------------------------------------------------------------------ */
 /*  ROUTE HANDLERS                                                     */
 /* ------------------------------------------------------------------ */
 
-const TARGET_DONORS = 160
-const BATCH_SIZE = 50 // Supabase insert batch size
+const TARGET_DONORS = 160;
+const BATCH_SIZE = 50; // Supabase insert batch size
 
 export async function POST() {
-  const { mosqueId, supabase, profile, isPlatformAdmin } = await getCachedProfile()
+  const { mosqueId, supabase, profile, isPlatformAdmin } =
+    await getCachedProfile();
 
   // In production, only platform admins may generate mock data.
   // Locally, any mosque admin can use it for development.
-  if (process.env.NODE_ENV === 'production' && !isPlatformAdmin) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  if (process.env.NODE_ENV === "production" && !isPlatformAdmin) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  if (!mosqueId || !profile || profile.role !== 'admin') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+  if (!mosqueId || !profile || profile.role !== "admin") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
   // Check if mock data already exists
   const { count } = await supabase
-    .from('donations')
-    .select('*', { count: 'exact', head: true })
-    .eq('mosque_id', mosqueId)
-    .eq('notes', '__mock__')
+    .from("donations")
+    .select("*", { count: "exact", head: true })
+    .eq("mosque_id", mosqueId)
+    .eq("notes", "__mock__");
 
   if (count && count > 0) {
-    return NextResponse.json({ error: 'Mock data already exists. Delete existing mock data first.' }, { status: 409 })
+    return NextResponse.json(
+      { error: "Mock data already exists. Delete existing mock data first." },
+      { status: 409 },
+    );
   }
 
   // Get existing funds
   const { data: funds } = await supabase
-    .from('funds')
-    .select('id, name')
-    .eq('mosque_id', mosqueId)
-    .eq('is_active', true)
-    .order('sort_order')
+    .from("funds")
+    .select("id, name")
+    .eq("mosque_id", mosqueId)
+    .eq("is_active", true)
+    .order("sort_order");
 
   if (!funds || funds.length === 0) {
-    return NextResponse.json({ error: 'No funds found. Create at least one fund first.' }, { status: 400 })
+    return NextResponse.json(
+      { error: "No funds found. Create at least one fund first." },
+      { status: 400 },
+    );
   }
 
   // Fund weighting: first fund (usually "Algemeen") gets most donations
-  const fundWeights = funds.map((_, i) => i === 0 ? 0.5 : 0.5 / (funds.length - 1))
+  const fundWeights = funds.map((_, i) =>
+    i === 0 ? 0.5 : 0.5 / (funds.length - 1),
+  );
 
   // ── 1. Generate donor profiles ──
-  const usedNames = new Set<string>()
-  const usedEmails = new Set<string>()
+  const usedNames = new Set<string>();
+  const usedEmails = new Set<string>();
 
   interface DonorProfile {
-    archetype: DonorArchetype
-    name: string | null
-    email: string | null
-    phone: string | null
-    address: string | null
-    iban_hint: string | null
-    tags: string[]
+    archetype: DonorArchetype;
+    name: string | null;
+    email: string | null;
+    phone: string | null;
+    address: string | null;
+    iban_hint: string | null;
+    tags: string[];
   }
 
-  const donorProfiles: DonorProfile[] = []
+  const donorProfiles: DonorProfile[] = [];
 
   // Assign archetypes based on weights
   for (let i = 0; i < TARGET_DONORS; i++) {
-    const archetype = weightedRandom(ARCHETYPES, ARCHETYPES.map(a => a.weight))
-    const isAnonymous = !archetype.hasEmail
+    const archetype = weightedRandom(
+      ARCHETYPES,
+      ARCHETYPES.map((a) => a.weight),
+    );
+    const isAnonymous = !archetype.hasEmail;
 
-    let name: string | null = null
-    let email: string | null = null
+    let name: string | null = null;
+    let email: string | null = null;
 
     if (!isAnonymous) {
-      const { name: genName } = generateName(usedNames)
-      name = genName
+      const { name: genName } = generateName(usedNames);
+      name = genName;
 
       if (name) {
-        email = nameToEmail(name)
+        email = nameToEmail(name);
         // Handle email collisions
-        const emailBase = email
-        let suffix = 2
+        const emailBase = email;
+        let suffix = 2;
         while (usedEmails.has(email)) {
-          email = emailBase.replace('@', `${suffix}@`)
-          suffix++
+          email = emailBase.replace("@", `${suffix}@`);
+          suffix++;
         }
-        usedEmails.add(email)
+        usedEmails.add(email);
       }
     } else {
       // Anonymous: ~40% have a name but no email (cash with name), ~60% fully anonymous
       if (Math.random() > 0.6) {
-        const { name: genName } = generateName(usedNames)
-        name = genName
+        const { name: genName } = generateName(usedNames);
+        name = genName;
       }
     }
 
-    const tags: string[] = []
+    const tags: string[] = [];
     if (Math.random() < archetype.tagChance) {
-      const numTags = 1 + Math.floor(Math.random() * 2)
-      tags.push(...pickN(TAGS_POOL, numTags))
+      const numTags = 1 + Math.floor(Math.random() * 2);
+      tags.push(...pickN(TAGS_POOL, numTags));
     }
 
     donorProfiles.push({
@@ -556,70 +812,84 @@ export async function POST() {
       email,
       phone: isAnonymous ? null : generatePhone(),
       address: isAnonymous ? null : generateAddress(),
-      iban_hint: isAnonymous ? null : (Math.random() > 0.3 ? generateIbanHint() : null),
+      iban_hint: isAnonymous
+        ? null
+        : Math.random() > 0.3
+          ? generateIbanHint()
+          : null,
       tags,
-    })
+    });
   }
 
   // Insert donors in batches (tag with __mock__ for easy cleanup)
-  const donorInserts = donorProfiles.map(p => ({
+  const donorInserts = donorProfiles.map((p) => ({
     mosque_id: mosqueId,
     name: p.name,
     email: p.email,
     phone: p.phone,
     address: p.address,
     iban_hint: p.iban_hint,
-    tags: [...p.tags, '__mock__'],
-  }))
+    tags: [...p.tags, "__mock__"],
+  }));
 
-  const allDonors: { id: string; name: string | null }[] = []
+  const allDonors: { id: string; name: string | null }[] = [];
 
   for (let i = 0; i < donorInserts.length; i += BATCH_SIZE) {
-    const batch = donorInserts.slice(i, i + BATCH_SIZE)
+    const batch = donorInserts.slice(i, i + BATCH_SIZE);
     const { data, error } = await supabase
-      .from('donors')
+      .from("donors")
       .insert(batch)
-      .select('id, name')
+      .select("id, name");
 
     if (error || !data) {
-      return NextResponse.json({ error: `Donor creation failed at batch ${i}: ${error?.message}` }, { status: 500 })
+      return NextResponse.json(
+        { error: `Donor creation failed at batch ${i}: ${error?.message}` },
+        { status: 500 },
+      );
     }
-    allDonors.push(...data)
+    allDonors.push(...data);
   }
 
   // ── 2. Generate donations ──
   const allDonationInserts: {
-    mosque_id: string
-    donor_id: string
-    fund_id: string
-    amount: number
-    fee_covered: number
-    currency: string
-    method: string
-    status: string
-    is_recurring: boolean
-    notes: string
-    created_at: string
-  }[] = []
+    mosque_id: string;
+    donor_id: string;
+    fund_id: string;
+    amount: number;
+    fee_covered: number;
+    currency: string;
+    method: string;
+    status: string;
+    is_recurring: boolean;
+    notes: string;
+    created_at: string;
+  }[] = [];
 
   for (let i = 0; i < allDonors.length; i++) {
-    const donor = allDonors[i]
-    const profile = donorProfiles[i]
-    const { archetype } = profile
-    const pattern = archetype.donationPattern
+    const donor = allDonors[i];
+    const profile = donorProfiles[i];
+    const { archetype } = profile;
+    const pattern = archetype.donationPattern;
 
-    const donationCount = pattern.countRange[0] +
-      Math.floor(Math.random() * (pattern.countRange[1] - pattern.countRange[0] + 1))
+    const donationCount =
+      pattern.countRange[0] +
+      Math.floor(
+        Math.random() * (pattern.countRange[1] - pattern.countRange[0] + 1),
+      );
 
-    const dates = generateDonationDates(archetype, donationCount)
+    const dates = generateDonationDates(archetype, donationCount);
 
     for (const date of dates) {
-      const fund = weightedRandom(funds, fundWeights)
-      const method = weightedRandom(METHODS, pattern.methodWeights)
-      const amount = randomAmountInRange(pattern.amountRange[0], pattern.amountRange[1])
-      const feeCovered = method !== 'cash' && Math.random() > 0.7
-        ? Math.round(amount * 0.029 + 30)
-        : 0
+      const fund = weightedRandom(funds, fundWeights);
+      const method = weightedRandom(METHODS, pattern.methodWeights);
+      const amount = randomAmountInRange(
+        pattern.amountRange[0],
+        pattern.amountRange[1],
+      );
+      const feeCovered =
+        method !== "cash" && Math.random() > 0.7
+          ? Math.round(amount * 0.029 + 30)
+          : 0;
 
       allDonationInserts.push({
         mosque_id: mosqueId,
@@ -627,134 +897,173 @@ export async function POST() {
         fund_id: fund.id,
         amount,
         fee_covered: feeCovered,
-        currency: 'EUR',
+        currency: "EUR",
         method,
-        status: 'completed',
-        is_recurring: archetype.hasRecurring && method !== 'cash',
-        notes: '__mock__',
+        status: "completed",
+        is_recurring: archetype.hasRecurring && method !== "cash",
+        notes: "__mock__",
         created_at: date.toISOString(),
-      })
+      });
     }
   }
 
   // Sort by date
-  allDonationInserts.sort((a, b) =>
-    new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-  )
+  allDonationInserts.sort(
+    (a, b) =>
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+  );
 
   // Insert donations in batches
   for (let i = 0; i < allDonationInserts.length; i += BATCH_SIZE) {
-    const batch = allDonationInserts.slice(i, i + BATCH_SIZE)
-    const { error } = await supabase.from('donations').insert(batch)
+    const batch = allDonationInserts.slice(i, i + BATCH_SIZE);
+    const { error } = await supabase.from("donations").insert(batch);
     if (error) {
-      return NextResponse.json({
-        error: `Donation creation failed at batch ${i}: ${error.message}`,
-      }, { status: 500 })
+      return NextResponse.json(
+        {
+          error: `Donation creation failed at batch ${i}: ${error.message}`,
+        },
+        { status: 500 },
+      );
     }
   }
 
   // ── 3. Create recurring mandates for monthly_steady donors ──
+  const now = new Date();
   const recurringDonors = allDonors
     .filter((_, i) => donorProfiles[i].archetype.hasRecurring)
-    .slice(0, 25) // cap at 25 active recurrings
+    .slice(0, 25); // cap at 25 active recurrings
 
-  const recurringInserts = recurringDonors.map((donor, i) => ({
-    mosque_id: mosqueId,
-    donor_id: donor.id,
-    fund_id: funds[i % funds.length].id,
-    amount: pick([1500, 2000, 2500, 3500, 5000, 7500, 10000]),
-    frequency: 'monthly' as const,
-    status: 'active' as const,
-    next_charge_at: new Date(Date.now() + (1 + i * 2) * 86400000).toISOString(),
-    cancel_token: `mock_cancel_${Date.now()}_${i}`,
-  }))
+  const recurringInserts = recurringDonors.map((donor, i) => {
+    // Most recurrings created in the past (existing), a few this month (new)
+    const isNewThisMonth = i < 4; // 4 new mandates this month
+    const createdAt = isNewThisMonth
+      ? new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          1 + Math.floor(Math.random() * now.getDate()),
+        )
+      : new Date(
+          now.getFullYear(),
+          now.getMonth() - 1 - Math.floor(Math.random() * 6),
+          1 + Math.floor(Math.random() * 28),
+        );
+    return {
+      mosque_id: mosqueId,
+      donor_id: donor.id,
+      fund_id: funds[i % funds.length].id,
+      amount: pick([1500, 2000, 2500, 3500, 5000, 7500, 10000]),
+      frequency: "monthly" as const,
+      status: "active" as const,
+      next_charge_at: new Date(
+        Date.now() + (1 + i * 2) * 86400000,
+      ).toISOString(),
+      cancel_token: `mock_cancel_${Date.now()}_${i}`,
+      created_at: createdAt.toISOString(),
+    };
+  });
 
   if (recurringInserts.length > 0) {
-    const { error } = await supabase.from('recurrings').insert(recurringInserts)
+    const { error } = await supabase
+      .from("recurrings")
+      .insert(recurringInserts);
     if (error) {
-      return NextResponse.json({ error: `Recurring creation failed: ${error.message}` }, { status: 500 })
+      return NextResponse.json(
+        { error: `Recurring creation failed: ${error.message}` },
+        { status: 500 },
+      );
     }
   }
 
   // ── 4. Create periodic gift agreements ──
   const periodicDonors = allDonors
-    .filter((_, i) => Math.random() < donorProfiles[i].archetype.periodicGiftChance)
-    .slice(0, 35) // realistic number
+    .filter(
+      (_, i) => Math.random() < donorProfiles[i].archetype.periodicGiftChance,
+    )
+    .slice(0, 35); // realistic number
 
   const periodicInserts = periodicDonors.map((donor) => {
-    const startDate = randomDate(
-      new Date(2024, 0, 1),
-      new Date(2025, 11, 31)
-    )
-    const years = pick([5, 5, 5, 10]) // most are 5-year agreements
-    const endDate = new Date(startDate)
-    endDate.setFullYear(endDate.getFullYear() + years)
-    const annualAmount = pick([12000, 18000, 24000, 30000, 36000, 48000, 60000])
+    const startDate = randomDate(new Date(2024, 0, 1), new Date(2025, 11, 31));
+    const years = pick([5, 5, 5, 10]); // most are 5-year agreements
+    const endDate = new Date(startDate);
+    endDate.setFullYear(endDate.getFullYear() + years);
+    const annualAmount = pick([
+      12000, 18000, 24000, 30000, 36000, 48000, 60000,
+    ]);
 
     return {
       mosque_id: mosqueId,
       donor_id: donor.id,
       annual_amount: annualAmount,
       fund_id: funds[0].id, // Algemeen
-      start_date: startDate.toISOString().split('T')[0],
-      end_date: endDate.toISOString().split('T')[0],
-      status: 'active' as const,
-      notes: '__mock__',
-    }
-  })
+      start_date: startDate.toISOString().split("T")[0],
+      end_date: endDate.toISOString().split("T")[0],
+      status: "active" as const,
+      notes: "__mock__",
+    };
+  });
 
   if (periodicInserts.length > 0) {
     for (let i = 0; i < periodicInserts.length; i += BATCH_SIZE) {
-      const batch = periodicInserts.slice(i, i + BATCH_SIZE)
-      const { error } = await supabase.from('periodic_gift_agreements').insert(batch)
+      const batch = periodicInserts.slice(i, i + BATCH_SIZE);
+      const { error } = await supabase
+        .from("periodic_gift_agreements")
+        .insert(batch);
       if (error) {
-        return NextResponse.json({ error: `Periodic gift creation failed: ${error.message}` }, { status: 500 })
+        return NextResponse.json(
+          { error: `Periodic gift creation failed: ${error.message}` },
+          { status: 500 },
+        );
       }
     }
   }
 
   // ── 5. Update donor aggregates (triggers may not fire for bulk inserts) ──
   // Process in parallel batches of 20 to avoid overwhelming the DB
-  const PARALLEL_BATCH = 20
+  const PARALLEL_BATCH = 20;
 
   async function updateDonorAggregate(donor: { id: string }) {
     const { data: agg } = await supabase
-      .from('donations')
-      .select('amount, created_at')
-      .eq('donor_id', donor.id)
-      .eq('status', 'completed')
-      .eq('mosque_id', mosqueId)
+      .from("donations")
+      .select("amount, created_at")
+      .eq("donor_id", donor.id)
+      .eq("status", "completed")
+      .eq("mosque_id", mosqueId);
 
     if (agg && agg.length > 0) {
-      const totalDonated = agg.reduce((sum, d) => sum + d.amount, 0)
-      const dates = agg.map((d) => new Date(d.created_at).getTime())
-      const avgAmount = Math.round(totalDonated / agg.length)
+      const totalDonated = agg.reduce((sum, d) => sum + d.amount, 0);
+      const dates = agg.map((d) => new Date(d.created_at).getTime());
+      const avgAmount = Math.round(totalDonated / agg.length);
 
-      const sortedDates = [...dates].sort((a, b) => a - b)
-      const intervals: number[] = []
+      const sortedDates = [...dates].sort((a, b) => a - b);
+      const intervals: number[] = [];
       for (let i = 1; i < sortedDates.length; i++) {
-        intervals.push((sortedDates[i] - sortedDates[i - 1]) / 86400000)
+        intervals.push((sortedDates[i] - sortedDates[i - 1]) / 86400000);
       }
 
-      let frequency: string | null = null
+      let frequency: string | null = null;
       if (intervals.length > 0) {
-        intervals.sort((a, b) => a - b)
-        const median = intervals[Math.floor(intervals.length / 2)]
-        if (median <= 10) frequency = 'weekly'
-        else if (median <= 45) frequency = 'monthly'
-        else if (median <= 120) frequency = 'quarterly'
-        else if (median <= 400) frequency = 'yearly'
-        else frequency = 'irregular'
+        intervals.sort((a, b) => a - b);
+        const median = intervals[Math.floor(intervals.length / 2)];
+        if (median <= 10) frequency = "weekly";
+        else if (median <= 45) frequency = "monthly";
+        else if (median <= 120) frequency = "quarterly";
+        else if (median <= 400) frequency = "yearly";
+        else frequency = "irregular";
       }
 
       const multiplier =
-        frequency === 'weekly' ? 52 :
-        frequency === 'monthly' ? 12 :
-        frequency === 'quarterly' ? 4 :
-        frequency === 'yearly' ? 1 : 1
+        frequency === "weekly"
+          ? 52
+          : frequency === "monthly"
+            ? 12
+            : frequency === "quarterly"
+              ? 4
+              : frequency === "yearly"
+                ? 1
+                : 1;
 
       await supabase
-        .from('donors')
+        .from("donors")
         .update({
           total_donated: totalDonated,
           donation_count: agg.length,
@@ -765,13 +1074,13 @@ export async function POST() {
           last_donated_at: new Date(Math.max(...dates)).toISOString(),
           last_computed_at: new Date().toISOString(),
         })
-        .eq('id', donor.id)
+        .eq("id", donor.id);
     }
   }
 
   for (let i = 0; i < allDonors.length; i += PARALLEL_BATCH) {
-    const batch = allDonors.slice(i, i + PARALLEL_BATCH)
-    await Promise.all(batch.map(updateDonorAggregate))
+    const batch = allDonors.slice(i, i + PARALLEL_BATCH);
+    await Promise.all(batch.map(updateDonorAggregate));
   }
 
   return NextResponse.json({
@@ -782,88 +1091,99 @@ export async function POST() {
       recurrings: recurringInserts.length,
       periodic_gifts: periodicInserts.length,
     },
-  })
+  });
 }
 
 // DELETE endpoint to clean up mock data
 export async function DELETE() {
-  const { mosqueId, supabase, profile } = await getCachedProfile()
+  const { mosqueId, supabase, profile } = await getCachedProfile();
 
-  if (!mosqueId || !profile || profile.role !== 'admin') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+  if (!mosqueId || !profile || profile.role !== "admin") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
   // Find mock donors by tag (reliable even if mock donations were already deleted)
   const { data: mockDonors } = await supabase
-    .from('donors')
-    .select('id')
-    .eq('mosque_id', mosqueId)
-    .contains('tags', ['__mock__'])
+    .from("donors")
+    .select("id")
+    .eq("mosque_id", mosqueId)
+    .contains("tags", ["__mock__"]);
 
-  const mockDonorIds = (mockDonors ?? []).map(d => d.id)
+  const mockDonorIds = (mockDonors ?? []).map((d) => d.id);
 
   // Also find donors by mock donations (for older data without the tag)
   const { data: mockDonations } = await supabase
-    .from('donations')
-    .select('donor_id')
-    .eq('mosque_id', mosqueId)
-    .eq('notes', '__mock__')
+    .from("donations")
+    .select("donor_id")
+    .eq("mosque_id", mosqueId)
+    .eq("notes", "__mock__");
 
-  const donationMockIds = (mockDonations ?? []).map(d => d.donor_id).filter(Boolean)
+  const donationMockIds = (mockDonations ?? [])
+    .map((d) => d.donor_id)
+    .filter(Boolean);
 
   // Fallback: find orphaned mock donors by @example.com email (older generations)
   const { data: exampleEmailDonors } = await supabase
-    .from('donors')
-    .select('id')
-    .eq('mosque_id', mosqueId)
-    .like('email', '%@example.com')
+    .from("donors")
+    .select("id")
+    .eq("mosque_id", mosqueId)
+    .like("email", "%@example.com");
 
-  const exampleEmailIds = (exampleEmailDonors ?? []).map(d => d.id)
+  const exampleEmailIds = (exampleEmailDonors ?? []).map((d) => d.id);
 
   // Fallback: find orphaned donors with no remaining donations (from previous partial deletes)
   // Only targets donors that genuinely have zero donations in the DB
   const { data: donorsWithDonations } = await supabase
-    .from('donations')
-    .select('donor_id')
-    .eq('mosque_id', mosqueId)
+    .from("donations")
+    .select("donor_id")
+    .eq("mosque_id", mosqueId);
 
-  const donorIdsWithDonations = new Set((donorsWithDonations ?? []).map(d => d.donor_id))
+  const donorIdsWithDonations = new Set(
+    (donorsWithDonations ?? []).map((d) => d.donor_id),
+  );
 
   const { data: allMosqueDonors } = await supabase
-    .from('donors')
-    .select('id')
-    .eq('mosque_id', mosqueId)
+    .from("donors")
+    .select("id")
+    .eq("mosque_id", mosqueId);
 
   const orphanedDonorIds = (allMosqueDonors ?? [])
-    .filter(d => !donorIdsWithDonations.has(d.id))
-    .map(d => d.id)
+    .filter((d) => !donorIdsWithDonations.has(d.id))
+    .map((d) => d.id);
 
-  const allMockDonorIds = Array.from(new Set([...mockDonorIds, ...donationMockIds, ...exampleEmailIds, ...orphanedDonorIds]))
+  const allMockDonorIds = Array.from(
+    new Set([
+      ...mockDonorIds,
+      ...donationMockIds,
+      ...exampleEmailIds,
+      ...orphanedDonorIds,
+    ]),
+  );
 
   // Delete mock donations, periodic gifts, and recurrings first
   await supabase
-    .from('donations')
+    .from("donations")
     .delete()
-    .eq('mosque_id', mosqueId)
-    .eq('notes', '__mock__')
+    .eq("mosque_id", mosqueId)
+    .eq("notes", "__mock__");
 
   await supabase
-    .from('periodic_gift_agreements')
+    .from("periodic_gift_agreements")
     .delete()
-    .eq('mosque_id', mosqueId)
-    .eq('notes', '__mock__')
+    .eq("mosque_id", mosqueId)
+    .eq("notes", "__mock__");
 
   await supabase
-    .from('recurrings')
+    .from("recurrings")
     .delete()
-    .eq('mosque_id', mosqueId)
-    .like('cancel_token', 'mock_cancel_%')
+    .eq("mosque_id", mosqueId)
+    .like("cancel_token", "mock_cancel_%");
 
   // Delete mock donors in batches (remaining child records cascade via ON DELETE CASCADE)
   for (let i = 0; i < allMockDonorIds.length; i += BATCH_SIZE) {
-    const batch = allMockDonorIds.slice(i, i + BATCH_SIZE)
-    await supabase.from('donors').delete().in('id', batch)
+    const batch = allMockDonorIds.slice(i, i + BATCH_SIZE);
+    await supabase.from("donors").delete().in("id", batch);
   }
 
-  return NextResponse.json({ success: true })
+  return NextResponse.json({ success: true });
 }

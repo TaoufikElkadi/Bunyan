@@ -32,7 +32,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div dir="ltr" style={{ zoom: 0.85 }}>
+    <div dir="ltr">
       <SidebarProvider>
         <AppSidebar
           user={profile}
@@ -40,7 +40,7 @@ export default async function DashboardLayout({
           isPlatformAdmin={isPlatformAdmin}
           pendingSignatures={pendingSignatures}
         />
-        <SidebarInset>
+        <SidebarInset style={{ zoom: 0.85 }}>
           <DashboardHeader user={profile} mosque={mosque} />
           {mosque?.status === "pending" && (
             <div className="mx-6 md:mx-8 mt-6 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4">
