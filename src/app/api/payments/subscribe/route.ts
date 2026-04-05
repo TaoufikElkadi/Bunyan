@@ -273,22 +273,6 @@ export async function POST(request: Request) {
     // - Apple Pay / Google Pay via card wallets
     // - Link, Bancontact, etc. based on customer location
 
-    // For periodic gift agreements, anchor billing to the 1st of next month.
-    // This gives the board time to countersign before the first charge.
-    const anchorParams: Partial<Stripe.SubscriptionCreateParams> = {};
-    if (periodic_gift_agreement_id) {
-      const now = new Date();
-      const firstOfNextMonth = new Date(
-        now.getFullYear(),
-        now.getMonth() + 1,
-        1,
-      );
-      anchorParams.billing_cycle_anchor = Math.floor(
-        firstOfNextMonth.getTime() / 1000,
-      );
-      anchorParams.proration_behavior = "none";
-    }
-
     const subscription = (await stripe.subscriptions.create({
       customer: customerId,
       items: [
@@ -319,7 +303,6 @@ export async function POST(request: Request) {
         campaign_id: campaign_id || "",
         periodic_gift_agreement_id: periodic_gift_agreement_id || "",
       },
-      ...anchorParams,
       ...transferParams,
     })) as Stripe.Subscription & {
       latest_invoice: ExpandedInvoice;

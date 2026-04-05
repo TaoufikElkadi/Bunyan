@@ -308,7 +308,7 @@ export function PeriodicGiftStep({
 
       const data = await res.json();
       setAgreementId(data.agreement_id);
-      setSubStep("payment");
+      setSubStep("confirmation");
     } catch (err) {
       setError(err instanceof Error ? err.message : t("donate.error"));
     } finally {
@@ -370,9 +370,8 @@ export function PeriodicGiftStep({
               {t("donate.periodic_confirmation_title")}
             </h2>
             <p className="text-sm" style={{ color: "#9B8E7B" }}>
-              {paymentMethod === "ideal"
-                ? "Uw overeenkomst is ondertekend en uw betaling is ingesteld. De eerste afschrijving vindt plaats op de 1e van volgende maand."
-                : "Uw overeenkomst is ondertekend. Stel een automatische overschrijving in bij uw bank om de periodieke gift te activeren."}
+              Uw overeenkomst is ondertekend en wordt beoordeeld door het
+              bestuur. U ontvangt bericht zodra de overeenkomst is goedgekeurd.
             </p>
           </div>
 
