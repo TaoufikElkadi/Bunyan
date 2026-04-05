@@ -392,11 +392,11 @@ async function DashboardContent() {
       )}
 
       {!hasNoDonations && (
-        <div className="flex gap-6">
+        <div className="flex flex-col xl:flex-row gap-6">
           {/* ---- Main column ---- */}
           <div className="flex-1 min-w-0 space-y-5">
             {/* Hero row: Donuts + KPIs side by side */}
-            <div className="grid gap-4 grid-cols-1 lg:grid-cols-[2fr_2fr_3fr]">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-[2fr_2fr_3fr]">
               <DonationDistributionCard data={fundData} />
               <FundUtilizationCard
                 data={fundData}
@@ -437,7 +437,7 @@ async function DashboardContent() {
             </div>
 
             {/* Summary Stats Row — all-time overview */}
-            <div className="grid gap-3 sm:grid-cols-4">
+            <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
               <SummaryCell
                 label="Totaal ontvangen"
                 value={formatCompact(allTimeDonationTotal)}
@@ -481,7 +481,7 @@ async function DashboardContent() {
           </div>
 
           {/* ---- Right sidebar ---- */}
-          <div className="hidden xl:flex w-[340px] shrink-0 flex-col gap-5">
+          <div className="xl:w-[340px] xl:shrink-0 flex flex-col gap-5">
             {/* Quick Actions */}
             <div className="rounded-2xl bg-white border border-[#eae6de]/80 shadow-[0_1px_2px_rgba(38,27,7,0.03)] p-5">
               <h3 className="text-[13px] font-semibold text-[#261b07] mb-4">

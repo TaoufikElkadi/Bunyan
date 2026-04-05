@@ -318,7 +318,7 @@ export function DashboardHeader({ user, mosque }: DashboardHeaderProps) {
 
       {/* Search */}
       <div
-        className="relative max-w-md flex-shrink-0 w-full sm:w-80"
+        className="relative max-w-[calc(100vw-8rem)] sm:max-w-md flex-shrink-0 w-full sm:w-80"
         ref={searchContainerRef}
         data-tour="header-search"
       >
@@ -504,7 +504,7 @@ export function DashboardHeader({ user, mosque }: DashboardHeaderProps) {
       {/* Right actions */}
       <div className="flex items-center gap-1 shrink-0">
         <button
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-[#8a8478] hover:bg-[#e3dfd5]/50 hover:text-[#261b07] transition-colors duration-150"
+          className="flex h-10 w-10 sm:h-8 sm:w-8 items-center justify-center rounded-lg text-[#8a8478] hover:bg-[#e3dfd5]/50 hover:text-[#261b07] transition-colors duration-150"
           aria-label="Meldingen"
         >
           <Bell className="size-[18px]" strokeWidth={1.5} />
@@ -514,7 +514,7 @@ export function DashboardHeader({ user, mosque }: DashboardHeaderProps) {
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-all duration-150 hover:bg-[#e3dfd5]/50"
+            className="flex items-center gap-2 rounded-lg px-2 py-1.5 min-h-[44px] sm:min-h-0 text-sm transition-all duration-150 hover:bg-[#e3dfd5]/50"
           >
             <span className="flex size-7 items-center justify-center rounded-full bg-[#261b07] text-[11px] font-semibold text-[#f8f7f5]">
               {initials}
@@ -528,7 +528,7 @@ export function DashboardHeader({ user, mosque }: DashboardHeaderProps) {
           </button>
 
           {dropdownOpen && (
-            <div className="absolute right-0 top-full mt-1.5 w-56 rounded-xl border border-[#e3dfd5] bg-white p-1 shadow-[0_4px_24px_rgba(38,27,7,0.08)] animate-in fade-in-0 zoom-in-95 slide-in-from-top-1">
+            <div className="absolute right-0 top-full mt-1.5 w-56 max-w-[calc(100vw-2rem)] rounded-xl border border-[#e3dfd5] bg-white p-1 shadow-[0_4px_24px_rgba(38,27,7,0.08)] animate-in fade-in-0 zoom-in-95 slide-in-from-top-1">
               <div className="px-3 py-2.5 border-b border-[#e3dfd5] mb-1">
                 <p className="text-sm font-medium text-[#261b07]">
                   {user.name}

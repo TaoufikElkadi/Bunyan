@@ -1,26 +1,26 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { XIcon, Sparkles } from 'lucide-react'
+import { useState } from "react";
+import { XIcon, Sparkles } from "lucide-react";
 
 interface UpgradeBannerProps {
-  message: string
-  plan: string
+  message: string;
+  plan: string;
 }
 
-const DISMISS_KEY = 'bunyan_upgrade_banner_dismissed'
+const DISMISS_KEY = "bunyan_upgrade_banner_dismissed";
 
 export function UpgradeBanner({ message, plan }: UpgradeBannerProps) {
   const [dismissed, setDismissed] = useState(() => {
-    if (typeof window === 'undefined') return false
-    return sessionStorage.getItem(DISMISS_KEY) === 'true'
-  })
+    if (typeof window === "undefined") return false;
+    return sessionStorage.getItem(DISMISS_KEY) === "true";
+  });
 
-  if (plan !== 'free' || dismissed) return null
+  if (plan !== "free" || dismissed) return null;
 
   function handleDismiss() {
-    sessionStorage.setItem(DISMISS_KEY, 'true')
-    setDismissed(true)
+    sessionStorage.setItem(DISMISS_KEY, "true");
+    setDismissed(true);
   }
 
   return (
@@ -30,17 +30,19 @@ export function UpgradeBanner({ message, plan }: UpgradeBannerProps) {
           <Sparkles className="h-4 w-4 text-[#f9a600]" strokeWidth={1.5} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-semibold text-[#261b07]">Upgrade uw abonnement</p>
+          <p className="text-[13px] font-semibold text-[#261b07]">
+            Upgrade uw abonnement
+          </p>
           <p className="text-[13px] text-[#8a8478] mt-0.5">{message}</p>
         </div>
         <button
           onClick={handleDismiss}
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[#a09888] hover:bg-[#261b07]/5 hover:text-[#261b07] transition-colors"
+          className="flex h-10 w-10 sm:h-7 sm:w-7 shrink-0 items-center justify-center rounded-md text-[#a09888] hover:bg-[#261b07]/5 hover:text-[#261b07] transition-colors"
         >
           <XIcon className="h-4 w-4" />
           <span className="sr-only">Sluiten</span>
         </button>
       </div>
     </div>
-  )
+  );
 }

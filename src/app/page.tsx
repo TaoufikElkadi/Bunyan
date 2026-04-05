@@ -90,35 +90,64 @@ export default function HomePage() {
         <InviteHandler />
 
         {/* ---- Mobile: flat sticky top bar ---- */}
-        <header className="lg:hidden sticky top-0 z-[999] flex items-center justify-between px-5 py-3 bg-[#f8f7f5]/95 backdrop-blur-md border-b border-[#e3dfd5]/60">
-          <Link href="/" className="flex items-center gap-2">
-            <Image
-              src="/logos/logo_transparent.svg"
-              alt=""
-              width={24}
-              height={24}
-              className="h-6 w-6"
-            />
-            <span
-              className="text-[16px] font-[584] tracking-[-0.36px] text-[#261b07] uppercase"
-              style={{ fontFamily: "var(--font-display), sans-serif" }}
-            >
-              bunyan
-            </span>
-          </Link>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/login"
-              className="inline-flex items-center justify-center rounded-lg border border-[#e3dfd5] bg-white px-4 py-2 text-[13px] font-medium text-[#261b07] hover:bg-[#f3f1ec] transition-colors"
-            >
-              Inloggen
+        <header className="lg:hidden sticky top-0 z-[999] bg-[#f8f7f5]/95 backdrop-blur-md border-b border-[#e3dfd5]/60">
+          <div className="flex items-center justify-between px-5 py-3">
+            <Link href="/" className="flex items-center gap-2">
+              <Image
+                src="/logos/logo_transparent.svg"
+                alt=""
+                width={24}
+                height={24}
+                className="h-6 w-6"
+              />
+              <span
+                className="text-[16px] font-[584] tracking-[-0.36px] text-[#261b07] uppercase"
+                style={{ fontFamily: "var(--font-display), sans-serif" }}
+              >
+                bunyan
+              </span>
             </Link>
-            <Link
-              href="/signup"
-              className="inline-flex items-center justify-center rounded-lg bg-[#261b07] px-4 py-2 text-[13px] font-semibold text-[#f8f7f5] hover:bg-[#3a2c14] transition-colors"
-            >
-              Starten
-            </Link>
+            <div className="flex items-center gap-2">
+              {/* Hamburger menu */}
+              <details className="relative group">
+                <summary className="list-none [&::-webkit-details-marker]:hidden flex items-center justify-center w-9 h-9 rounded-lg border border-[#e3dfd5] bg-white hover:bg-[#f3f1ec] transition-colors cursor-pointer">
+                  <svg
+                    className="w-4 h-4 text-[#261b07]"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  >
+                    <path d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                </summary>
+                <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-[#e3dfd5] bg-white py-2 shadow-lg shadow-black/[0.08] z-50">
+                  {navLinks.map((link) => (
+                    <a
+                      key={link.label}
+                      href={link.href}
+                      className="block px-4 py-2.5 text-[14px] font-medium text-[#261b07]/70 hover:text-[#261b07] hover:bg-[#f3f1ec] transition-colors"
+                    >
+                      {link.label}
+                    </a>
+                  ))}
+                  <div className="h-px bg-[#e3dfd5] mx-3 my-1.5" />
+                  <Link
+                    href="/login"
+                    className="block px-4 py-2.5 text-[14px] font-medium text-[#261b07]/70 hover:text-[#261b07] hover:bg-[#f3f1ec] transition-colors"
+                  >
+                    Inloggen
+                  </Link>
+                </div>
+              </details>
+              <Link
+                href="/signup"
+                className="inline-flex items-center justify-center rounded-lg bg-[#261b07] px-4 py-2 text-[13px] font-semibold text-[#f8f7f5] hover:bg-[#3a2c14] transition-colors"
+              >
+                Starten
+              </Link>
+            </div>
           </div>
         </header>
 
@@ -131,7 +160,7 @@ export default function HomePage() {
             <div className="absolute inset-0 bg-gradient-to-b from-[#c5bfa0]/30 via-[#d5cfb8]/20 to-[#f8f7f5] pointer-events-none" />
 
             <section className="relative pt-10 lg:pt-28 pb-10">
-              <div className="mx-auto max-w-[980px] px-[30px] text-center">
+              <div className="mx-auto max-w-[980px] px-5 sm:px-[30px] text-center">
                 {/* Category */}
                 <p className="text-[12px] font-medium tracking-[0.6px] uppercase text-[color:rgba(38,27,7,0.5)] mb-5">
                   Donatiebeheer &amp; ledensoftware voor moskeeën
@@ -139,7 +168,7 @@ export default function HomePage() {
 
                 {/* Headline */}
                 <h1
-                  className="text-[42px] sm:text-[56px] md:text-[64.8px] lg:text-[72px] font-[584] leading-[1.125] tracking-[-1.44px] text-[#261b07] mb-6"
+                  className="text-[32px] sm:text-[56px] md:text-[64.8px] lg:text-[72px] font-[584] leading-[1.125] tracking-[-1.44px] text-[#261b07] mb-6"
                   style={{ fontFamily: "var(--font-display), sans-serif" }}
                 >
                   Ontvang donaties. Begrijp uw gemeenschap. Groei als moskee.
@@ -210,7 +239,7 @@ export default function HomePage() {
               {/* Section header */}
               <div className="text-center mb-16">
                 <h2
-                  className="text-[48px] sm:text-[64px] font-[380] leading-[1.08] tracking-[-1.5px] text-[#1a1510] mb-5"
+                  className="text-[32px] sm:text-[48px] md:text-[64px] font-[380] leading-[1.08] tracking-[-1.5px] text-[#1a1510] mb-5"
                   style={{ fontFamily: "var(--font-display), sans-serif" }}
                 >
                   Eerlijke prijzen, geen verrassingen
@@ -228,14 +257,14 @@ export default function HomePage() {
                 <div className="flex flex-col gap-3">
                   {/* FREE card */}
                   <div className="bg-white rounded-[14px] border border-[#dddad3] overflow-hidden">
-                    <div className="flex min-h-[280px]">
+                    <div className="flex flex-col sm:flex-row sm:min-h-[280px]">
                       {/* Plan info */}
-                      <div className="flex-1 p-7 flex flex-col">
+                      <div className="flex-1 p-5 sm:p-7 flex flex-col">
                         <span className="self-start text-[10px] font-semibold tracking-[0.55px] uppercase bg-[#edeae4] text-[color:rgba(26,21,16,0.5)] rounded-[6px] px-3 py-1.5 mb-7">
                           Gratis
                         </span>
                         <h3
-                          className="text-[40px] font-[380] leading-none tracking-[-1px] text-[#1a1510] mb-3"
+                          className="text-[28px] sm:text-[40px] font-[380] leading-none tracking-[-1px] text-[#1a1510] mb-3"
                           style={{
                             fontFamily: "var(--font-display), sans-serif",
                           }}
@@ -254,10 +283,10 @@ export default function HomePage() {
                           Gratis starten
                         </Link>
                       </div>
-                      {/* Vertical divider */}
-                      <div className="w-px bg-[#dddad3] flex-shrink-0" />
+                      {/* Divider: vertical on sm+, horizontal on mobile */}
+                      <div className="h-px sm:h-auto sm:w-px bg-[#dddad3] flex-shrink-0" />
                       {/* Features */}
-                      <div className="flex-1 p-7">
+                      <div className="flex-1 p-5 sm:p-7">
                         <div className="flex items-center gap-2 text-[13px] text-[color:rgba(26,21,16,0.55)] mb-2">
                           <svg
                             className="w-[15px] h-[15px] flex-shrink-0"
@@ -324,14 +353,14 @@ export default function HomePage() {
 
                   {/* STARTER card */}
                   <div className="bg-white rounded-[14px] border border-[#dddad3] overflow-hidden">
-                    <div className="flex min-h-[280px]">
+                    <div className="flex flex-col sm:flex-row sm:min-h-[280px]">
                       {/* Plan info */}
-                      <div className="flex-1 p-7 flex flex-col">
+                      <div className="flex-1 p-5 sm:p-7 flex flex-col">
                         <span className="self-start text-[10px] font-semibold tracking-[0.55px] uppercase bg-[#edeae4] text-[color:rgba(26,21,16,0.5)] rounded-[6px] px-3 py-1.5 mb-7">
                           €69 per maand
                         </span>
                         <h3
-                          className="text-[40px] font-[380] leading-none tracking-[-1px] text-[#1a1510] mb-3"
+                          className="text-[28px] sm:text-[40px] font-[380] leading-none tracking-[-1px] text-[#1a1510] mb-3"
                           style={{
                             fontFamily: "var(--font-display), sans-serif",
                           }}
@@ -350,10 +379,10 @@ export default function HomePage() {
                           Nu aanmelden
                         </Link>
                       </div>
-                      {/* Vertical divider */}
-                      <div className="w-px bg-[#dddad3] flex-shrink-0" />
+                      {/* Divider: vertical on sm+, horizontal on mobile */}
+                      <div className="h-px sm:h-auto sm:w-px bg-[#dddad3] flex-shrink-0" />
                       {/* Features */}
-                      <div className="flex-1 p-7">
+                      <div className="flex-1 p-5 sm:p-7">
                         <div className="flex items-center gap-2 text-[13px] text-[color:rgba(26,21,16,0.55)] mb-2">
                           <svg
                             className="w-[15px] h-[15px] flex-shrink-0"
@@ -424,13 +453,13 @@ export default function HomePage() {
                 {/* ── Right column: Compleet — tall card ── */}
                 <div className="bg-white rounded-[14px] border border-[#dddad3] overflow-hidden flex flex-col">
                   {/* Top: plan info + lime image */}
-                  <div className="p-7 flex gap-4 items-start">
+                  <div className="p-5 sm:p-7 flex gap-4 items-start">
                     <div className="flex-1 flex flex-col">
                       <span className="self-start text-[10px] font-semibold tracking-[0.55px] uppercase bg-[#edeae4] text-[color:rgba(26,21,16,0.5)] rounded-[6px] px-3 py-1.5 mb-7">
                         €149 per maand
                       </span>
                       <h3
-                        className="text-[40px] font-[380] leading-none tracking-[-1px] text-[#1a1510] mb-3"
+                        className="text-[28px] sm:text-[40px] font-[380] leading-none tracking-[-1px] text-[#1a1510] mb-3"
                         style={{
                           fontFamily: "var(--font-display), sans-serif",
                         }}
@@ -451,7 +480,7 @@ export default function HomePage() {
                     </div>
                     {/* Lime decorative block */}
                     <div
-                      className="w-[150px] h-[175px] rounded-[8px] flex-shrink-0 overflow-hidden relative"
+                      className="hidden sm:block w-[150px] h-[175px] rounded-[8px] flex-shrink-0 overflow-hidden relative"
                       style={{ background: "#c6e535" }}
                     >
                       <svg
@@ -512,7 +541,7 @@ export default function HomePage() {
                   <div className="h-px bg-[#dddad3]" />
 
                   {/* Bottom: features */}
-                  <div className="p-7 flex-1">
+                  <div className="p-5 sm:p-7 flex-1">
                     <div className="flex items-center gap-2 text-[13px] text-[color:rgba(26,21,16,0.55)] mb-2">
                       <svg
                         className="w-[15px] h-[15px] flex-shrink-0"
@@ -614,8 +643,8 @@ export default function HomePage() {
             }}
           />
           {/* ── Top link columns ── */}
-          <div className="relative mx-auto max-w-[1216px] px-[30px] pt-16 pb-10">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-10">
+          <div className="relative mx-auto max-w-[1216px] px-5 sm:px-[30px] pt-12 sm:pt-16 pb-10">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-8 sm:gap-10">
               {/* Col 1: Bedrijf */}
               <div>
                 <span className="inline-block text-[10px] font-semibold tracking-[0.55px] uppercase bg-[#edeae4] text-[color:rgba(26,21,16,0.45)] rounded-[5px] px-2.5 py-1 mb-5">
@@ -762,7 +791,7 @@ export default function HomePage() {
 
           {/* ── Legal bar ── */}
           <div className="relative border-t border-[#e3dfd5] mt-6">
-            <div className="mx-auto max-w-[1216px] px-[30px] py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="mx-auto max-w-[1216px] px-5 sm:px-[30px] py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <p className="text-[11px] text-[color:rgba(26,21,16,0.38)]">
                 Copyright &copy; 2026 Bunyan — Moskee software voor
                 donatiebeheer, ANBI-giftenverklaringen &amp; ledenbeheer in

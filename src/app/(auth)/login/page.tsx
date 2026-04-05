@@ -124,13 +124,13 @@ function LoginForm() {
             required
             autoFocus
             autoComplete="one-time-code"
-            className="w-full rounded-lg border border-[#e3dfd5] bg-white px-4 py-3 text-center text-[24px] font-semibold tracking-[0.5em] text-[#261b07] placeholder:text-[#b5b0a5] placeholder:tracking-[0.5em] outline-none focus:border-[#261b07]/30 focus:ring-1 focus:ring-[#261b07]/10 transition-colors"
+            className="w-full rounded-lg border border-[#e3dfd5] bg-white px-4 py-3 text-center text-2xl sm:text-[24px] font-semibold tracking-[0.3em] sm:tracking-[0.5em] text-[#261b07] placeholder:text-[#b5b0a5] placeholder:tracking-[0.3em] sm:placeholder:tracking-[0.5em] outline-none focus:border-[#261b07]/30 focus:ring-1 focus:ring-[#261b07]/10 transition-colors"
           />
           {error && <p className="text-[13px] text-red-600">{error}</p>}
           <button
             type="submit"
             disabled={loading || otp.length < 6}
-            className="w-full rounded-lg bg-[#261b07] py-3 text-[14px] font-semibold text-[#f8f7f5] hover:bg-[#3a2c14] disabled:opacity-50 transition-colors"
+            className="w-full rounded-lg bg-[#261b07] py-3.5 text-[15px] font-semibold text-[#f8f7f5] hover:bg-[#3a2c14] disabled:opacity-50 transition-colors"
           >
             {loading ? "Bezig..." : "Verifiëren"}
           </button>
@@ -150,7 +150,7 @@ function LoginForm() {
             setOtp("");
             setError(null);
           }}
-          className="mt-2 w-full py-3 rounded-lg border border-[#e3dfd5] text-[14px] font-medium text-[#261b07] hover:bg-[#f0ede6] transition-colors"
+          className="mt-2 w-full py-3.5 rounded-lg border border-[#e3dfd5] text-[15px] font-medium text-[#261b07] hover:bg-[#f0ede6] transition-colors"
         >
           Ander e-mailadres gebruiken
         </button>
@@ -177,7 +177,7 @@ function LoginForm() {
           required
           autoComplete="email"
           autoCapitalize="none"
-          className="w-full rounded-lg border border-[#e3dfd5] bg-white px-4 py-3 text-[14px] text-[#261b07] placeholder:text-[#b5b0a5] outline-none focus:border-[#261b07]/30 focus:ring-1 focus:ring-[#261b07]/10 transition-colors"
+          className="w-full rounded-lg border border-[#e3dfd5] bg-white px-4 py-3 text-base text-[#261b07] placeholder:text-[#b5b0a5] outline-none focus:border-[#261b07]/30 focus:ring-1 focus:ring-[#261b07]/10 transition-colors"
         />
         <input
           type="password"
@@ -186,7 +186,7 @@ function LoginForm() {
           onChange={(e) => setPassword(e.target.value)}
           required
           autoComplete="current-password"
-          className="w-full rounded-lg border border-[#e3dfd5] bg-white px-4 py-3 text-[14px] text-[#261b07] placeholder:text-[#b5b0a5] outline-none focus:border-[#261b07]/30 focus:ring-1 focus:ring-[#261b07]/10 transition-colors"
+          className="w-full rounded-lg border border-[#e3dfd5] bg-white px-4 py-3 text-base text-[#261b07] placeholder:text-[#b5b0a5] outline-none focus:border-[#261b07]/30 focus:ring-1 focus:ring-[#261b07]/10 transition-colors"
         />
 
         {error && <p className="text-[13px] text-red-600">{error}</p>}
@@ -194,7 +194,7 @@ function LoginForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-[#261b07] py-3 text-[14px] font-semibold text-[#f8f7f5] hover:bg-[#3a2c14] disabled:opacity-50 transition-colors"
+          className="w-full rounded-lg bg-[#261b07] py-3.5 text-[15px] font-semibold text-[#f8f7f5] hover:bg-[#3a2c14] disabled:opacity-50 transition-colors"
         >
           {loading ? "Bezig..." : "Inloggen met e-mail"}
         </button>
@@ -216,7 +216,7 @@ function LoginForm() {
       <button
         onClick={handleOtpRequest}
         disabled={loading}
-        className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#e3dfd5] bg-white py-3 text-[14px] font-medium text-[#261b07] hover:bg-[#f8f7f5] disabled:opacity-50 transition-colors"
+        className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#e3dfd5] bg-white py-3.5 text-[15px] font-medium text-[#261b07] hover:bg-[#f8f7f5] disabled:opacity-50 transition-colors"
       >
         <svg
           className="w-4 h-4 text-[#a09888]"

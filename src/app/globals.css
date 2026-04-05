@@ -66,10 +66,10 @@
   --border: #e3dfd5;
   --input: #e3dfd5;
   --ring: #261b07;
-  --chart-1: #C87D3A;
-  --chart-2: #D4956A;
-  --chart-3: #6B8F71;
-  --chart-4: #7B8EAD;
+  --chart-1: #c87d3a;
+  --chart-2: #d4956a;
+  --chart-3: #6b8f71;
+  --chart-4: #7b8ead;
   --chart-5: #f9a600;
   --radius: 0.625rem;
   --sidebar: #fafaf8;
@@ -104,7 +104,7 @@
   --chart-1: oklch(0.72 0.08 55);
   --chart-2: oklch(0.65 0.07 65);
   --chart-3: oklch(0.58 0.09 45);
-  --chart-4: oklch(0.50 0.06 75);
+  --chart-4: oklch(0.5 0.06 75);
   --chart-5: oklch(0.78 0.05 70);
   --sidebar: oklch(0.11 0.007 55);
   --sidebar-foreground: oklch(0.88 0.008 60);
@@ -114,6 +114,14 @@
   --sidebar-accent-foreground: oklch(0.88 0.008 60);
   --sidebar-border: oklch(1 0 0 / 8%);
   --sidebar-ring: oklch(0.55 0.05 55);
+}
+
+@utility scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 @layer base {
@@ -142,7 +150,7 @@
   .dark body {
     background-image: radial-gradient(
       ellipse 80% 50% at 50% -20%,
-      oklch(0.20 0.02 55 / 15%),
+      oklch(0.2 0.02 55 / 15%),
       transparent
     );
     background-attachment: fixed;

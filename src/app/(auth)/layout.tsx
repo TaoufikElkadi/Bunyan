@@ -1,24 +1,27 @@
-import Image from "next/image"
-import Link from "next/link"
-import { AuthTopLink } from "./auth-top-link"
+import Image from "next/image";
+import Link from "next/link";
+import { AuthTopLink } from "./auth-top-link";
 
 export default function AuthLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <div className="flex min-h-screen bg-[#f8f7f5]">
       {/* Left: form side */}
       <div className="relative flex w-full flex-col lg:w-1/2">
         {/* Top bar */}
-        <div className="flex items-center justify-between px-8 pt-8">
-          <Link
-            href="/"
-            className="flex items-center gap-2.5"
-          >
+        <div className="flex items-center justify-between px-5 pt-5 sm:px-8 sm:pt-8">
+          <Link href="/" className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#345e7d] shadow-sm overflow-hidden">
-              <Image src="/logos/logo_transparent.svg" alt="" width={24} height={24} className="h-6 w-6" />
+              <Image
+                src="/logos/logo_transparent.svg"
+                alt=""
+                width={24}
+                height={24}
+                className="h-6 w-6"
+              />
             </div>
             <span
               className="text-[18px] font-[584] tracking-[-0.36px] text-[#261b07] uppercase"
@@ -31,16 +34,16 @@ export default function AuthLayout({
         </div>
 
         {/* Center form */}
-        <div className="flex flex-1 items-center justify-center px-8">
+        <div className="flex flex-1 items-center justify-center px-5 sm:px-8">
           <div className="w-full max-w-[420px]">{children}</div>
         </div>
 
         {/* Bottom bar */}
-        <div className="flex items-center justify-between px-8 pb-8">
-          <p className="text-[13px] text-[#a09888] max-w-[220px] leading-snug">
+        <div className="flex flex-col gap-1 sm:flex-row items-center justify-between px-5 pb-5 sm:px-8 sm:pb-8">
+          <p className="text-[13px] text-[#a09888] max-w-[220px] leading-snug text-center sm:text-left">
             Het platform voor donatiebeheer, fondsen en ANBI-rapportage.
           </p>
-          <p className="text-[13px] text-[#a09888]">
+          <p className="text-[12px] sm:text-[13px] text-[#a09888]">
             &copy; 2026 Bunyan. Alle rechten voorbehouden.
           </p>
         </div>
@@ -53,7 +56,7 @@ export default function AuthLayout({
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 function DashboardDecoration() {
@@ -75,7 +78,7 @@ function DashboardDecoration() {
     { icon: "edit", active: false },
     { icon: "circle-g", active: false },
     { icon: "circle-b", active: false },
-  ]
+  ];
 
   const rows = [
     { w1: "60%", w2: "40%", tag: null },
@@ -90,7 +93,7 @@ function DashboardDecoration() {
     { w1: "50%", w2: "40%", tag: "#fde8d8" },
     { w1: "60%", w2: "35%", tag: "#fde8d8" },
     { w1: "65%", w2: "30%", tag: "#fef3c7" },
-  ]
+  ];
 
   return (
     <div className="absolute inset-4 flex">
@@ -98,7 +101,13 @@ function DashboardDecoration() {
       <div className="w-[52px] flex flex-col items-center pt-6 gap-4 flex-shrink-0">
         {/* Logo placeholder */}
         <div className="w-7 h-7 rounded-lg bg-[#345e7d]/20 mb-2 overflow-hidden flex items-center justify-center">
-          <Image src="/logos/logo_transparent.svg" alt="" width={18} height={18} className="h-[18px] w-[18px] opacity-40" />
+          <Image
+            src="/logos/logo_transparent.svg"
+            alt=""
+            width={18}
+            height={18}
+            className="h-[18px] w-[18px] opacity-40"
+          />
         </div>
         {sidebarItems.map((item, i) => (
           <div
@@ -114,7 +123,8 @@ function DashboardDecoration() {
       <div className="flex-1 bg-white/60 rounded-xl ml-2 p-5 overflow-hidden">
         {/* Top bar skeleton */}
         <div className="flex items-center gap-3 mb-6">
-          <div className="font-semibold text-[14px] text-[#261b07]/30"
+          <div
+            className="font-semibold text-[14px] text-[#261b07]/30"
             style={{ fontFamily: "var(--font-display), sans-serif" }}
           >
             bunyan
@@ -147,9 +157,15 @@ function DashboardDecoration() {
               }`}
             >
               <div className="w-5 h-5 rounded flex-shrink-0 bg-[#261b07]/8" />
-              <div className="h-2.5 rounded-full bg-[#261b07]/10" style={{ width: row.w1 }} />
+              <div
+                className="h-2.5 rounded-full bg-[#261b07]/10"
+                style={{ width: row.w1 }}
+              />
               <div className="flex-1" />
-              <div className="h-2.5 rounded-full bg-[#261b07]/6" style={{ width: row.w2 }} />
+              <div
+                className="h-2.5 rounded-full bg-[#261b07]/6"
+                style={{ width: row.w2 }}
+              />
               {row.tag && (
                 <div
                   className="h-5 w-[52px] rounded-md flex-shrink-0"
@@ -161,5 +177,5 @@ function DashboardDecoration() {
         </div>
       </div>
     </div>
-  )
+  );
 }

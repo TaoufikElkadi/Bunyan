@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -133,7 +134,12 @@ export function AppSidebar({
   pendingSignatures = 0,
 }: AppSidebarProps) {
   const pathname = usePathname();
-  const { toggleSidebar } = useSidebar();
+  const { toggleSidebar, setOpenMobile } = useSidebar();
+
+  // Close mobile sidebar when route changes (after new page loads)
+  useEffect(() => {
+    setOpenMobile(false);
+  }, [pathname, setOpenMobile]);
 
   async function switchToAdmin() {
     await fetch("/api/switch-view", {
@@ -170,7 +176,7 @@ export function AppSidebar({
           </div>
           <button
             onClick={toggleSidebar}
-            className="flex h-6 w-6 items-center justify-center rounded-md text-[#8a8478] hover:bg-[#e3dfd5]/50 hover:text-[#261b07] transition-colors duration-150"
+            className="flex h-8 w-8 sm:h-6 sm:w-6 items-center justify-center rounded-md text-[#8a8478] hover:bg-[#e3dfd5]/50 hover:text-[#261b07] transition-colors duration-150"
             aria-label="Toggle sidebar"
           >
             <PanelLeft className="h-3.5 w-3.5" />
@@ -209,7 +215,7 @@ export function AppSidebar({
                         <SidebarMenuButton
                           render={<Link href={item.href} />}
                           isActive={isActive}
-                          className={`relative rounded-md px-2.5 py-1.5 transition-all duration-150 ${
+                          className={`relative rounded-md px-2.5 py-2.5 sm:py-1.5 min-h-[44px] sm:min-h-0 transition-all duration-150 ${
                             isActive
                               ? "bg-[#f9a600]/12 text-[#261b07] font-medium before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-4 before:w-[2.5px] before:rounded-full before:bg-[#f9a600]"
                               : "text-[#8a8478] hover:bg-[#e3dfd5]/40 hover:text-[#261b07]"
@@ -242,7 +248,7 @@ export function AppSidebar({
       <SidebarFooter className="border-t border-[#e3dfd5] px-3 py-2.5">
         <a
           href="mailto:info@bunyan.nl"
-          className="mb-1.5 flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[12px] text-[#8a8478] hover:bg-[#e3dfd5]/40 hover:text-[#261b07] transition-all duration-150"
+          className="mb-1.5 flex items-center gap-2 rounded-md px-2.5 py-2.5 sm:py-1.5 min-h-[44px] sm:min-h-0 text-[12px] text-[#8a8478] hover:bg-[#e3dfd5]/40 hover:text-[#261b07] transition-all duration-150"
         >
           <LifeBuoy className="h-4 w-4 shrink-0" strokeWidth={1.5} />
           Hulp & Support
@@ -250,7 +256,7 @@ export function AppSidebar({
         {isPlatformAdmin && (
           <button
             onClick={switchToAdmin}
-            className="mb-1.5 flex w-full items-center justify-center gap-1.5 rounded-md border border-[#e3dfd5] bg-white px-2.5 py-1.5 text-[11px] font-medium text-[#8a8478] hover:bg-[#f3f1ec] hover:text-[#261b07] transition-colors"
+            className="mb-1.5 flex w-full items-center justify-center gap-1.5 rounded-md border border-[#e3dfd5] bg-white px-2.5 py-2.5 sm:py-1.5 min-h-[44px] sm:min-h-0 text-[11px] font-medium text-[#8a8478] hover:bg-[#f3f1ec] hover:text-[#261b07] transition-colors"
           >
             <Shield className="h-3 w-3" strokeWidth={1.5} />
             Platform Admin

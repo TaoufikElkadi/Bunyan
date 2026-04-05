@@ -257,7 +257,7 @@ export default async function LedenPage({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-[28px] font-bold tracking-[-0.5px] text-[#261b07]">
             Dragers
@@ -269,7 +269,7 @@ export default async function LedenPage({
         {limits.hasCsvExport && (
           <a
             href="/api/donors/export"
-            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg border border-[#e3dfd5] bg-white text-[13px] font-medium text-[#261b07] hover:bg-[#f3f1ec] transition-colors"
+            className="inline-flex items-center gap-1.5 min-h-[44px] sm:min-h-0 h-9 px-4 rounded-lg border border-[#e3dfd5] bg-white text-[13px] font-medium text-[#261b07] hover:bg-[#f3f1ec] transition-colors"
             download
           >
             <Download className="h-3.5 w-3.5" strokeWidth={1.5} />
@@ -337,99 +337,103 @@ export default async function LedenPage({
 
         {members.length > 0 ? (
           <>
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent border-[#e3dfd5]">
-                  <TableHead className="h-10 px-4 sm:px-6 text-[12px] font-medium text-[#a09888] uppercase tracking-wide">
-                    Naam
-                  </TableHead>
-                  <TableHead className="h-10 px-4 text-[12px] font-medium text-[#a09888] uppercase tracking-wide hidden sm:table-cell">
-                    Status
-                  </TableHead>
-                  <TableHead className="h-10 px-4 text-[12px] font-medium text-[#a09888] uppercase tracking-wide hidden md:table-cell">
-                    Verloop
-                  </TableHead>
-                  <TableHead className="h-10 px-4 text-[12px] font-medium text-[#a09888] uppercase tracking-wide text-right hidden sm:table-cell">
-                    Totaal
-                  </TableHead>
-                  <TableHead className="h-10 px-4 text-[12px] font-medium text-[#a09888] uppercase tracking-wide text-right hidden sm:table-cell">
-                    Donaties
-                  </TableHead>
-                  <TableHead className="h-10 px-4 text-[12px] font-medium text-[#a09888] uppercase tracking-wide hidden lg:table-cell">
-                    Frequentie
-                  </TableHead>
-                  <TableHead className="h-10 px-6 text-[12px] font-medium text-[#a09888] uppercase tracking-wide hidden md:table-cell">
-                    Laatste donatie
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {members.map((member) => (
-                  <TableRow
-                    key={member.id}
-                    className="hover:bg-[#fafaf8] border-[#e3dfd5]/60"
-                  >
-                    <TableCell className="px-4 sm:px-6 py-3 sm:py-4 text-[13px] font-medium">
-                      <Link
-                        href={`/leden/${member.id}`}
-                        className="text-[#261b07] hover:text-[#C87D3A] underline-offset-4 hover:underline transition-colors"
-                      >
-                        {member.name ?? (
-                          <span className="text-[#b5b0a5] italic">Anoniem</span>
-                        )}
-                      </Link>
-                      {member.email && (
-                        <p className="text-[11px] text-[#a09888] mt-0.5 truncate max-w-[180px]">
-                          {member.email}
-                        </p>
-                      )}
-                      {/* Mobile-only: show status + amount below name */}
-                      <div className="flex items-center gap-2 mt-1.5 sm:hidden">
-                        <MemberStatusBadge status={member.member_status} />
-                        <span className="text-[12px] font-semibold text-[#261b07] tabular-nums">
-                          {formatMoney(member.total_donated)}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="px-4 py-4 hidden sm:table-cell">
-                      <MemberStatusBadge status={member.member_status} />
-                    </TableCell>
-                    <TableCell className="px-4 py-4 hidden md:table-cell">
-                      <ChurnRiskIndicator risk={member.churn_risk} />
-                    </TableCell>
-                    <TableCell className="px-4 py-4 text-[13px] text-right font-semibold tabular-nums text-[#261b07] hidden sm:table-cell">
-                      {formatMoney(member.total_donated)}
-                    </TableCell>
-                    <TableCell className="px-4 py-4 text-right hidden sm:table-cell">
-                      <span className="inline-flex items-center justify-center min-w-[1.75rem] rounded-md bg-[#f3f1ec] px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-[#8a8478]">
-                        {member.donation_count}
-                      </span>
-                    </TableCell>
-                    <TableCell className="px-4 py-4 text-[12px] text-[#8a8478] hidden lg:table-cell capitalize">
-                      {member.donation_frequency ?? "-"}
-                    </TableCell>
-                    <TableCell className="px-6 py-4 text-[13px] text-[#8a8478] hidden md:table-cell">
-                      {member.last_donated_at ? (
-                        new Date(member.last_donated_at).toLocaleDateString(
-                          "nl-NL",
-                          {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          },
-                        )
-                      ) : (
-                        <span className="text-[#d5cfb8]">-</span>
-                      )}
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent border-[#e3dfd5]">
+                    <TableHead className="h-10 px-4 sm:px-6 text-[12px] font-medium text-[#a09888] uppercase tracking-wide">
+                      Naam
+                    </TableHead>
+                    <TableHead className="h-10 px-4 text-[12px] font-medium text-[#a09888] uppercase tracking-wide hidden sm:table-cell">
+                      Status
+                    </TableHead>
+                    <TableHead className="h-10 px-4 text-[12px] font-medium text-[#a09888] uppercase tracking-wide hidden md:table-cell">
+                      Verloop
+                    </TableHead>
+                    <TableHead className="h-10 px-4 text-[12px] font-medium text-[#a09888] uppercase tracking-wide text-right hidden sm:table-cell">
+                      Totaal
+                    </TableHead>
+                    <TableHead className="h-10 px-4 text-[12px] font-medium text-[#a09888] uppercase tracking-wide text-right hidden sm:table-cell">
+                      Donaties
+                    </TableHead>
+                    <TableHead className="h-10 px-4 text-[12px] font-medium text-[#a09888] uppercase tracking-wide hidden lg:table-cell">
+                      Frequentie
+                    </TableHead>
+                    <TableHead className="h-10 px-6 text-[12px] font-medium text-[#a09888] uppercase tracking-wide hidden md:table-cell">
+                      Laatste donatie
+                    </TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {members.map((member) => (
+                    <TableRow
+                      key={member.id}
+                      className="hover:bg-[#fafaf8] border-[#e3dfd5]/60"
+                    >
+                      <TableCell className="px-4 sm:px-6 py-3 sm:py-4 text-[13px] font-medium">
+                        <Link
+                          href={`/leden/${member.id}`}
+                          className="text-[#261b07] hover:text-[#C87D3A] underline-offset-4 hover:underline transition-colors"
+                        >
+                          {member.name ?? (
+                            <span className="text-[#b5b0a5] italic">
+                              Anoniem
+                            </span>
+                          )}
+                        </Link>
+                        {member.email && (
+                          <p className="text-[11px] text-[#a09888] mt-0.5 truncate max-w-[180px]">
+                            {member.email}
+                          </p>
+                        )}
+                        {/* Mobile-only: show status + amount below name */}
+                        <div className="flex items-center gap-2 mt-1.5 sm:hidden">
+                          <MemberStatusBadge status={member.member_status} />
+                          <span className="text-[12px] font-semibold text-[#261b07] tabular-nums">
+                            {formatMoney(member.total_donated)}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-4 py-4 hidden sm:table-cell">
+                        <MemberStatusBadge status={member.member_status} />
+                      </TableCell>
+                      <TableCell className="px-4 py-4 hidden md:table-cell">
+                        <ChurnRiskIndicator risk={member.churn_risk} />
+                      </TableCell>
+                      <TableCell className="px-4 py-4 text-[13px] text-right font-semibold tabular-nums text-[#261b07] hidden sm:table-cell">
+                        {formatMoney(member.total_donated)}
+                      </TableCell>
+                      <TableCell className="px-4 py-4 text-right hidden sm:table-cell">
+                        <span className="inline-flex items-center justify-center min-w-[1.75rem] rounded-md bg-[#f3f1ec] px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-[#8a8478]">
+                          {member.donation_count}
+                        </span>
+                      </TableCell>
+                      <TableCell className="px-4 py-4 text-[12px] text-[#8a8478] hidden lg:table-cell capitalize">
+                        {member.donation_frequency ?? "-"}
+                      </TableCell>
+                      <TableCell className="px-6 py-4 text-[13px] text-[#8a8478] hidden md:table-cell">
+                        {member.last_donated_at ? (
+                          new Date(member.last_donated_at).toLocaleDateString(
+                            "nl-NL",
+                            {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            },
+                          )
+                        ) : (
+                          <span className="text-[#d5cfb8]">-</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-4 border-t border-[#e3dfd5]">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-6 py-4 border-t border-[#e3dfd5]">
                 <p className="text-[13px] text-[#8a8478]">
                   <span className="font-medium text-[#261b07]">
                     {filteredCount}

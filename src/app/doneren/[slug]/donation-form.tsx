@@ -327,7 +327,7 @@ export function DonationForm({
       )}
 
       <div
-        className="rounded-3xl bg-white p-6 space-y-6"
+        className="rounded-3xl bg-white p-5 sm:p-6 space-y-6"
         style={{
           boxShadow:
             "0 8px 40px rgba(27, 37, 65, 0.08), 0 1px 3px rgba(27, 37, 65, 0.06)",
@@ -385,7 +385,7 @@ export function DonationForm({
                 key={opt.value}
                 type="button"
                 onClick={() => setFrequency(opt.value)}
-                className="flex-1 rounded-xl py-2.5 text-[13px] font-semibold transition-all duration-200"
+                className="flex-1 rounded-xl py-2.5 text-[11px] sm:text-[13px] font-semibold transition-all duration-200"
                 style={
                   active
                     ? {
@@ -451,7 +451,7 @@ export function DonationForm({
                   key={preset}
                   type="button"
                   onClick={() => setAmount(String(preset))}
-                  className="flex-1 h-10 rounded-xl text-sm font-semibold transition-all duration-200"
+                  className="flex-1 h-11 rounded-xl text-sm font-semibold transition-all duration-200"
                   style={
                     active
                       ? {
@@ -650,7 +650,7 @@ export function DonationForm({
             onChange={(e) => setDonorName(e.target.value)}
             autoComplete="name"
             autoCapitalize="words"
-            className="accent-input w-full h-[52px] rounded-2xl px-4 text-sm font-medium outline-none transition-all duration-200"
+            className="accent-input w-full h-[52px] rounded-2xl px-4 text-base font-medium outline-none transition-all duration-200"
             style={{
               background: "#FAFAF7",
               border: "1px solid #EDE8DF",
@@ -666,7 +666,7 @@ export function DonationForm({
               onChange={(e) => setDonorEmail(e.target.value)}
               required={isRecurring}
               autoComplete="email"
-              className="accent-input w-full h-[52px] rounded-2xl px-4 text-sm font-medium outline-none transition-all duration-200"
+              className="accent-input w-full h-[52px] rounded-2xl px-4 text-base font-medium outline-none transition-all duration-200"
               style={{
                 background: "#FAFAF7",
                 border: "1px solid #EDE8DF",
@@ -781,7 +781,7 @@ function PaymentStep({
   }
 
   return (
-    <div dir={dir} className="mx-auto max-w-lg">
+    <div dir={dir} className="mx-auto max-w-lg w-full">
       {/* Header bar */}
       <div
         className="flex items-center gap-3.5 px-5 py-4"

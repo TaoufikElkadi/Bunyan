@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import useSWR from 'swr'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useState } from "react";
+import useSWR from "swr";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -12,105 +12,114 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
-import { PlusIcon, DownloadIcon } from 'lucide-react'
+} from "@/components/ui/dialog";
+import { PlusIcon, DownloadIcon } from "lucide-react";
 
-type Fund = { id: string; name: string }
-type Campaign = { id: string; title: string }
+type Fund = { id: string; name: string };
+type Campaign = { id: string; title: string };
 
 type QRLink = {
-  id: string
-  code: string
-  fund_id: string | null
-  campaign_id: string | null
-  scan_count: number
-  created_at: string
-  funds: { name: string } | null
-  campaigns: { title: string } | null
-}
+  id: string;
+  code: string;
+  fund_id: string | null;
+  campaign_id: string | null;
+  scan_count: number;
+  created_at: string;
+  funds: { name: string } | null;
+  campaigns: { title: string } | null;
+};
 
 type Props = {
-  funds: Fund[]
-  campaigns: Campaign[]
-}
+  funds: Fund[];
+  campaigns: Campaign[];
+};
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json())
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 function downloadDataUrl(dataUrl: string, filename: string) {
-  const link = document.createElement('a')
-  link.download = filename
-  link.href = dataUrl
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
+  const link = document.createElement("a");
+  link.download = filename;
+  link.href = dataUrl;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 export function QRManagement({ funds, campaigns }: Props) {
-  const { data: qrLinks, mutate } = useSWR<QRLink[]>('/api/qr', fetcher)
-  const [open, setOpen] = useState(false)
-  const [fundId, setFundId] = useState('')
-  const [campaignId, setCampaignId] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [createdQR, setCreatedQR] = useState<{ code: string; qr_data_url: string; url: string } | null>(null)
+  const { data: qrLinks, mutate } = useSWR<QRLink[]>("/api/qr", fetcher);
+  const [open, setOpen] = useState(false);
+  const [fundId, setFundId] = useState("");
+  const [campaignId, setCampaignId] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [createdQR, setCreatedQR] = useState<{
+    code: string;
+    qr_data_url: string;
+    url: string;
+  } | null>(null);
 
   async function handleCreate() {
-    setLoading(true)
+    setLoading(true);
     try {
-      const res = await fetch('/api/qr', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/qr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           fund_id: fundId || undefined,
           campaign_id: campaignId || undefined,
         }),
-      })
-      if (!res.ok) throw new Error('Failed')
-      const data = await res.json()
-      setCreatedQR(data)
-      mutate()
+      });
+      if (!res.ok) throw new Error("Failed");
+      const data = await res.json();
+      setCreatedQR(data);
+      mutate();
     } catch {
       // error handled silently
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   async function handleDownloadQR(code: string) {
-    const url = `${window.location.origin}/go/${code}`
-    const QRCode = (await import('qrcode')).default
-    const dataUrl = await QRCode.toDataURL(url, { width: 400, margin: 2 })
-    downloadDataUrl(dataUrl, `qr-${code}.png`)
+    const url = `${window.location.origin}/go/${code}`;
+    const QRCode = (await import("qrcode")).default;
+    const dataUrl = await QRCode.toDataURL(url, { width: 400, margin: 2 });
+    downloadDataUrl(dataUrl, `qr-${code}.png`);
   }
 
   function handleClose() {
-    setOpen(false)
-    setFundId('')
-    setCampaignId('')
-    setCreatedQR(null)
+    setOpen(false);
+    setFundId("");
+    setCampaignId("");
+    setCreatedQR(null);
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">QR Codes</h1>
-        <Dialog open={open} onOpenChange={(v) => (v ? setOpen(true) : handleClose())}>
-          <DialogTrigger render={
-            <Button size="sm">
-              <PlusIcon className="size-4 mr-1" />
-              Nieuwe QR code
-            </Button>
-          } />
+        <Dialog
+          open={open}
+          onOpenChange={(v) => (v ? setOpen(true) : handleClose())}
+        >
+          <DialogTrigger
+            render={
+              <Button size="sm">
+                <PlusIcon className="size-4 mr-1" />
+                Nieuwe QR code
+              </Button>
+            }
+          />
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                {createdQR ? 'QR Code aangemaakt' : 'Nieuwe QR code'}
+                {createdQR ? "QR Code aangemaakt" : "Nieuwe QR code"}
               </DialogTitle>
             </DialogHeader>
 
@@ -128,7 +137,12 @@ export function QRManagement({ funds, campaigns }: Props) {
                 <div className="flex gap-2 justify-center">
                   <Button
                     variant="outline"
-                    onClick={() => downloadDataUrl(createdQR.qr_data_url, `qr-${createdQR.code}.png`)}
+                    onClick={() =>
+                      downloadDataUrl(
+                        createdQR.qr_data_url,
+                        `qr-${createdQR.code}.png`,
+                      )
+                    }
                   >
                     <DownloadIcon className="size-4 mr-1" />
                     Download
@@ -172,8 +186,12 @@ export function QRManagement({ funds, campaigns }: Props) {
                   </select>
                 </div>
 
-                <Button onClick={handleCreate} disabled={loading} className="w-full">
-                  {loading ? 'Bezig...' : 'QR code aanmaken'}
+                <Button
+                  onClick={handleCreate}
+                  disabled={loading}
+                  className="w-full"
+                >
+                  {loading ? "Bezig..." : "QR code aanmaken"}
                 </Button>
               </div>
             )}
@@ -193,43 +211,51 @@ export function QRManagement({ funds, campaigns }: Props) {
               Nog geen QR codes aangemaakt.
             </p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Fonds / Campagne</TableHead>
-                  <TableHead className="text-right">Scans</TableHead>
-                  <TableHead>Aangemaakt</TableHead>
-                  <TableHead></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {qrLinks.map((qr) => (
-                  <TableRow key={qr.id}>
-                    <TableCell className="font-mono text-sm">{qr.code}</TableCell>
-                    <TableCell>
-                      {qr.campaigns?.title || qr.funds?.name || '—'}
-                    </TableCell>
-                    <TableCell className="text-right">{qr.scan_count}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {new Date(qr.created_at).toLocaleDateString('nl-NL')}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDownloadQR(qr.code)}
-                      >
-                        <DownloadIcon className="size-4" />
-                      </Button>
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Code</TableHead>
+                    <TableHead>Fonds / Campagne</TableHead>
+                    <TableHead className="text-right">Scans</TableHead>
+                    <TableHead className="hidden sm:table-cell">
+                      Aangemaakt
+                    </TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {qrLinks.map((qr) => (
+                    <TableRow key={qr.id}>
+                      <TableCell className="font-mono text-sm">
+                        {qr.code}
+                      </TableCell>
+                      <TableCell>
+                        {qr.campaigns?.title || qr.funds?.name || "—"}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {qr.scan_count}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">
+                        {new Date(qr.created_at).toLocaleDateString("nl-NL")}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDownloadQR(qr.code)}
+                        >
+                          <DownloadIcon className="size-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

@@ -49,7 +49,7 @@ export function ContactForm() {
           {/* Left: text */}
           <div>
             <h2
-              className="text-[48px] sm:text-[56px] font-[380] leading-[1.08] tracking-[-1.5px] text-[#1a1510] mb-5"
+              className="text-[32px] sm:text-[48px] md:text-[56px] font-[380] leading-[1.08] tracking-[-1.5px] text-[#1a1510] mb-5"
               style={{ fontFamily: "var(--font-display), sans-serif" }}
             >
               Neem contact op

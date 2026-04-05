@@ -80,7 +80,7 @@ const INPUT_STYLE = {
   color: "#1B2541",
 };
 const INPUT_CLASS =
-  "accent-input w-full h-[52px] rounded-2xl px-4 text-sm font-medium outline-none transition-all duration-200";
+  "accent-input w-full h-[52px] rounded-2xl px-4 text-base font-medium outline-none transition-all duration-200";
 
 // ─── Mode tabs (reused across sub-steps) ─────────────────────────────────────
 
@@ -130,7 +130,7 @@ function ModeTabs({
 function Card({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className="rounded-3xl bg-white p-6 space-y-5"
+      className="rounded-3xl bg-white p-5 sm:p-6 space-y-5"
       style={{
         boxShadow:
           "0 8px 40px rgba(27, 37, 65, 0.08), 0 1px 3px rgba(27, 37, 65, 0.06)",

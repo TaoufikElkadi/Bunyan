@@ -216,8 +216,11 @@ export function CollectionForm({ funds }: { funds: FundOption[] }) {
             {lines.map((line, i) => {
               const fund = funds.find((f) => f.id === line.fund_id);
               return (
-                <div key={line.fund_id} className="flex items-center gap-3">
-                  <div className="flex items-center gap-2 w-[160px] shrink-0">
+                <div
+                  key={line.fund_id}
+                  className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3"
+                >
+                  <div className="flex items-center gap-2 sm:w-[160px] shrink-0">
                     {fund?.icon && (
                       <span className="text-[16px]">{fund.icon}</span>
                     )}
@@ -225,7 +228,7 @@ export function CollectionForm({ funds }: { funds: FundOption[] }) {
                       {fund?.name}
                     </span>
                   </div>
-                  <div className="relative flex-1 max-w-[200px]">
+                  <div className="relative flex-1 sm:max-w-[200px]">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[14px] text-[#b5b0a5]">
                       €
                     </span>
@@ -254,7 +257,10 @@ export function CollectionForm({ funds }: { funds: FundOption[] }) {
             </label>
             <div className="space-y-3">
               {extraLines.map((line, i) => (
-                <div key={i} className="flex items-center gap-3">
+                <div
+                  key={i}
+                  className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3"
+                >
                   <input
                     type="text"
                     value={line.label}
@@ -262,14 +268,14 @@ export function CollectionForm({ funds }: { funds: FundOption[] }) {
                       updateExtraLine(i, "label", e.target.value)
                     }
                     placeholder="bijv. Enveloppen, Losse giften"
-                    className="w-[160px] shrink-0 rounded-lg border border-[#e3dfd5] bg-white px-3 py-2.5 text-[13px] text-[#261b07] placeholder:text-[#b5b0a5] outline-none focus:border-[#261b07]/30 focus:ring-1 focus:ring-[#261b07]/10 transition-colors"
+                    className="w-full sm:w-[160px] shrink-0 rounded-lg border border-[#e3dfd5] bg-white px-3 py-2.5 text-[13px] text-[#261b07] placeholder:text-[#b5b0a5] outline-none focus:border-[#261b07]/30 focus:ring-1 focus:ring-[#261b07]/10 transition-colors"
                   />
                   <select
                     value={line.fund_id}
                     onChange={(e) =>
                       updateExtraLine(i, "fund_id", e.target.value)
                     }
-                    className="rounded-lg border border-[#e3dfd5] bg-white px-3 py-2.5 text-[13px] text-[#261b07] outline-none focus:border-[#261b07]/30 transition-colors"
+                    className="w-full sm:w-auto rounded-lg border border-[#e3dfd5] bg-white px-3 py-2.5 text-[13px] text-[#261b07] outline-none focus:border-[#261b07]/30 transition-colors"
                   >
                     {funds.map((f) => (
                       <option key={f.id} value={f.id}>
@@ -278,7 +284,7 @@ export function CollectionForm({ funds }: { funds: FundOption[] }) {
                       </option>
                     ))}
                   </select>
-                  <div className="relative flex-1 max-w-[200px]">
+                  <div className="relative flex-1 sm:max-w-[200px]">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[14px] text-[#b5b0a5]">
                       €
                     </span>
@@ -321,7 +327,7 @@ export function CollectionForm({ funds }: { funds: FundOption[] }) {
         </div>
 
         {/* Footer with total + submit */}
-        <div className="flex items-center justify-between px-6 py-4 bg-[#fafaf8] border-t border-[#e3dfd5]/60">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-4 sm:px-6 py-4 bg-[#fafaf8] border-t border-[#e3dfd5]/60">
           <div>
             <p className="text-[12px] font-medium text-[#8a8478] uppercase tracking-wide">
               Totaal

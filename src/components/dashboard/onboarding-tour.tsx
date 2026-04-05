@@ -88,6 +88,13 @@ export function OnboardingTour() {
         max-width: 340px;
       }
 
+      @media (max-width: 374px) {
+        .bunyan-tour.driver-popover {
+          max-width: calc(100vw - 2rem);
+          padding: 16px;
+        }
+      }
+
       .bunyan-tour .driver-popover-title {
         font-size: 17px;
         font-weight: 700;
