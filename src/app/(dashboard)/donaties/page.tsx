@@ -179,14 +179,14 @@ export default async function DonatiesPage({
     toDate;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Page header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-[28px] font-bold tracking-[-0.5px] text-[#261b07]">
             Donaties
           </h1>
-          <p className="text-[14px] text-[#8a8478] mt-1">
+          <p className="text-[14px] text-[#8a8478] mt-0.5">
             Beheer en bekijk alle ontvangen donaties
           </p>
         </div>
@@ -206,95 +206,93 @@ export default async function DonatiesPage({
       </div>
 
       {/* Filters */}
-      <div className="rounded-xl border border-[#e3dfd5] bg-white p-5">
-        <form
-          action="/donaties"
-          method="GET"
-          className="grid grid-cols-2 md:flex md:flex-wrap items-center gap-2.5"
-        >
-          <select
-            name="status"
-            defaultValue={statusFilter}
-            className={selectClasses}
-          >
-            {STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-
-          <select
-            name="method"
-            defaultValue={methodFilter}
-            className={selectClasses}
-          >
-            {METHOD_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-
-          <select
-            name="fund"
-            defaultValue={fundFilter}
-            className={selectClasses}
-          >
-            <option value="">Alle fondsen</option>
-            {(funds ?? []).map((f: { id: string; name: string }) => (
-              <option key={f.id} value={f.id}>
-                {f.name}
-              </option>
-            ))}
-          </select>
-
-          <input
-            type="date"
-            name="from"
-            defaultValue={fromDate}
-            className={inputClasses}
-            placeholder="Van"
-          />
-          <input
-            type="date"
-            name="to"
-            defaultValue={toDate}
-            className={inputClasses}
-            placeholder="Tot"
-          />
-
-          <input
-            type="text"
-            name="q"
-            defaultValue={searchQuery}
-            placeholder="Zoek op naam of e-mail..."
-            className={`${inputClasses} col-span-2 md:w-56`}
-          />
-
-          <button
-            type="submit"
-            className="h-9 px-4 rounded-lg bg-[#261b07] text-[#f8f7f5] text-[13px] font-medium hover:bg-[#3a2c14] transition-colors"
-          >
-            Filteren
-          </button>
-
-          {hasActiveFilters && (
-            <Link
-              href="/donaties"
-              className="h-9 px-3 rounded-lg border border-[#e3dfd5] text-[13px] font-medium flex items-center justify-center gap-1 hover:bg-[#f3f1ec] transition-colors text-[#8a8478] hover:text-[#261b07]"
+      <div className="rounded-xl border border-[#e3dfd5] bg-white p-3 sm:p-3.5">
+        <form action="/donaties" method="GET" className="flex flex-col gap-2">
+          {/* Row 1: Search + actions */}
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              name="q"
+              defaultValue={searchQuery}
+              placeholder="Zoek op naam of e-mail..."
+              className={`${inputClasses} h-8 flex-1 min-w-0`}
+            />
+            <button
+              type="submit"
+              className="h-8 px-3.5 rounded-lg bg-[#261b07] text-[#f8f7f5] text-[13px] font-medium hover:bg-[#3a2c14] transition-colors shrink-0"
             >
-              <X className="h-3.5 w-3.5" />
-              Wissen
-            </Link>
-          )}
+              Filteren
+            </button>
+            {hasActiveFilters && (
+              <Link
+                href="/donaties"
+                className="h-8 px-2.5 rounded-lg border border-[#e3dfd5] text-[13px] font-medium flex items-center justify-center gap-1 hover:bg-[#f3f1ec] transition-colors text-[#8a8478] hover:text-[#261b07] shrink-0"
+              >
+                <X className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Wissen</span>
+              </Link>
+            )}
+          </div>
+
+          {/* Row 2: Select filters + date range */}
+          <div className="grid grid-cols-3 sm:flex sm:flex-wrap items-center gap-1.5 sm:gap-2">
+            <select
+              name="status"
+              defaultValue={statusFilter}
+              className={`${selectClasses} h-8`}
+            >
+              {STATUS_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+
+            <select
+              name="method"
+              defaultValue={methodFilter}
+              className={`${selectClasses} h-8`}
+            >
+              {METHOD_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+
+            <select
+              name="fund"
+              defaultValue={fundFilter}
+              className={`${selectClasses} h-8`}
+            >
+              <option value="">Alle fondsen</option>
+              {(funds ?? []).map((f: { id: string; name: string }) => (
+                <option key={f.id} value={f.id}>
+                  {f.name}
+                </option>
+              ))}
+            </select>
+
+            <input
+              type="date"
+              name="from"
+              defaultValue={fromDate}
+              className={`${inputClasses} h-8 col-span-1`}
+            />
+            <input
+              type="date"
+              name="to"
+              defaultValue={toDate}
+              className={`${inputClasses} h-8 col-span-1`}
+            />
+          </div>
         </form>
       </div>
 
       {/* Table */}
       <div className="rounded-xl border border-[#e3dfd5] bg-white overflow-hidden">
-        <div className="flex items-center justify-between px-6 pt-5 pb-4">
-          <h3 className="text-[15px] font-semibold text-[#261b07]">
+        <div className="flex items-center justify-between px-5 pt-3.5 pb-3">
+          <h3 className="text-[14px] font-semibold text-[#261b07]">
             Alle donaties
           </h3>
           {filteredCount > 0 && (

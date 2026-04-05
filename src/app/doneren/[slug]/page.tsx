@@ -44,7 +44,7 @@ export default async function DonerenPage({ params }: Props) {
   const { data: mosque } = await admin
     .from("mosques")
     .select(
-      "id, name, slug, primary_color, welcome_msg, logo_url, language, anbi_status, rsin, iban, status, stripe_account_id, contact_email",
+      "id, name, slug, primary_color, welcome_msg, logo_url, language, anbi_status, rsin, iban, status, stripe_account_id, stripe_connected_at, contact_email",
     )
     .eq("slug", slug)
     .single();
@@ -77,7 +77,7 @@ export default async function DonerenPage({ params }: Props) {
 
   const defaultLocale = (mosque.language as Locale) || "nl";
 
-  if (!mosque.stripe_account_id) {
+  if (!mosque.stripe_account_id || !mosque.stripe_connected_at) {
     return (
       <DonationPageShell
         defaultLocale={defaultLocale}

@@ -28,6 +28,7 @@ import {
   PenLineIcon,
   BuildingIcon,
   CreditCardIcon,
+  InfoIcon,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getFundIcon, FUND_ICON_COLORS } from "@/components/fund/fund-cards";
@@ -924,6 +925,22 @@ export function PeriodicGiftStep({
           }}
         >
           {t("donate.periodic_info")}
+        </div>
+
+        {/* Tax benefit hint */}
+        <div
+          className="flex items-start gap-2.5 rounded-2xl px-4 py-3 text-xs leading-relaxed"
+          style={{
+            background: "#F0F5FF",
+            border: "1px solid #DBEAFE",
+            color: "#1E40AF",
+          }}
+        >
+          <InfoIcon className="size-3.5 mt-0.5 shrink-0" strokeWidth={2} />
+          <span>
+            Periodieke giften aan een ANBI zijn volledig aftrekbaar als de
+            overeenkomst minimaal 5 jaar loopt — zonder drempelbedrag.
+          </span>
         </div>
 
         {/* Personal details */}

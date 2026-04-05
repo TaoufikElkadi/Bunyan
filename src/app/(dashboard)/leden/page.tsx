@@ -255,14 +255,14 @@ export default async function LedenPage({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-[28px] font-bold tracking-[-0.5px] text-[#261b07]">
             Dragers
           </h1>
-          <p className="text-[14px] text-[#8a8478] mt-1">
+          <p className="text-[14px] text-[#8a8478] mt-0.5">
             Overzicht van uw gemeenschap en donateurs
           </p>
         </div>
@@ -280,12 +280,12 @@ export default async function LedenPage({
 
       {/* Filters — scrollable on mobile */}
       <div className="-mx-6 px-6 md:mx-0 md:px-0 overflow-x-auto scrollbar-none">
-        <div className="flex gap-2 min-w-max pb-1">
+        <div className="flex gap-1.5 min-w-max">
           {STATUS_OPTIONS.map((opt) => (
             <Link
               key={opt.value || "all-status"}
               href={filterUrl({ status: opt.value, page: "1" })}
-              className={`inline-flex items-center h-9 sm:h-8 px-3.5 sm:px-3 rounded-lg border text-[12px] font-medium transition-colors whitespace-nowrap ${
+              className={`inline-flex items-center h-7 px-2.5 rounded-md border text-[11px] font-medium transition-colors whitespace-nowrap ${
                 statusFilter === opt.value
                   ? "bg-[#261b07] text-white border-[#261b07]"
                   : "bg-white text-[#8a8478] border-[#e3dfd5] hover:bg-[#f3f1ec] hover:text-[#261b07]"
@@ -294,12 +294,12 @@ export default async function LedenPage({
               {opt.label}
             </Link>
           ))}
-          <div className="w-px h-8 sm:h-8 self-center bg-[#e3dfd5] shrink-0" />
+          <div className="w-px h-5 self-center bg-[#e3dfd5] shrink-0" />
           {RISK_OPTIONS.map((opt) => (
             <Link
               key={opt.value || "all-risk"}
               href={filterUrl({ risk: opt.value, page: "1" })}
-              className={`inline-flex items-center h-9 sm:h-8 px-3.5 sm:px-3 rounded-lg border text-[12px] font-medium transition-colors whitespace-nowrap ${
+              className={`inline-flex items-center h-7 px-2.5 rounded-md border text-[11px] font-medium transition-colors whitespace-nowrap ${
                 riskFilter === opt.value
                   ? "bg-[#261b07] text-white border-[#261b07]"
                   : "bg-white text-[#8a8478] border-[#e3dfd5] hover:bg-[#f3f1ec] hover:text-[#261b07]"
@@ -324,8 +324,8 @@ export default async function LedenPage({
 
       {/* Table */}
       <div className="rounded-xl border border-[#e3dfd5] bg-white overflow-hidden">
-        <div className="flex items-center justify-between px-6 pt-5 pb-4">
-          <h3 className="text-[15px] font-semibold text-[#261b07]">
+        <div className="flex items-center justify-between px-5 pt-3.5 pb-3">
+          <h3 className="text-[14px] font-semibold text-[#261b07]">
             {statusFilter || riskFilter ? "Gefilterde leden" : "Alle leden"}
           </h3>
           {filteredCount > 0 && (

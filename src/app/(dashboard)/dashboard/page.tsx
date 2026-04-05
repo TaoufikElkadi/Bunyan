@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import { getCachedProfile } from "@/lib/supabase/cached";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatMoney } from "@/lib/money";
-import { DonationTrendChart } from "@/components/dashboard/donation-trend-chart";
 import { FundBars } from "@/components/dashboard/fund-bars";
 import { UpgradeBanner } from "@/components/dashboard/upgrade-banner";
 import { getPlanLimits } from "@/lib/plan";
@@ -20,15 +19,16 @@ import { GenerateMockButton } from "@/components/dashboard/generate-mock-button"
 import { MemberHealthCard } from "@/components/members/member-health-card";
 import { TaxSavingsCard } from "@/components/members/tax-savings-card";
 import { ShardCollectionCard } from "@/components/shard/shard-collection-card";
-import {
-  DonationDistributionCard,
-  FundUtilizationCard,
-} from "@/components/dashboard/donut-chart";
+import { PeriodToggle } from "@/components/dashboard/period-toggle";
+import { IncomeTrendChart } from "@/components/dashboard/income-trend-chart";
+import type { MonthlyTotalSplit } from "@/components/dashboard/income-trend-chart";
 
 export const revalidate = 60;
 
 type DashboardMetrics = {
   total_this_month: number;
+  one_time_total: number;
+  recurring_total: number;
   monthly_count: number;
   recurring_mrr: number;
   new_donors: number;
@@ -42,8 +42,6 @@ type DashboardMetrics = {
   }[];
 };
 
-type MonthlyTotal = { month: string; total: number };
-type MonthlyByFund = { month: string; fund_name: string; total: number };
 type FundBreakdown = { name: string; total: number };
 
 /* ------------------------------------------------------------------ */
@@ -53,14 +51,17 @@ type FundBreakdown = { name: string; total: number };
 function DashboardSkeleton() {
   return (
     <div className="flex gap-6">
-      <div className="flex-1 min-w-0 space-y-6">
-        {/* KPI row */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[#e3dfd5]/80">
+      <div className="flex-1 min-w-0 space-y-5">
+        {/* 3 KPI cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="py-5 px-1">
-              <Skeleton className="h-3.5 w-24 rounded-md mb-3" />
+            <div
+              key={i}
+              className="rounded-2xl bg-white border border-[#eae6de]/80 p-5"
+            >
+              <Skeleton className="h-3 w-20 rounded-md mb-3" />
               <Skeleton className="h-8 w-28 rounded-md mb-3" />
-              <Skeleton className="h-3 w-36 rounded-md" />
+              <Skeleton className="h-3 w-24 rounded-md" />
             </div>
           ))}
         </div>
@@ -68,7 +69,7 @@ function DashboardSkeleton() {
         <div className="rounded-2xl bg-white border border-[#eae6de]/80 p-6">
           <Skeleton className="h-4 w-20 rounded-md mb-2" />
           <Skeleton className="h-8 w-32 rounded-md mb-6" />
-          <Skeleton className="h-[280px] w-full rounded-xl" />
+          <Skeleton className="h-[300px] w-full rounded-xl" />
         </div>
         {/* Summary row */}
         <div className="grid gap-3 sm:grid-cols-4">
@@ -102,7 +103,14 @@ function DashboardSkeleton() {
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
 
-export default function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ period?: string }>;
+}) {
+  const params = await searchParams;
+  const period = params.period ?? "month";
+
   return (
     <div>
       <div className="mb-6 flex items-end justify-between">
@@ -114,9 +122,10 @@ export default function DashboardPage() {
             Overzicht van uw donaties en activiteiten
           </p>
         </div>
+        <PeriodToggle />
       </div>
       <Suspense fallback={<DashboardSkeleton />}>
-        <DashboardContent />
+        <DashboardContent period={period} />
       </Suspense>
     </div>
   );
@@ -165,12 +174,22 @@ function timeAgo(dateStr: string): string {
 /*  Content                                                            */
 /* ------------------------------------------------------------------ */
 
-async function DashboardContent() {
+async function DashboardContent({ period }: { period: string }) {
   const { mosqueId, mosque, supabase } = await getCachedProfile();
 
   if (!mosqueId) return null;
 
   const now = new Date();
+  let periodStart: Date;
+  if (period === "year") {
+    periodStart = new Date(now.getFullYear(), 0, 1);
+  } else if (period === "all") {
+    periodStart = new Date(2000, 0, 1);
+  } else {
+    periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  }
+  const startOfPeriod = periodStart.toISOString();
+
   const startOfMonth = new Date(
     now.getFullYear(),
     now.getMonth(),
@@ -185,7 +204,6 @@ async function DashboardContent() {
     { data: metrics },
     { data: monthly },
     { data: byFund },
-    { data: monthlyByFund },
     { data: usageRows },
     { data: activeCampaigns },
     { data: recurringTotal },
@@ -195,9 +213,9 @@ async function DashboardContent() {
   ] = await Promise.all([
     supabase.rpc("get_dashboard_metrics", {
       p_mosque_id: mosqueId,
-      p_month_start: startOfMonth,
+      p_month_start: startOfPeriod,
     }),
-    supabase.rpc("get_monthly_totals", { p_mosque_id: mosqueId }),
+    supabase.rpc("get_monthly_totals_split", { p_mosque_id: mosqueId }),
     supabase.rpc("get_fund_breakdown", {
       p_mosque_id: mosqueId,
       p_month_start: new Date(
@@ -206,7 +224,6 @@ async function DashboardContent() {
         1,
       ).toISOString(),
     }),
-    supabase.rpc("get_monthly_totals_by_fund", { p_mosque_id: mosqueId }),
     supabase
       .from("plan_usage")
       .select("online_donations")
@@ -249,8 +266,7 @@ async function DashboardContent() {
 
   const m = (metrics ?? {}) as DashboardMetrics;
   const recentDonations = m.recent_donations ?? [];
-  const monthlyData = (monthly ?? []) as MonthlyTotal[];
-  const monthlyByFundData = (monthlyByFund ?? []) as MonthlyByFund[];
+  const monthlyData = (monthly ?? []) as MonthlyTotalSplit[];
   const fundData = (byFund ?? []) as FundBreakdown[];
   const allTimeRecurringTotal = (recurringTotal ?? []).reduce(
     (sum: number, r: { amount: number }) => sum + r.amount,
@@ -273,13 +289,9 @@ async function DashboardContent() {
   );
   const currentMrr = m.recurring_mrr ?? 0;
   const prevMrr = currentMrr - newMrrThisMonth;
-  const trendMrr = currentMrr > 0 ? calcTrend(currentMrr, prevMrr) : null;
 
   // Donor trend: new donors this month vs previous total
   const newDonors = m.new_donors ?? 0;
-  const prevDonorCount = (totalDonors ?? 0) - newDonors;
-  const trendDonors =
-    (totalDonors ?? 0) > 0 ? calcTrend(totalDonors ?? 0, prevDonorCount) : null;
 
   const onlineDonations = usageRows?.online_donations ?? 0;
   const maxOnline = limits.maxOnlineDonations;
@@ -293,44 +305,44 @@ async function DashboardContent() {
     }
   }
 
-  // Calculate trends from monthly totals data
-  const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const prevMonthKey = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, "0")}`;
-  const prevTotal =
-    monthlyData.find((d) => d.month === prevMonthKey)?.total ?? 0;
+  // Period labels for KPIs
+  const periodLabel =
+    period === "year" ? "Dit jaar" : period === "all" ? "Totaal" : "Deze maand";
+  const periodCompareLabel =
+    period === "year"
+      ? "vs vorig jaar"
+      : period === "all"
+        ? ""
+        : "vs vorige maand";
 
-  // Use current month if it has data, otherwise show last month with data
-  const thisMonthTotal = m.total_this_month ?? 0;
-  const hasCurrentMonthData = thisMonthTotal > 0;
-  const lastMonthWithData = [...monthlyData].reverse().find((d) => d.total > 0);
-  const displayTotal = hasCurrentMonthData
-    ? thisMonthTotal
-    : (lastMonthWithData?.total ?? 0);
-  const displayTotalLabel = hasCurrentMonthData
-    ? "Deze maand"
-    : "Laatste maand";
-  const displayTotalSub = hasCurrentMonthData
-    ? `van ${formatCompact(prevTotal)} · vorige maand`
-    : lastMonthWithData
-      ? `${lastMonthWithData.month.split("-").reverse().join("/")} · meest recente maand`
-      : "nog geen donaties";
+  // Compute previous period start for comparison
+  let prevPeriodStart: Date;
+  if (period === "year") {
+    prevPeriodStart = new Date(now.getFullYear() - 1, 0, 1);
+  } else if (period === "all") {
+    // No comparison for "all"
+    prevPeriodStart = new Date(2000, 0, 1);
+  } else {
+    prevPeriodStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  }
 
-  // Trend: compare displayed period to the one before it
-  const displayIdx = lastMonthWithData
-    ? monthlyData.indexOf(lastMonthWithData)
-    : -1;
-  const compareTotal = displayIdx > 0 ? monthlyData[displayIdx - 1].total : 0;
-  // Only show trend when we have a real comparison point
-  const trendTotal =
-    displayIdx > 0 ? calcTrend(displayTotal, compareTotal) : null;
+  // Sum monthly data for previous period
+  const prevPeriodEnd = periodStart;
+  const prevMonthlyData = monthlyData.filter((d) => {
+    const date = new Date(d.month + "-01");
+    return date >= prevPeriodStart && date < prevPeriodEnd;
+  });
+  const prevTotal = prevMonthlyData.reduce((sum, d) => sum + d.total, 0);
+  const prevOneTime = prevMonthlyData.reduce((sum, d) => sum + d.one_time, 0);
+  const prevRecurring = prevMonthlyData.reduce(
+    (sum, d) => sum + d.recurring,
+    0,
+  );
 
   const donationPageUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "https://bunyan.nl"}/doneren/${mosque.slug}`;
 
   const hasNoDonations =
-    (m.total_this_month ?? 0) === 0 &&
-    (m.monthly_count ?? 0) === 0 &&
-    recentDonations.length === 0 &&
-    monthlyData.every((d) => d.total === 0);
+    monthlyData.every((d) => d.total === 0) && (m.total_this_month ?? 0) === 0;
 
   // All-time stats from monthly totals (for summary row)
   const allTimeDonationTotal = monthlyData.reduce((sum, d) => sum + d.total, 0);
@@ -343,16 +355,16 @@ async function DashboardContent() {
       )}
 
       {hasNoDonations && (
-        <div className="relative">
+        <div className="relative min-h-[70vh]">
           {/* Blurred dashboard preview */}
           <div
-            className="pointer-events-none select-none blur-[6px] opacity-60"
+            className="pointer-events-none select-none blur-[3px] opacity-80"
             aria-hidden="true"
           >
             <DashboardSkeleton />
           </div>
           {/* Overlay card */}
-          <div className="absolute inset-0 flex items-center justify-center z-10">
+          <div className="absolute inset-0 flex items-start justify-center z-10 pt-[10vh]">
             <div
               className="rounded-2xl bg-white border border-[#eae6de]/80 shadow-[0_4px_24px_rgba(38,27,7,0.08)] p-10 text-center max-w-md w-full"
               data-tour="donation-link"
@@ -386,57 +398,57 @@ async function DashboardContent() {
                 <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.5} />
                 Bekijk donatiepagina
               </Link>
+              <GenerateMockButton />
             </div>
           </div>
         </div>
       )}
 
       {!hasNoDonations && (
-        <div className="flex flex-col xl:flex-row gap-6">
+        <div className="flex gap-6">
           {/* ---- Main column ---- */}
           <div className="flex-1 min-w-0 space-y-5">
-            {/* Hero row: Donuts + KPIs side by side */}
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-[2fr_2fr_3fr]">
-              <DonationDistributionCard data={fundData} />
-              <FundUtilizationCard
-                data={fundData}
-                recurringTotal={allTimeRecurringTotal}
+            {/* 3 KPI Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <KPICard
+                label={periodLabel}
+                value={formatMoney(m.total_this_month ?? 0)}
+                trend={
+                  prevTotal > 0 && period !== "all"
+                    ? calcTrend(m.total_this_month ?? 0, prevTotal)
+                    : null
+                }
+                sub={periodCompareLabel}
+                color="#C87D3A"
               />
-              <div className="rounded-2xl bg-white border border-[#eae6de]/80 shadow-[0_1px_2px_rgba(38,27,7,0.03)] p-6 flex flex-col justify-between divide-y divide-[#e3dfd5]/80">
-                <KPICell
-                  label={displayTotalLabel}
-                  value={formatMoney(displayTotal)}
-                  trend={trendTotal}
-                  sub={displayTotalSub}
-                />
-                <KPICell
-                  label="Maandelijks terugkerend"
-                  value={formatMoney(m.recurring_mrr ?? 0)}
-                  trend={trendMrr}
-                  sub={`${activeRecurrings ?? 0} actieve mandaten`}
-                />
-                <KPICell
-                  label="Donateurs"
-                  value={String(totalDonors ?? 0)}
-                  trend={trendDonors}
-                  sub={
-                    m.new_donors > 0
-                      ? `+${m.new_donors} nieuw deze maand`
-                      : "totaal geregistreerd"
-                  }
-                />
-              </div>
-            </div>
-
-            {/* Donation Trend Chart */}
-            <div className="rounded-2xl bg-white border border-[#eae6de]/80 shadow-[0_1px_2px_rgba(38,27,7,0.03)] px-6 py-5">
-              <DonationTrendChart
-                data={monthlyData}
-                dataByFund={monthlyByFundData}
+              <KPICard
+                label="Losse donaties"
+                value={formatMoney(m.one_time_total ?? 0)}
+                trend={
+                  prevOneTime > 0 && period !== "all"
+                    ? calcTrend(m.one_time_total ?? 0, prevOneTime)
+                    : null
+                }
+                sub={periodCompareLabel}
+                color="#7B8EAD"
+              />
+              <KPICard
+                label="Terugkerend"
+                value={formatMoney(m.recurring_total ?? 0)}
+                trend={
+                  prevRecurring > 0 && period !== "all"
+                    ? calcTrend(m.recurring_total ?? 0, prevRecurring)
+                    : null
+                }
+                sub={periodCompareLabel}
+                color="#6B8F71"
               />
             </div>
 
-            {/* Summary Stats Row — all-time overview */}
+            {/* Income Trend Chart */}
+            <IncomeTrendChart data={monthlyData} />
+
+            {/* Summary Stats Row */}
             <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
               <SummaryCell
                 label="Totaal ontvangen"
@@ -451,9 +463,9 @@ async function DashboardContent() {
                 color="#6B8F71"
               />
               <SummaryCell
-                label="Actieve mandaten"
+                label="Periodieke donaties"
                 value={String(activeRecurrings ?? 0)}
-                sub="terugkerend"
+                sub="actief"
                 color="#7B8EAD"
               />
               <SummaryCell
@@ -468,7 +480,17 @@ async function DashboardContent() {
               />
             </div>
 
-            {/* Member Intelligence Row */}
+            {/* Fund Distribution */}
+            {fundData.length > 0 && (
+              <div className="rounded-2xl bg-white border border-[#eae6de]/80 shadow-[0_1px_2px_rgba(38,27,7,0.03)] p-5">
+                <h3 className="text-[13px] font-semibold text-[#261b07] mb-4">
+                  Fondsverdeling
+                </h3>
+                <FundBars data={fundData} />
+              </div>
+            )}
+
+            {/* Member Intelligence */}
             {limits.hasMemberIntelligence && (
               <div className="grid gap-4 sm:grid-cols-2">
                 <MemberHealthCard />
@@ -476,12 +498,12 @@ async function DashboardContent() {
               </div>
             )}
 
-            {/* Shard Collection */}
+            {/* Shard */}
             {limits.hasShard && <ShardCollectionCard />}
           </div>
 
           {/* ---- Right sidebar ---- */}
-          <div className="xl:w-[340px] xl:shrink-0 flex flex-col gap-5">
+          <div className="hidden xl:flex w-[340px] shrink-0 flex-col gap-5">
             {/* Quick Actions */}
             <div className="rounded-2xl bg-white border border-[#eae6de]/80 shadow-[0_1px_2px_rgba(38,27,7,0.03)] p-5">
               <h3 className="text-[13px] font-semibold text-[#261b07] mb-4">
@@ -646,22 +668,6 @@ async function DashboardContent() {
               )}
             </div>
 
-            {/* Fund Distribution */}
-            <div className="rounded-2xl bg-white border border-[#eae6de]/80 shadow-[0_1px_2px_rgba(38,27,7,0.03)] p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-[13px] font-semibold text-[#261b07]">
-                  Fondsverdeling
-                </h3>
-                <Link
-                  href="/fondsen"
-                  className="text-[11px] font-medium text-[#a09888] hover:text-[#261b07] transition-colors"
-                >
-                  Beheer
-                </Link>
-              </div>
-              <FundBars data={fundData} />
-            </div>
-
             {/* Mock Data Generator */}
             <GenerateMockButton />
           </div>
@@ -680,20 +686,27 @@ function KPICard({
   value,
   sub,
   trend,
+  color,
 }: {
   label: string;
   value: string;
   sub: string;
   trend?: { value: string; up: boolean } | null;
+  color: string;
 }) {
   return (
-    <div className="relative py-5 px-1">
-      <p className="text-[13px] text-[#8a8478] mb-1.5">{label}</p>
-      <p className="text-[28px] font-bold tracking-[-0.02em] text-[#261b07] leading-none mb-2">
+    <div className="rounded-2xl bg-white border border-[#eae6de]/80 shadow-[0_1px_2px_rgba(38,27,7,0.03)] p-5">
+      <div className="flex items-center gap-2 mb-3">
+        <div
+          className="h-2 w-2 rounded-full"
+          style={{ backgroundColor: color }}
+        />
+        <p className="text-[12px] font-medium text-[#8a8478]">{label}</p>
+      </div>
+      <p className="text-[26px] font-bold tracking-[-0.02em] text-[#261b07] leading-none mb-2">
         {value}
       </p>
       <div className="flex items-center gap-1.5">
-        <span className="text-[12px] text-[#b5b0a5]">{sub}</span>
         {trend && (
           <span
             className={`inline-flex items-center gap-0.5 text-[12px] font-medium ${
@@ -708,44 +721,7 @@ function KPICard({
             {trend.value}
           </span>
         )}
-      </div>
-    </div>
-  );
-}
-
-function KPICell({
-  label,
-  value,
-  sub,
-  trend,
-}: {
-  label: string;
-  value: string;
-  sub: string;
-  trend?: { value: string; up: boolean } | null;
-}) {
-  return (
-    <div className="flex-1 flex flex-col justify-center py-3 first:pt-0 last:pb-0">
-      <p className="text-[11px] text-[#8a8478] mb-1">{label}</p>
-      <p className="text-[22px] font-bold tracking-[-0.02em] text-[#261b07] leading-none mb-1">
-        {value}
-      </p>
-      <div className="flex items-center gap-1.5">
-        <span className="text-[10px] text-[#b5b0a5]">{sub}</span>
-        {trend && (
-          <span
-            className={`inline-flex items-center gap-0.5 text-[10px] font-medium ${
-              trend.up ? "text-emerald-600" : "text-red-500"
-            }`}
-          >
-            {trend.up ? (
-              <ArrowUpRight className="h-2.5 w-2.5" />
-            ) : (
-              <ArrowDownRight className="h-2.5 w-2.5" />
-            )}
-            {trend.value}
-          </span>
-        )}
+        {sub && <span className="text-[11px] text-[#b5b0a5]">{sub}</span>}
       </div>
     </div>
   );

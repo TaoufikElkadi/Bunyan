@@ -1,87 +1,95 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { toast } from 'sonner'
-import type { Mosque, Locale } from '@/types'
-import { Loader2Icon, AlertTriangleIcon } from 'lucide-react'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { toast } from "sonner";
+import type { Mosque, Locale } from "@/types";
+import { Loader2Icon, AlertTriangleIcon } from "lucide-react";
 
 const LANGUAGES: { value: Locale; label: string }[] = [
-  { value: 'nl', label: 'Nederlands' },
-  { value: 'en', label: 'English' },
-  { value: 'tr', label: 'Turkce' },
-  { value: 'ar', label: 'العربية' },
-]
+  { value: "nl", label: "Nederlands" },
+  { value: "en", label: "English" },
+  { value: "tr", label: "Turkce" },
+  { value: "ar", label: "العربية" },
+];
 
 interface Props {
-  mosque: Mosque
-  isAdmin: boolean
+  mosque: Mosque;
+  isAdmin: boolean;
 }
 
-const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 function slugify(text: string): string {
   return text
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '')
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
 }
 
 export function MosqueDetailsCard({ mosque, isAdmin }: Props) {
-  const router = useRouter()
-  const [loading, setLoading] = useState(false)
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
 
-  const [name, setName] = useState(mosque.name)
-  const [slug, setSlug] = useState(mosque.slug)
-  const [city, setCity] = useState(mosque.city ?? '')
-  const [address, setAddress] = useState(mosque.address ?? '')
-  const [iban, setIban] = useState(mosque.iban ?? '')
-  const [welcomeMsg, setWelcomeMsg] = useState(mosque.welcome_msg ?? '')
-  const [language, setLanguage] = useState<Locale>(mosque.language)
+  const [name, setName] = useState(mosque.name);
+  const [slug, setSlug] = useState(mosque.slug);
+  const [city, setCity] = useState(mosque.city ?? "");
+  const [address, setAddress] = useState(mosque.address ?? "");
+  const [iban, setIban] = useState(mosque.iban ?? "");
+  const [welcomeMsg, setWelcomeMsg] = useState(mosque.welcome_msg ?? "");
+  const [language, setLanguage] = useState<Locale>(mosque.language);
 
-  const slugChanged = slug !== mosque.slug
-  const slugValid = slug.length >= 2 && SLUG_RE.test(slug)
+  const slugChanged = slug !== mosque.slug;
+  const slugValid = slug.length >= 2 && SLUG_RE.test(slug);
 
   const isDirty =
     name !== mosque.name ||
     slugChanged ||
-    city !== (mosque.city ?? '') ||
-    address !== (mosque.address ?? '') ||
-    iban !== (mosque.iban ?? '') ||
-    welcomeMsg !== (mosque.welcome_msg ?? '') ||
-    language !== mosque.language
+    city !== (mosque.city ?? "") ||
+    address !== (mosque.address ?? "") ||
+    iban !== (mosque.iban ?? "") ||
+    welcomeMsg !== (mosque.welcome_msg ?? "") ||
+    language !== mosque.language;
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!isAdmin) return
+    e.preventDefault();
+    if (!isAdmin) return;
 
     if (slugChanged && !slugValid) {
-      toast.error('Ongeldige slug (alleen kleine letters, cijfers en streepjes)')
-      return
+      toast.error(
+        "Ongeldige slug (alleen kleine letters, cijfers en streepjes)",
+      );
+      return;
     }
 
     if (slugChanged) {
       const confirmed = window.confirm(
-        'Let op: de URL van uw donatiepagina verandert.\n\n' +
-        `Huidige URL: /doneren/${mosque.slug}\n` +
-        `Nieuwe URL: /doneren/${slug}\n\n` +
-        'Bestaande links en QR-codes blijven werken via een doorverwijzing.\n' +
-        'Weet u het zeker?'
-      )
-      if (!confirmed) return
+        "Let op: de URL van uw donatiepagina verandert.\n\n" +
+          `Huidige URL: /doneren/${mosque.slug}\n` +
+          `Nieuwe URL: /doneren/${slug}\n\n` +
+          "Bestaande links en QR-codes blijven werken via een doorverwijzing.\n" +
+          "Weet u het zeker?",
+      );
+      if (!confirmed) return;
     }
 
-    setLoading(true)
+    setLoading(true);
 
     try {
-      const res = await fetch('/api/settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: name.trim(),
           slug: slugChanged ? slug : undefined,
@@ -93,24 +101,22 @@ export function MosqueDetailsCard({ mosque, isAdmin }: Props) {
           // Preserve existing values for fields managed by other cards
           primary_color: mosque.primary_color,
           anbi_status: mosque.anbi_status,
-          rsin: mosque.rsin,
-          kvk: mosque.kvk,
         }),
-      })
+      });
 
-      const data = await res.json()
+      const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || 'Er is iets misgegaan')
-        return
+        toast.error(data.error || "Er is iets misgegaan");
+        return;
       }
 
-      toast.success('Moskee gegevens opgeslagen')
-      router.refresh()
+      toast.success("Moskee gegevens opgeslagen");
+      router.refresh();
     } catch {
-      toast.error('Er is iets misgegaan')
+      toast.error("Er is iets misgegaan");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
@@ -169,7 +175,9 @@ export function MosqueDetailsCard({ mosque, isAdmin }: Props) {
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="mosque-welcome">Welkomstbericht (donatiepagina)</Label>
+            <Label htmlFor="mosque-welcome">
+              Welkomstbericht (donatiepagina)
+            </Label>
             <Textarea
               id="mosque-welcome"
               value={welcomeMsg}
@@ -219,8 +227,10 @@ export function MosqueDetailsCard({ mosque, isAdmin }: Props) {
               <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-2 dark:border-amber-900 dark:bg-amber-950">
                 <AlertTriangleIcon className="mt-0.5 size-4 shrink-0 text-amber-600" />
                 <p className="text-xs text-amber-800 dark:text-amber-200">
-                  De URL wijzigt naar <span className="font-mono font-medium">/doneren/{slug}</span>.
-                  Bestaande links en QR-codes blijven werken via een doorverwijzing.
+                  De URL wijzigt naar{" "}
+                  <span className="font-mono font-medium">/doneren/{slug}</span>
+                  . Bestaande links en QR-codes blijven werken via een
+                  doorverwijzing.
                 </p>
               </div>
             )}
@@ -228,14 +238,17 @@ export function MosqueDetailsCard({ mosque, isAdmin }: Props) {
 
           {isAdmin && (
             <div className="flex justify-end">
-              <Button type="submit" disabled={loading || !isDirty || (slugChanged && !slugValid)}>
+              <Button
+                type="submit"
+                disabled={loading || !isDirty || (slugChanged && !slugValid)}
+              >
                 {loading && <Loader2Icon className="size-4 animate-spin" />}
-                {loading ? 'Opslaan...' : 'Opslaan'}
+                {loading ? "Opslaan..." : "Opslaan"}
               </Button>
             </div>
           )}
         </form>
       </CardContent>
     </Card>
-  )
+  );
 }

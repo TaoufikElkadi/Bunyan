@@ -385,6 +385,10 @@ export default function OnboardingPage() {
                     <p className="text-[12px] text-[#a09888] mt-0.5">
                       Donateurs ontvangen automatisch een fiscale jaaropgave
                     </p>
+                    <p className="text-[11px] text-[#b5b0a5] mt-1">
+                      Donateurs kunnen hun giften aftrekken van de belasting —
+                      dit verhoogt de geefbereidheid.
+                    </p>
                   </div>
                 </label>
 

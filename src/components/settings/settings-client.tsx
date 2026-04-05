@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { MosqueDetailsCard } from "@/components/settings/mosque-details-card";
 import { BrandingCard } from "@/components/settings/branding-card";
 import { StripeCard } from "@/components/settings/stripe-card";
@@ -24,9 +25,11 @@ export function SettingsClient({
   hasStripeKey,
 }: Props) {
   const isAdmin = userRole === "admin";
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get("tab") || "algemeen";
 
   return (
-    <Tabs defaultValue="algemeen">
+    <Tabs defaultValue={initialTab}>
       <div
         className="-mx-1 overflow-x-auto scrollbar-none"
         style={{ WebkitOverflowScrolling: "touch" }}

@@ -1,13 +1,21 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { useSidebar } from "@/components/ui/sidebar";
 import "driver.js/dist/driver.css";
 
 const STORAGE_KEY = "bunyan_tour_completed";
+const MOBILE_BREAKPOINT = 768;
 
 export function OnboardingTour() {
+  const { setOpenMobile } = useSidebar();
+  const setOpenMobileRef = useRef(setOpenMobile);
+  setOpenMobileRef.current = setOpenMobile;
+
   useEffect(() => {
     if (localStorage.getItem(STORAGE_KEY)) return;
+
+    const isMobile = () => window.innerWidth < MOBILE_BREAKPOINT;
 
     const timeout = setTimeout(async () => {
       const { driver } = await import("driver.js");
@@ -27,6 +35,7 @@ export function OnboardingTour() {
         allowClose: true,
         onDestroyed: () => {
           localStorage.setItem(STORAGE_KEY, "true");
+          if (isMobile()) setOpenMobileRef.current(false);
         },
         steps: [
           {
@@ -42,6 +51,9 @@ export function OnboardingTour() {
               title: "Navigatie",
               description:
                 "Hier vindt u alle pagina's: donaties, dragers, fondsen, campagnes en meer.",
+              onPopoverRender: () => {
+                if (isMobile()) setOpenMobileRef.current(true);
+              },
             },
           },
           {
@@ -50,6 +62,9 @@ export function OnboardingTour() {
               title: "Zoeken",
               description:
                 "Zoek snel naar donateurs, fondsen of campagnes. U kunt ook \u2318K gebruiken.",
+              onPopoverRender: () => {
+                if (isMobile()) setOpenMobileRef.current(false);
+              },
             },
           },
           {
@@ -66,6 +81,9 @@ export function OnboardingTour() {
               title: "Instellingen",
               description:
                 "Configureer uw moskee, koppel Stripe en beheer uw team.",
+              onPopoverRender: () => {
+                if (isMobile()) setOpenMobileRef.current(true);
+              },
             },
           },
         ],
@@ -120,19 +138,21 @@ export function OnboardingTour() {
       }
 
       .bunyan-tour .driver-popover-next-btn {
-        background: #261b07;
-        color: #fafaf8;
+        background: #C87D3A;
+        color: #fff;
         border: none;
         border-radius: 10px;
         padding: 8px 20px;
         font-size: 13px;
         font-weight: 600;
+        font-style: normal;
+        letter-spacing: 0;
         cursor: pointer;
         transition: background 0.15s;
       }
 
       .bunyan-tour .driver-popover-next-btn:hover {
-        background: #3a2d17;
+        background: #a8632a;
       }
 
       .bunyan-tour .driver-popover-prev-btn {
@@ -167,8 +187,7 @@ export function OnboardingTour() {
       }
 
       .driver-overlay {
-        background: rgba(38, 27, 7, 0.3) !important;
-        backdrop-filter: blur(2px);
+        background: rgba(38, 27, 7, 0.4) !important;
       }
     `}</style>
   );
