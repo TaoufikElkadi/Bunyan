@@ -308,7 +308,7 @@ export function PeriodicGiftStep({
 
       const data = await res.json();
       setAgreementId(data.agreement_id);
-      setSubStep("confirmation");
+      setSubStep("payment");
     } catch (err) {
       setError(err instanceof Error ? err.message : t("donate.error"));
     } finally {
