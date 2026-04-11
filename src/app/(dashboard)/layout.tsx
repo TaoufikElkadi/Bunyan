@@ -70,7 +70,7 @@ export default async function DashboardLayout({
             {children}
           </main>
         </SidebarInset>
-        <OnboardingTour />
+        {!profile.has_seen_tour && <OnboardingTour userId={profile.id} />}
       </SidebarProvider>
     </div>
   );

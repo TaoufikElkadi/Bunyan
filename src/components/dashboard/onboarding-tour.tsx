@@ -3,13 +3,14 @@
 import { useEffect } from "react";
 import "driver.js/dist/driver.css";
 
-const STORAGE_KEY = "bunyan_tour_completed";
 const MOBILE_BREAKPOINT = 768;
 
-export function OnboardingTour() {
-  useEffect(() => {
-    if (localStorage.getItem(STORAGE_KEY)) return;
+interface Props {
+  userId: string;
+}
 
+export function OnboardingTour({ userId }: Props) {
+  useEffect(() => {
     const isMobile = () => window.innerWidth < MOBILE_BREAKPOINT;
 
     const timeout = setTimeout(async () => {
@@ -104,7 +105,7 @@ export function OnboardingTour() {
         smoothScroll: true,
         allowClose: true,
         onDestroyed: () => {
-          localStorage.setItem(STORAGE_KEY, "true");
+          fetch("/api/tour/complete", { method: "POST" });
         },
         steps: mobile ? mobileSteps : desktopSteps,
       });
@@ -113,7 +114,7 @@ export function OnboardingTour() {
     }, 600);
 
     return () => clearTimeout(timeout);
-  }, []);
+  }, [userId]);
 
   return (
     <style>{`

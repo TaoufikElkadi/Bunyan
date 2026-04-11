@@ -61,6 +61,7 @@ export interface User {
   role: UserRole;
   invited_at: string | null;
   invited_by: string | null;
+  has_seen_tour: boolean;
   created_at: string;
 }
 
