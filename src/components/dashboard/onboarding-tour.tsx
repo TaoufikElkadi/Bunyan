@@ -158,21 +158,24 @@ export function OnboardingTour() {
       }
 
       .bunyan-tour .driver-popover-next-btn {
-        background: #C87D3A;
-        color: #fff;
-        border: none;
-        border-radius: 10px;
-        padding: 8px 20px;
-        font-size: 13px;
-        font-weight: 600;
-        font-style: normal;
-        letter-spacing: 0;
+        background: #C87D3A !important;
+        color: #fff !important;
+        border: none !important;
+        border-radius: 10px !important;
+        padding: 8px 20px !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
+        font-style: normal !important;
+        letter-spacing: 0.01em !important;
+        -webkit-font-smoothing: antialiased !important;
+        -moz-osx-font-smoothing: grayscale !important;
+        text-shadow: none !important;
         cursor: pointer;
         transition: background 0.15s;
       }
 
       .bunyan-tour .driver-popover-next-btn:hover {
-        background: #a8632a;
+        background: #a8632a !important;
       }
 
       .bunyan-tour .driver-popover-prev-btn {
